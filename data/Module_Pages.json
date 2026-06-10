@@ -9,7 +9,7 @@
       },
       {
         "page_name": "addressBook.aspx",
-        "Feature_Flag": "AddressBook",
+        "Feature_Flag": "F989550_TelerikRefactor_AddressBookModule",
         "Feature_Flag_Status": "Enabled"
       },
       {
@@ -96,23 +96,33 @@
     "Pages": [
       {
         "page_name": "assets.aspx",
-        "Feature_Flag": "Assets",
+        "Feature_Flag": "F989552_TelerikRefactor_AssetAware_Assets",
         "Feature_Flag_Status": "Enabled"
       },
       {
         "page_name": "assetHistory.aspx",
-        "Feature_Flag": "AssetHistory",
-        "Feature_Flag_Status": "Enabled"
+        "Feature_Flag": "F989552_TelerikRefactor_AssetAware_AssetHistory",
+        "Feature_Flag_Status": "Disabled"
       },
       {
         "page_name": "assetVendorAddressContact.aspx",
-        "Feature_Flag": "AssetVendorAddressContact",
+        "Feature_Flag": "F989552_TelerikRefactor_AssetAware_AddressContact",
         "Feature_Flag_Status": "Enabled"
       },
       {
         "page_name": "expressassesthistory.aspx",
-        "Feature_Flag": "ExpressAssetHistory",
-        "Feature_Flag_Status": "Enabled"
+        "Feature_Flag": "F989552_TelerikRefactor_AssetAware_AssetHistory",
+        "Feature_Flag_Status": "Disabled"
+      },
+      {
+        "page_name": "assetWarrentyTypes.aspx",
+        "Feature_Flag": "F989552_TelerikRefactor_AssetAware_WarrantyTypes",
+        "Feature_Flag_Status": "Disabled"
+      },
+      {
+        "page_name": "assetVendors.aspx",
+        "Feature_Flag": "F989552_TelerikRefactor_AssetAware_AssetVendors",
+        "Feature_Flag_Status": "Disabled"
       }
     ],
     "OutOfScope": [
@@ -124,7 +134,7 @@
     "Pages": [
       {
         "page_name": "webmail/webmailBox.aspx",
-        "Feature_Flag": "Webmail",
+        "Feature_Flag": "F1048496_RefactorTelerik_Communication_Webmail_WebmailBox",
         "Feature_Flag_Status": "Enabled"
       }
     ],
@@ -135,38 +145,38 @@
     "Pages": [
       {
         "page_name": "captionedVideoItem.aspx",
-        "Feature_Flag": "CaptionedVideoItem",
-        "Feature_Flag_Status": "Enabled"
+        "Feature_Flag": "F1040954_TelerikRefactor_Content_CaptionedVideoItem",
+        "Feature_Flag_Status": "Disabled"
       },
       {
         "page_name": "elmItemInteractive.aspx",
-        "Feature_Flag": "ElmItemInteractive",
-        "Feature_Flag_Status": "Enabled"
+        "Feature_Flag": "F1040955_RefactorTelerik_Content_ElmItemInteractive",
+        "Feature_Flag_Status": "Disabled"
       },
       {
         "page_name": "grammarTool.aspx",
-        "Feature_Flag": "GrammarTool",
-        "Feature_Flag_Status": "Enabled"
+        "Feature_Flag": "F1040956_RefactorTelerik_Content_GrammarTool",
+        "Feature_Flag_Status": "Disabled"
       },
       {
         "page_name": "hyperlink.aspx",
-        "Feature_Flag": "Hyperlink",
-        "Feature_Flag_Status": "Enabled"
+        "Feature_Flag": "F1040957_RefactorTelerik_Content_Hyperlink",
+        "Feature_Flag_Status": "Disabled"
       },
       {
         "page_name": "sources/default.aspx",
-        "Feature_Flag": "SourcesDefault",
-        "Feature_Flag_Status": "Enabled"
+        "Feature_Flag": "F1040963_RefactorTelerik_Content_Default",
+        "Feature_Flag_Status": "Disabled"
       },
       {
         "page_name": "sources/source.aspx",
-        "Feature_Flag": "SourcesSource",
-        "Feature_Flag_Status": "Enabled"
+        "Feature_Flag": "F1040964_RefactorTelerik_Content_SourcesSource",
+        "Feature_Flag_Status": "Disabled"
       },
       {
         "page_name": "timeline.aspx",
-        "Feature_Flag": "Timeline",
-        "Feature_Flag_Status": "Enabled"
+        "Feature_Flag": "F1040958_RefactorTelerik_Content_Timeline",
+        "Feature_Flag_Status": "Disabled"
       }
     ],
     "OutOfScope": [
@@ -181,23 +191,23 @@
     "Pages": [
       {
         "page_name": "placement/default.aspx",
-        "Feature_Flag": "PlacementDefault",
-        "Feature_Flag_Status": "Enabled"
+        "Feature_Flag": "F1045395_RefactorTelerik_Enrollment_Placement_default",
+        "Feature_Flag_Status": "Disabled"
       },
       {
         "page_name": "placement/manager.aspx",
-        "Feature_Flag": "PlacementManager",
-        "Feature_Flag_Status": "Enabled"
+        "Feature_Flag": "F1047732_RefactorTelerik_Enrollment_Placement_Manager",
+        "Feature_Flag_Status": "Disabled"
       },
       {
         "page_name": "placement/rejectReason.aspx",
         "Feature_Flag": "PlacementRejectReason",
-        "Feature_Flag_Status": "Enabled"
+        "Feature_Flag_Status": "Disabled"
       },
       {
         "page_name": "registration/default.aspx",
-        "Feature_Flag": "RegistrationDefault",
-        "Feature_Flag_Status": "Enabled"
+        "Feature_Flag": "F1045150_RefactorTelerik_Enrollment_RegistrationDefault",
+        "Feature_Flag_Status": "Disabled"
       }
     ],
     "OutOfScope": [
@@ -215,12 +225,12 @@
       },
       {
         "page_name": "calculationGroups.aspx",
-        "Feature_Flag": "CalculationGroups",
+        "Feature_Flag": "F1045468_RefactorTelerik_ExtendedField_CalculationGroups",
         "Feature_Flag_Status": "Enabled"
       },
       {
         "page_name": "fieldHistory.aspx",
-        "Feature_Flag": "FieldHistory",
+        "Feature_Flag": "F1047070_TelerikRefactor_ExtendedField_FieldHistory",
         "Feature_Flag_Status": "Enabled"
       },
       {
@@ -289,7 +299,7 @@
     "Pages": [
       {
         "page_name": "enrollment.aspx",
-        "Feature_Flag": "Enrollment",
+        "Feature_Flag": "F1037582_RefactorTelerik_Home_Enrollment",
         "Feature_Flag_Status": "Enabled"
       },
       {
@@ -328,7 +338,7 @@
       },
       {
         "page_name": "searchResults.aspx",
-        "Feature_Flag": "SearchResults",
+        "Feature_Flag": "F989607_TelerikRefactor_Library_SearchResults",
         "Feature_Flag_Status": "Enabled"
       },
       {
@@ -348,6 +358,21 @@
         "page_name": "default.aspx",
         "Feature_Flag": "Default",
         "Feature_Flag_Status": "Enabled"
+      },
+      {
+        "page_name": "gradebookWeightTypes.aspx",
+        "Feature_Flag": "F989655_TelerikRefactor_Location",
+        "Feature_Flag_Status": "Enabled"
+      },
+      {
+        "page_name": "security\\roleAccessRestrictions.aspx",
+        "Feature_Flag": "F989655_TelerikRefactor_Location",
+        "Feature_Flag_Status": "Enabled"
+      },
+      {
+        "page_name": "skinProperties.aspx",
+        "Feature_Flag": "F989655_TelerikRefactor_Location",
+        "Feature_Flag_Status": "Enabled"
       }
     ],
     "OutOfScope": []
@@ -357,32 +382,32 @@
     "Pages": [
       {
         "page_name": "default.aspx",
-        "Feature_Flag": "Default",
+        "Feature_Flag": "F989570_TelerikRefactor_SecurityModule",
         "Feature_Flag_Status": "Enabled"
       },
       {
         "page_name": "permissionDisplayGroups.aspx",
-        "Feature_Flag": "PermissionDisplayGroups",
+        "Feature_Flag": "F989570_TelerikRefactor_SecurityModule",
         "Feature_Flag_Status": "Enabled"
       },
       {
         "page_name": "permissionDisplayGroupPermissions.aspx",
-        "Feature_Flag": "PermissionDisplayGroupPermissions",
+        "Feature_Flag": "F989570_TelerikRefactor_SecurityModule",
         "Feature_Flag_Status": "Enabled"
       },
       {
         "page_name": "permissionRoles.aspx",
-        "Feature_Flag": "PermissionRoles",
+        "Feature_Flag": "F989570_TelerikRefactor_SecurityModule",
         "Feature_Flag_Status": "Enabled"
       },
       {
         "page_name": "permissionSectionRoles.aspx",
-        "Feature_Flag": "PermissionSectionRoles",
+        "Feature_Flag": "F989570_TelerikRefactor_SecurityModule",
         "Feature_Flag_Status": "Enabled"
       },
       {
         "page_name": "permissionVisibility.aspx",
-        "Feature_Flag": "PermissionVisibility",
+        "Feature_Flag": "F989570_TelerikRefactor_SecurityModule",
         "Feature_Flag_Status": "Enabled"
       }
     ],
