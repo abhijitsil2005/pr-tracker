@@ -524,7 +524,7 @@ async function renderPRs(filters = {}) {
     (p.Developer||'').toLowerCase().includes(search) ||
     (p.Module||'').toLowerCase().includes(search) ||
     (p.Status||'').toLowerCase().includes(search));
-  document.getElementById('prTableBody').innerHTML = rows.map(p => `
+    document.getElementById('prTableBody').innerHTML = rows.sort((a,b)=>b.Dev_Sprint-a.Dev_Sprint).map(p => `
     <tr>
       <td><strong style="color:var(--accent)">#${p.PR}</strong></td>
       <td>${p.Module||'—'}</td>
