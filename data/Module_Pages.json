@@ -1,0 +1,399 @@
+[
+  {
+    "Module": "AddressBook",
+    "Pages": [
+      {
+        "page_name": "contacts.aspx",
+        "Feature_Flag": "ContactManagement",
+        "Feature_Flag_Status": "Enabled"
+      },
+      {
+        "page_name": "addressBook.aspx",
+        "Feature_Flag": "AddressBook",
+        "Feature_Flag_Status": "Enabled"
+      },
+      {
+        "page_name": "automatedRoleAssignment.aspx",
+        "Feature_Flag": "AutomatedRoleAssignment",
+        "Feature_Flag_Status": "Enabled"
+      },
+      {
+        "page_name": "default.aspx",
+        "Feature_Flag": "Default",
+        "Feature_Flag_Status": "Enabled"
+      },
+      {
+        "page_name": "mailboxes.aspx",
+        "Feature_Flag": "Mailboxes",
+        "Feature_Flag_Status": "Enabled"
+      }
+    ],
+    "OutOfScope": [
+    ]
+  },
+  {
+    "Module": "Assessment",
+    "Pages": [
+      {
+        "page_name": "analysis.aspx",
+        "Feature_Flag": "analysis",
+        "Feature_Flag_Status": "Enabled"
+      },
+      {
+        "page_name": "assessment.aspx",
+        "Feature_Flag": "Assessment",
+        "Feature_Flag_Status": "Enabled"
+      },
+      {
+        "page_name": "checkMyWork/checkMyWork.aspx",
+        "Feature_Flag": "CheckMyWork",
+        "Feature_Flag_Status": "Enabled"
+      },
+      {
+        "page_name": "checkMyWork/submissions.aspx",
+        "Feature_Flag": "CheckMyWork",
+        "Feature_Flag_Status": "Enabled"
+      },
+      {
+        "page_name": "default.aspx",
+        "Feature_Flag": "Default",
+        "Feature_Flag_Status": "Enabled"
+      },
+      {
+        "page_name": "import.aspx",
+        "Feature_Flag": "Import",
+        "Feature_Flag_Status": "Enabled"
+      },
+      {
+        "page_name": "manager.aspx",
+        "Feature_Flag": "Manager",
+        "Feature_Flag_Status": "Enabled"
+      },
+      {
+        "page_name": "questions.aspx",
+        "Feature_Flag": "Questions",
+        "Feature_Flag_Status": "Enabled"
+      },
+      {
+        "page_name": "questionManager.aspx",
+        "Feature_Flag": "QuestionManager",
+        "Feature_Flag_Status": "Enabled"
+      },
+      {
+        "page_name": "reports/assessmentAnswersAccepted.aspx",
+        "Feature_Flag": "AssessmentAnswersAccepted",
+        "Feature_Flag_Status": "Enabled"
+      },
+      {
+        "page_name": "reports/assessmentQuestionAnalysis.aspx",
+        "Feature_Flag": "AssessmentQuestionAnalysis",
+        "Feature_Flag_Status": "Enabled"
+      }
+    ],
+    "OutOfScope": [
+    ]
+  },
+  {
+    "Module": "AssetAware",
+    "Pages": [
+      {
+        "page_name": "assets.aspx",
+        "Feature_Flag": "Assets",
+        "Feature_Flag_Status": "Enabled"
+      },
+      {
+        "page_name": "assetHistory.aspx",
+        "Feature_Flag": "AssetHistory",
+        "Feature_Flag_Status": "Enabled"
+      },
+      {
+        "page_name": "assetVendorAddressContact.aspx",
+        "Feature_Flag": "AssetVendorAddressContact",
+        "Feature_Flag_Status": "Enabled"
+      },
+      {
+        "page_name": "expressassesthistory.aspx",
+        "Feature_Flag": "ExpressAssetHistory",
+        "Feature_Flag_Status": "Enabled"
+      }
+    ],
+    "OutOfScope": [
+      "assetvendor.aspx"
+    ]
+  },
+  {
+    "Module": "Communication",
+    "Pages": [
+      {
+        "page_name": "webmail/webmailBox.aspx",
+        "Feature_Flag": "Webmail",
+        "Feature_Flag_Status": "Enabled"
+      }
+    ],
+    "OutOfScope": [
+    ]
+  },
+  {
+    "Module": "Content",
+    "Pages": [
+      {
+        "page_name": "captionedVideoItem.aspx",
+        "Feature_Flag": "CaptionedVideoItem",
+        "Feature_Flag_Status": "Enabled"
+      },
+      {
+        "page_name": "elmItemInteractive.aspx",
+        "Feature_Flag": "ElmItemInteractive",
+        "Feature_Flag_Status": "Enabled"
+      },
+      {
+        "page_name": "grammarTool.aspx",
+        "Feature_Flag": "GrammarTool",
+        "Feature_Flag_Status": "Enabled"
+      },
+      {
+        "page_name": "hyperlink.aspx",
+        "Feature_Flag": "Hyperlink",
+        "Feature_Flag_Status": "Enabled"
+      },
+      {
+        "page_name": "sources/default.aspx",
+        "Feature_Flag": "SourcesDefault",
+        "Feature_Flag_Status": "Enabled"
+      },
+      {
+        "page_name": "sources/source.aspx",
+        "Feature_Flag": "SourcesSource",
+        "Feature_Flag_Status": "Enabled"
+      },
+      {
+        "page_name": "timeline.aspx",
+        "Feature_Flag": "Timeline",
+        "Feature_Flag_Status": "Enabled"
+      }
+    ],
+    "OutOfScope": [
+      "affiliate.aspx",  
+      "affiliates.aspx",
+      "chrome/online/footer.aspx",
+      "chrome/printed/options.aspx"
+    ]
+  },
+  {
+    "Module": "Enrollment",
+    "Pages": [
+      {
+        "page_name": "placement/default.aspx",
+        "Feature_Flag": "PlacementDefault",
+        "Feature_Flag_Status": "Enabled"
+      },
+      {
+        "page_name": "placement/manager.aspx",
+        "Feature_Flag": "PlacementManager",
+        "Feature_Flag_Status": "Enabled"
+      },
+      {
+        "page_name": "placement/rejectReason.aspx",
+        "Feature_Flag": "PlacementRejectReason",
+        "Feature_Flag_Status": "Enabled"
+      },
+      {
+        "page_name": "registration/default.aspx",
+        "Feature_Flag": "RegistrationDefault",
+        "Feature_Flag_Status": "Enabled"
+      }
+    ],  
+    "OutOfScope": [
+      "registration/registrationLocation.aspx",
+      "registration/registrationLocations.aspx"
+    ]
+  },
+  {
+    "Module": "Extended Field",
+    "Pages": [
+      {
+        "page_name": "categories.aspx",
+        "Feature_Flag": "Categories",
+        "Feature_Flag_Status": "Enabled"
+      },
+      {
+        "page_name": "calculationGroups.aspx",
+        "Feature_Flag": "CalculationGroups",
+        "Feature_Flag_Status": "Enabled"
+      },
+      {
+        "page_name": "fieldHistory.aspx",
+        "Feature_Flag": "FieldHistory",
+        "Feature_Flag_Status": "Enabled"
+      },
+      {
+        "page_name": "default.aspx",
+        "Feature_Flag": "Default",
+        "Feature_Flag_Status": "Enabled"
+      },
+      {
+        "page_name": "extendedField.aspx",
+        "Feature_Flag": "ExtendedField",
+        "Feature_Flag_Status": "Enabled"  
+      }
+
+    ],
+    "OutOfScope": [
+      "importData.aspx"
+    ]
+  },
+  {
+    "Module": "GradeBook",
+    "Pages": [
+      {
+        "page_name": "default.aspx",
+        "Feature_Flag": "Default",
+        "Feature_Flag_Status": "Enabled"
+      },
+      {
+        "page_name": "objectivePerformance.aspx",
+        "Feature_Flag": "ObjectivePerformance",
+        "Feature_Flag_Status": "Enabled"
+      },
+      {
+        "page_name": "progressReport/default.aspx",
+        "Feature_Flag": "ProgressReportDefault",
+        "Feature_Flag_Status": "Enabled"
+      },
+      {
+        "page_name": "progressReport/progressReport.aspx",
+        "Feature_Flag": "ProgressReport",
+        "Feature_Flag_Status": "Enabled"
+      },
+      {
+        "page_name": "progressReport/transcript/createExternalCourses.aspx",
+        "Feature_Flag": "CreateExternalCourses",
+        "Feature_Flag_Status": "Enabled"
+      },
+      {
+        "page_name": "progressReport/transcript/externalCourse.aspx",
+        "Feature_Flag": "ExternalCourse",
+        "Feature_Flag_Status": "Enabled"
+      },
+      {
+        "page_name": "progressReport/transcript/externalCourses.aspx",
+        "Feature_Flag": "ExternalCourses",
+        "Feature_Flag_Status": "Enabled"
+      },
+      {
+        "page_name": "section/* - all pages",
+        "Feature_Flag": "SectionAllPages",
+        "Feature_Flag_Status": "Enabled"
+      }
+    ],
+    "OutOfScope": [
+    ]
+  },
+  {
+    "Module": "Home",
+    "Pages": [
+      {
+        "page_name": "enrollment.aspx",
+        "Feature_Flag": "Enrollment",
+        "Feature_Flag_Status": "Enabled"
+      },
+      {
+        "page_name": "overdueLessons.aspx",
+        "Feature_Flag": "OverdueLessons",
+        "Feature_Flag_Status": "Enabled"
+      }
+    ],
+    "OutOfScope": [
+      "caretaker.aspx"
+    ]
+  },
+  {
+    "Module": "IssueAware",
+    "Pages": [
+      {
+        "page_name": "automaticStakeholderRules.aspx",
+        "Feature_Flag": "AutomaticStakeholderRules",
+        "Feature_Flag_Status": "Enabled"
+      },
+      {
+        "page_name": "search.aspx",
+        "Feature_Flag": "Search",
+        "Feature_Flag_Status": "Enabled"
+      }
+    ],
+    "OutOfScope": [
+    ]
+  },
+  {
+    "Module": "Library",
+    "Pages": [
+      {
+        "page_name": "resource.aspx",
+        "Feature_Flag": "Resource",
+        "Feature_Flag_Status": "Enabled"
+      },
+      {
+        "page_name": "searchResults.aspx",
+        "Feature_Flag": "SearchResults",
+        "Feature_Flag_Status": "Enabled"
+      },
+      {
+        "page_name": "category.aspx.cs",
+        "Feature_Flag": "Category",
+        "Feature_Flag_Status": "Enabled"
+      }
+    ],
+    "OutOfScope": [
+      "userSelector.aspx"
+    ]
+  },
+  {
+    "Module": "Location",
+    "Pages": [
+      {
+        "page_name": "default.aspx",
+        "Feature_Flag": "Default",
+        "Feature_Flag_Status": "Enabled"
+      }
+    ],
+    "OutOfScope": [
+    ]
+  },
+  {
+    "Module": "Security",
+    "Pages": [
+      {
+        "page_name": "default.aspx",
+        "Feature_Flag": "Default",
+        "Feature_Flag_Status": "Enabled"
+      },
+      {
+        "page_name": "permissionDisplayGroups.aspx",
+        "Feature_Flag": "PermissionDisplayGroups",
+        "Feature_Flag_Status": "Enabled"
+      },
+      {
+        "page_name": "permissionDisplayGroupPermissions.aspx",
+        "Feature_Flag": "PermissionDisplayGroupPermissions",
+        "Feature_Flag_Status": "Enabled"
+      },
+      {
+        "page_name": "permissionRoles.aspx",
+        "Feature_Flag": "PermissionRoles",
+        "Feature_Flag_Status": "Enabled"
+      },
+      {
+        "page_name": "permissionSectionRoles.aspx",
+        "Feature_Flag": "PermissionSectionRoles",
+        "Feature_Flag_Status": "Enabled"
+      },
+      {
+        "page_name": "permissionVisibility.aspx",
+        "Feature_Flag": "PermissionVisibility",
+        "Feature_Flag_Status": "Enabled"
+      }
+    ],
+    "OutOfScope": [
+    ]
+  }
+]

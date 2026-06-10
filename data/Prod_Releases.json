@@ -1,0 +1,98 @@
+[
+  {
+    "Release_Number": "10",
+    "Release_Date": "05/14/2026",
+    "Code_Freeze": "05/07/2026",
+    "Regression_Start": "5/7/26",
+    "PRs": [
+      8842,
+      8852
+    ],
+    "PR_Count": 2
+  },
+  {
+    "Release_Number": "11",
+    "Release_Date": "05/28/2026",
+    "Code_Freeze": "05/21/2026",
+    "Regression_Start": "05/21/2026",
+    "PRs": [
+      8886,
+      8798,
+      8807,
+      8877,
+      8751,
+      8889,
+      8814,
+      8864,
+      8801,
+      8769,
+      8846,
+      8872,
+      8868,
+      9006,
+      8888,
+      9002,
+      8865,
+      8828,
+      8939
+    ],
+    "PR_Count": 19
+  },
+  {
+    "Release_Number": "12",
+    "Release_Date": "06/11/2026",
+    "Code_Freeze": "06/04/2026",
+    "Regression_Start": "06/04/2026",
+    "PRs": [
+      8795,
+      8815,
+      8802,
+      8817,
+      8818,
+      8895,
+      9009,
+      8804,
+      8932,
+      8897
+    ],
+    "PR_Count": 10
+  },
+  {
+    "Release_Number": "13",
+    "Release_Date": "06/25/2026",
+    "Code_Freeze": "06/18/2026",
+    "Regression_Start": "06/18/2026",
+    "PRs": [
+      8917,
+      9059,
+      9017,
+      9045,
+      9046
+    ],
+    "PR_Count": 5
+  },
+  {
+    "Release_Number": "14",
+    "Release_Date": "07/09/2026",
+    "Code_Freeze": "07/02/2026",
+    "Regression_Start": "07/02/2026",
+    "PRs": [
+      8838,
+      8876,
+      8787
+    ],
+    "PR_Count": 3
+  },
+  {
+    "Release_Number": "16",
+    "Release_Date": "08/06/2026",
+    "Code_Freeze": "07/30/2026",
+    "Regression_Start": "07/30/2026",
+    "PRs": [
+      8902,
+      8887,
+      9060
+    ],
+    "PR_Count": 3
+  }
+]

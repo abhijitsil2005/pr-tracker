@@ -1,0 +1,184 @@
+[
+  {
+    "Release Cutoff Date": "01/01/2026",
+    "Release_Number": "1",
+    "Release_Date": "01/08/2026",
+    "Code Freeze": "01/01/2026",
+    "Regression Start Date": "1/1/26"
+  },
+  {
+    "Release Cutoff Date": "01/15/2026",
+    "Release_Number": "2",
+    "Release_Date": "01/22/2026",
+    "Code Freeze": "01/15/2026",
+    "Regression Start Date": "1/15/26"
+  },
+  {
+    "Release Cutoff Date": "01/29/2026",
+    "Release_Number": "3",
+    "Release_Date": "02/05/2026",
+    "Code Freeze": "01/29/2026",
+    "Regression Start Date": "1/29/26"
+  },
+  {
+    "Release Cutoff Date": "02/12/2026",
+    "Release_Number": "4",
+    "Release_Date": "02/19/2026",
+    "Code Freeze": "02/12/2026",
+    "Regression Start Date": "2/12/26"
+  },
+  {
+    "Release Cutoff Date": "02/26/2026",
+    "Release_Number": "5",
+    "Release_Date": "03/05/2026",
+    "Code Freeze": "02/26/2026",
+    "Regression Start Date": "2/26/26"
+  },
+  {
+    "Release Cutoff Date": "03/12/2026",
+    "Release_Number": "6",
+    "Release_Date": "03/19/2026",
+    "Code Freeze": "03/12/2026",
+    "Regression Start Date": "3/12/26"
+  },
+  {
+    "Release Cutoff Date": "03/26/2026",
+    "Release_Number": "7",
+    "Release_Date": "04/02/2026",
+    "Code Freeze": "03/26/2026",
+    "Regression Start Date": "3/26/26"
+  },
+  {
+    "Release Cutoff Date": "04/09/2026",
+    "Release_Number": "8",
+    "Release_Date": "04/16/2026",
+    "Code Freeze": "04/09/2026",
+    "Regression Start Date": "4/9/26"
+  },
+  {
+    "Release Cutoff Date": "04/23/2026",
+    "Release_Number": "9",
+    "Release_Date": "04/30/2026",
+    "Code Freeze": "04/23/2026",
+    "Regression Start Date": "4/23/26"
+  },
+  {
+    "Release Cutoff Date": "05/07/2026",
+    "Release_Number": "10",
+    "Release_Date": "05/14/2026",
+    "Code Freeze": "05/07/2026",
+    "Regression Start Date": "5/7/26"
+  },
+  {
+    "Release Cutoff Date": "05/21/2026",
+    "Release_Number": "11",
+    "Release_Date": "05/28/2026",
+    "Code Freeze": "05/21/2026",
+    "Regression Start Date": "05/21/2026"
+  },
+  {
+    "Release Cutoff Date": "06/04/2026",
+    "Release_Number": "12",
+    "Release_Date": "06/11/2026",
+    "Code Freeze": "06/04/2026",
+    "Regression Start Date": "06/04/2026"
+  },
+  {
+    "Release Cutoff Date": "06/18/2026",
+    "Release_Number": "13",
+    "Release_Date": "06/25/2026",
+    "Code Freeze": "06/18/2026",
+    "Regression Start Date": "06/18/2026"
+  },
+  {
+    "Release Cutoff Date": "07/02/2026",
+    "Release_Number": "14",
+    "Release_Date": "07/09/2026",
+    "Code Freeze": "07/02/2026",
+    "Regression Start Date": "07/02/2026"
+  },
+  {
+    "Release Cutoff Date": "07/16/2026",
+    "Release_Number": "15",
+    "Release_Date": "07/23/2026",
+    "Code Freeze": "07/16/2026",
+    "Regression Start Date": "07/16/2026"
+  },
+  {
+    "Release Cutoff Date": "07/30/2026",
+    "Release_Number": "16",
+    "Release_Date": "08/06/2026",
+    "Code Freeze": "07/30/2026",
+    "Regression Start Date": "07/30/2026"
+  },
+  {
+    "Release Cutoff Date": "08/13/2026",
+    "Release_Number": "17",
+    "Release_Date": "08/20/2026",
+    "Code Freeze": "08/13/2026",
+    "Regression Start Date": "08/13/2026"
+  },
+  {
+    "Release Cutoff Date": "08/27/2026",
+    "Release_Number": "18",
+    "Release_Date": "09/03/2026",
+    "Code Freeze": "08/27/2026",
+    "Regression Start Date": "08/27/2026"
+  },
+  {
+    "Release Cutoff Date": "09/10/2026",
+    "Release_Number": "19",
+    "Release_Date": "09/17/2026",
+    "Code Freeze": "09/10/2026",
+    "Regression Start Date": "09/10/2026"
+  },
+  {
+    "Release Cutoff Date": "09/24/2026",
+    "Release_Number": "20",
+    "Release_Date": "10/01/2026",
+    "Code Freeze": "09/24/2026",
+    "Regression Start Date": "09/24/2026"
+  },
+  {
+    "Release Cutoff Date": "10/08/2026",
+    "Release_Number": "21",
+    "Release_Date": "10/15/2026",
+    "Code Freeze": "10/08/2026",
+    "Regression Start Date": "10/08/2026"
+  },
+  {
+    "Release Cutoff Date": "10/22/2026",
+    "Release_Number": "22",
+    "Release_Date": "10/29/2026",
+    "Code Freeze": "10/22/2026",
+    "Regression Start Date": "10/22/2026"
+  },
+  {
+    "Release Cutoff Date": "11/05/2026",
+    "Release_Number": "23",
+    "Release_Date": "11/12/2026",
+    "Code Freeze": "11/5/2026",
+    "Regression Start Date": "11/5/2026"
+  },
+  {
+    "Release Cutoff Date": "11/19/2026",
+    "Release_Number": "24",
+    "Release_Date": "11/26/2026",
+    "Code Freeze": "11/19/2026",
+    "Regression Start Date": "11/19/2026"
+  },
+  {
+    "Release Cutoff Date": "12/03/2026",
+    "Release_Number": "25",
+    "Release_Date": "12/10/2026",
+    "Code Freeze": "12/3/2026",
+    "Regression Start Date": "12/3/2026"
+  },
+  {
+    "Release Cutoff Date": "12/17/2026",
+    "Release_Number": "26",
+    "Release_Date": "12/24/2026",
+    "Code Freeze": "12/17/2026",
+    "Regression Start Date": "12/17/2026"
+  }
+]

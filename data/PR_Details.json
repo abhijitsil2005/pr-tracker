@@ -1,0 +1,1086 @@
+[
+  {
+    "PR": 8886,
+    "Type": "Development",
+    "Developer": "Vijay",
+    "Module": "Assessment",
+    "Page": [
+      "checkMyWork/submissions.aspx",
+      "checkMyWork/checkMyWork.aspx"
+    ],
+    "Status": "TCR Testing In Progress",
+    "PR Raised Date": "05/27/2026",
+    "Reviewer": null,
+    "PR First Response Date": "05/29/2026",
+    "PR Approved Date": "06/02/2026",
+    "PR Merged Date": "06/02/2026",
+    "Dev_Sprint": "2.5",
+    "Testing_Sprint": null,
+    "Dependent_PRs": [
+      8846,
+      8872,
+      8868
+    ],
+    "Target_Release": "05/28/2026",
+    "PR_Comments": []
+  },
+  {
+    "PR": 8798,
+    "Type": "Development",
+    "Developer": "Anil",
+    "Module": "Assessment",
+    "Page": [
+      "import.aspx"
+    ],
+    "Status": "TCR Testing In Progress",
+    "PR Raised Date": "05/04/2026",
+    "Reviewer": null,
+    "PR First Response Date": "05/29/2026",
+    "PR Approved Date": "05/29/2026",
+    "PR Merged Date": "05/29/2026",
+    "Dev_Sprint": "2.3",
+    "Testing_Sprint": null,
+    "Dependent_PRs": [],
+    "Target_Release": "05/28/2026",
+    "PR_Comments": []
+  },
+  {
+    "PR": 8807,
+    "Type": "Development",
+    "Developer": "Vijay",
+    "Module": "Assessment",
+    "Page": [
+      "assessment.aspx"
+    ],
+    "Status": "Prod Deployed FF OFF",
+    "PR Raised Date": "05/05/2026",
+    "Reviewer": null,
+    "PR First Response Date": "05/06/2026",
+    "PR Approved Date": "05/09/2026",
+    "PR Merged Date": "05/09/2026",
+    "Dev_Sprint": "2.3",
+    "Testing_Sprint": null,
+    "Dependent_PRs": [
+      8846,
+      8872,
+      8868
+    ],
+    "Target_Release": "05/28/2026",
+    "PR_Comments": []
+  },
+  {
+    "PR": 8877,
+    "Type": "Development",
+    "Developer": "Rizwana",
+    "Module": "Assessment",
+    "Page": [
+      "questions.aspx"
+    ],
+    "Status": "Prod Deployed FF OFF",
+    "PR Raised Date": "05/11/2026",
+    "Reviewer": null,
+    "PR First Response Date": "05/13/2026",
+    "PR Approved Date": "05/14/2026",
+    "PR Merged Date": "05/14/2026",
+    "Dev_Sprint": "2.4",
+    "Testing_Sprint": null,
+    "Dependent_PRs": [
+      8846,
+      8872,
+      8868
+    ],
+    "Target_Release": "05/28/2026",
+    "PR_Comments": []
+  },
+  {
+    "PR": 8751,
+    "Type": "Development",
+    "Developer": "Vijay",
+    "Module": "Assessment",
+    "Page": [
+      "manager.aspx"
+    ],
+    "Status": "Prod Deployed FF OFF",
+    "PR Raised Date": "04/29/2026",
+    "Reviewer": null,
+    "PR First Response Date": "05/12/2026",
+    "PR Approved Date": "05/14/2026",
+    "PR Merged Date": "05/14/2026",
+    "Dev_Sprint": "2.3",
+    "Testing_Sprint": null,
+    "Dependent_PRs": [
+      8846,
+      8872,
+      8868
+    ],
+    "Target_Release": "05/28/2026",
+    "PR_Comments": []
+  },
+  {
+    "PR": 8889,
+    "Type": "Development",
+    "Developer": "Sohith",
+    "Module": "Assessment",
+    "Page": [
+      "reports/assessmentAnswersAccepted.aspx",
+      "reports/assessmentQuestionAnalysis.aspx"
+    ],
+    "Status": "TCR Testing In Progress",
+    "PR Raised Date": "05/12/2026",
+    "Reviewer": null,
+    "PR First Response Date": "05/19/2026",
+    "PR Approved Date": "06/01/2026",
+    "PR Merged Date": "06/01/2026",
+    "Dev_Sprint": "2.4",
+    "Testing_Sprint": null,
+    "Dependent_PRs": [],
+    "Target_Release": "05/28/2026",
+    "PR_Comments": []
+  },
+  {
+    "PR": 8842,
+    "Type": "Development",
+    "Developer": "Vijay",
+    "Module": "IssueAware",
+    "Page": [
+      "Bug fixes in .aspx pages"
+    ],
+    "Status": "Prod Deployed FF ON",
+    "PR Raised Date": "05/06/2026",
+    "Reviewer": null,
+    "PR First Response Date": null,
+    "PR Approved Date": "05/08/2026",
+    "PR Merged Date": "05/08/2026",
+    "Dev_Sprint": null,
+    "Testing_Sprint": null,
+    "Dependent_PRs": [],
+    "Target_Release": "05/14/2026",
+    "PR_Comments": []
+  },
+  {
+    "PR": 8814,
+    "Type": "Development",
+    "Developer": "Mizan",
+    "Module": "AssetAware",
+    "Page": [
+      "assetHistory.aspx"
+    ],
+    "Status": "Prod Deployed FF OFF",
+    "PR Raised Date": "05/05/2026",
+    "Reviewer": null,
+    "PR First Response Date": "05/19/2026",
+    "PR Approved Date": "05/19/2026",
+    "PR Merged Date": "05/19/2026",
+    "Dev_Sprint": "2.3",
+    "Testing_Sprint": null,
+    "Dependent_PRs": [],
+    "Target_Release": "05/28/2026",
+    "PR_Comments": []
+  },
+  {
+    "PR": 8864,
+    "Type": "Development",
+    "Developer": "Swarneem",
+    "Module": "AssetAware",
+    "Page": [
+      "assetVendorAddressContact.aspx"
+    ],
+    "Status": "TCR Testing In Progress",
+    "PR Raised Date": "05/08/2026",
+    "Reviewer": null,
+    "PR First Response Date": "05/25/2026",
+    "PR Approved Date": "05/25/2026",
+    "PR Merged Date": "05/25/2026",
+    "Dev_Sprint": "2.3",
+    "Testing_Sprint": null,
+    "Dependent_PRs": [],
+    "Target_Release": "05/28/2026",
+    "PR_Comments": []
+  },
+  {
+    "PR": 8795,
+    "Type": "Development",
+    "Developer": "Prem",
+    "Module": "Library",
+    "Page": [
+      "searchResults.aspx"
+    ],
+    "Status": "TCR Testing in progress",
+    "PR Raised Date": "05/04/2026",
+    "Reviewer": null,
+    "PR First Response Date": null,
+    "PR Approved Date": "05/25/2026",
+    "PR Merged Date": "05/25/2026",
+    "Dev_Sprint": null,
+    "Testing_Sprint": null,
+    "Dependent_PRs": [],
+    "Target_Release": "06/11/2026",
+    "PR_Comments": []
+  },
+  {
+    "PR": 8815,
+    "Type": "Development",
+    "Developer": "Ramesh",
+    "Module": "Content",
+    "Page": [
+      "elmItemInteractive.aspx"
+    ],
+    "Status": "TCR Testing in progress",
+    "PR Raised Date": "05/05/2026",
+    "Reviewer": null,
+    "PR First Response Date": null,
+    "PR Approved Date": "05/14/2026",
+    "PR Merged Date": "05/14/2026",
+    "Dev_Sprint": "2.3",
+    "Testing_Sprint": null,
+    "Dependent_PRs": [],
+    "Target_Release": "06/11/2026",
+    "PR_Comments": []
+  },
+  {
+    "PR": 8802,
+    "Type": "Development",
+    "Developer": "Rizwana",
+    "Module": "Content",
+    "Page": [
+      "hyperlink.aspx"
+    ],
+    "Status": "TCR Testing in progress",
+    "PR Raised Date": "05/04/2026",
+    "Reviewer": null,
+    "PR First Response Date": null,
+    "PR Approved Date": "05/11/2026",
+    "PR Merged Date": "05/11/2026",
+    "Dev_Sprint": "2.3",
+    "Testing_Sprint": null,
+    "Dependent_PRs": [],
+    "Target_Release": "06/11/2026",
+    "PR_Comments": []
+  },
+  {
+    "PR": 8817,
+    "Type": "Development",
+    "Developer": "Rizwana",
+    "Module": "Content",
+    "Page": [
+      "timeline.aspx"
+    ],
+    "Status": "TCR Testing in progress",
+    "PR Raised Date": "05/05/2026",
+    "Reviewer": null,
+    "PR First Response Date": null,
+    "PR Approved Date": "05/14/2026",
+    "PR Merged Date": "05/14/2026",
+    "Dev_Sprint": "2.3",
+    "Testing_Sprint": null,
+    "Dependent_PRs": [],
+    "Target_Release": "06/11/2026",
+    "PR_Comments": []
+  },
+  {
+    "PR": 8818,
+    "Type": "Development",
+    "Developer": "Amol",
+    "Module": "Content",
+    "Page": [
+      "grammarTool.aspx"
+    ],
+    "Status": "TCR Testing in progress",
+    "PR Raised Date": "05/05/2026",
+    "Reviewer": null,
+    "PR First Response Date": null,
+    "PR Approved Date": "05/14/2026",
+    "PR Merged Date": "05/14/2026",
+    "Dev_Sprint": "2.3",
+    "Testing_Sprint": null,
+    "Dependent_PRs": [
+      9009
+    ],
+    "Target_Release": "06/11/2026",
+    "PR_Comments": []
+  },
+  {
+    "PR": 8801,
+    "Type": "Development",
+    "Developer": "Amol",
+    "Module": "Content",
+    "Page": [
+      "sources/default.aspx"
+    ],
+    "Status": "Prod Deployed FF OFF",
+    "PR Raised Date": "05/05/2026",
+    "Reviewer": null,
+    "PR First Response Date": "05/07/2026",
+    "PR Approved Date": "05/08/2026",
+    "PR Merged Date": "05/08/2026",
+    "Dev_Sprint": "2.3",
+    "Testing_Sprint": null,
+    "Dependent_PRs": [],
+    "Target_Release": "05/28/2026",
+    "PR_Comments": []
+  },
+  {
+    "PR": 8784,
+    "Type": "Development",
+    "Developer": "Prem",
+    "Module": "Security",
+    "Page": [
+      "Ongoing PRs + CoPilot Comments + Merge Conflicts"
+    ],
+    "Status": "TCR Testing in progress",
+    "PR Raised Date": null,
+    "Reviewer": null,
+    "PR First Response Date": null,
+    "PR Approved Date": null,
+    "PR Merged Date": null,
+    "Dev_Sprint": null,
+    "Testing_Sprint": null,
+    "Dependent_PRs": [],
+    "Target_Release": null,
+    "PR_Comments": []
+  },
+  {
+    "PR": 8781,
+    "Type": "Development",
+    "Developer": "Prem",
+    "Module": "Security",
+    "Page": [
+      "Ongoing PRs + CoPilot Comments + Merge Conflicts"
+    ],
+    "Status": "TCR Testing in progress",
+    "PR Raised Date": null,
+    "Reviewer": null,
+    "PR First Response Date": null,
+    "PR Approved Date": null,
+    "PR Merged Date": null,
+    "Dev_Sprint": null,
+    "Testing_Sprint": null,
+    "Dependent_PRs": [],
+    "Target_Release": null,
+    "PR_Comments": []
+  },
+  {
+    "PR": 8782,
+    "Type": "Development",
+    "Developer": "Prem",
+    "Module": "Security",
+    "Page": [
+      "Ongoing PRs + CoPilot Comments + Merge Conflicts"
+    ],
+    "Status": "TCR Testing in progress",
+    "PR Raised Date": null,
+    "Reviewer": null,
+    "PR First Response Date": null,
+    "PR Approved Date": null,
+    "PR Merged Date": null,
+    "Dev_Sprint": null,
+    "Testing_Sprint": null,
+    "Dependent_PRs": [],
+    "Target_Release": null,
+    "PR_Comments": []
+  },
+  {
+    "PR": 8783,
+    "Type": "Development",
+    "Developer": "Prem",
+    "Module": "Security",
+    "Page": [
+      "Ongoing PRs + CoPilot Comments + Merge Conflicts"
+    ],
+    "Status": "TCR Testing in progress",
+    "PR Raised Date": null,
+    "Reviewer": null,
+    "PR First Response Date": null,
+    "PR Approved Date": null,
+    "PR Merged Date": null,
+    "Dev_Sprint": null,
+    "Testing_Sprint": null,
+    "Dependent_PRs": [],
+    "Target_Release": null,
+    "PR_Comments": []
+  },
+  {
+    "PR": 9016,
+    "Type": "Development",
+    "Developer": "Prem",
+    "Module": "Security",
+    "Page": [
+      "QE bug in TCR",
+      "Bug"
+    ],
+    "Status": "TCR bug PR  in Review",
+    "PR Raised Date": null,
+    "Reviewer": null,
+    "PR First Response Date": null,
+    "PR Approved Date": null,
+    "PR Merged Date": null,
+    "Dev_Sprint": null,
+    "Testing_Sprint": null,
+    "Dependent_PRs": [],
+    "Target_Release": null,
+    "PR_Comments": []
+  },
+  {
+    "PR": 8793,
+    "Type": "Development",
+    "Developer": "Amol",
+    "Module": "GradeBook",
+    "Page": [
+      "GradeBook open Issues(deatils tab)\r\nSPA page"
+    ],
+    "Status": "Dev PR in review",
+    "PR Raised Date": null,
+    "Reviewer": null,
+    "PR First Response Date": null,
+    "PR Approved Date": null,
+    "PR Merged Date": null,
+    "Dev_Sprint": null,
+    "Testing_Sprint": null,
+    "Dependent_PRs": [],
+    "Target_Release": null,
+    "PR_Comments": []
+  },
+  {
+    "PR": 8789,
+    "Type": "Development",
+    "Developer": "Amol",
+    "Module": "GradeBook",
+    "Page": [
+      "GradeBook open Issues(deatils tab)\r\nSPA page"
+    ],
+    "Status": "Dev PR in review",
+    "PR Raised Date": null,
+    "Reviewer": null,
+    "PR First Response Date": null,
+    "PR Approved Date": null,
+    "PR Merged Date": null,
+    "Dev_Sprint": null,
+    "Testing_Sprint": null,
+    "Dependent_PRs": [],
+    "Target_Release": null,
+    "PR_Comments": []
+  },
+  {
+    "PR": 8762,
+    "Type": "Development",
+    "Developer": "Rizwana",
+    "Module": "Common",
+    "Page": [
+      "Setup QA Dev Env and guide others"
+    ],
+    "Status": "TCR Testing in progress",
+    "PR Raised Date": null,
+    "Reviewer": null,
+    "PR First Response Date": null,
+    "PR Approved Date": null,
+    "PR Merged Date": null,
+    "Dev_Sprint": null,
+    "Testing_Sprint": null,
+    "Dependent_PRs": [],
+    "Target_Release": null,
+    "PR_Comments": []
+  },
+  {
+    "PR": 8797,
+    "Type": "Development",
+    "Developer": "Rizwana",
+    "Module": "Common",
+    "Page": [
+      "Setup QA Dev Env and guide others"
+    ],
+    "Status": "TCR Testing in progress",
+    "PR Raised Date": null,
+    "Reviewer": null,
+    "PR First Response Date": null,
+    "PR Approved Date": null,
+    "PR Merged Date": null,
+    "Dev_Sprint": null,
+    "Testing_Sprint": null,
+    "Dependent_PRs": [],
+    "Target_Release": null,
+    "PR_Comments": []
+  },
+  {
+    "PR": 8769,
+    "Type": "Development",
+    "Developer": "Rizwana",
+    "Module": "Home",
+    "Page": [
+      "overdueLessons.aspx"
+    ],
+    "Status": "TCR Testing in progress",
+    "PR Raised Date": "04/29/2026",
+    "Reviewer": null,
+    "PR First Response Date": "04/30/2026",
+    "PR Approved Date": "05/14/2026",
+    "PR Merged Date": null,
+    "Dev_Sprint": null,
+    "Testing_Sprint": null,
+    "Dependent_PRs": [],
+    "Target_Release": "05/28/2026",
+    "PR_Comments": []
+  },
+  {
+    "PR": 8895,
+    "Type": "Development",
+    "Developer": "Rizwana",
+    "Module": "Enrollment",
+    "Page": [
+      "placement/default.aspx"
+    ],
+    "Status": "TCR Testing in progress",
+    "PR Raised Date": "05/13/2026",
+    "Reviewer": null,
+    "PR First Response Date": null,
+    "PR Approved Date": "06/01/2026",
+    "PR Merged Date": null,
+    "Dev_Sprint": "2.4",
+    "Testing_Sprint": null,
+    "Dependent_PRs": [],
+    "Target_Release": "06/11/2026",
+    "PR_Comments": []
+  },
+  {
+    "PR": 8902,
+    "Type": "Development",
+    "Developer": "Prem",
+    "Module": "Location",
+    "Page": [
+      "gradebookWeightTypes.aspx",
+      "security/roleAccessRestrictions.aspx"
+    ],
+    "Status": "TCR Testing in progress",
+    "PR Raised Date": "05/14/2026",
+    "Reviewer": null,
+    "PR First Response Date": null,
+    "PR Approved Date": "05/26/2026",
+    "PR Merged Date": null,
+    "Dev_Sprint": null,
+    "Testing_Sprint": null,
+    "Dependent_PRs": [],
+    "Target_Release": "08/06/2026",
+    "PR_Comments": []
+  },
+  {
+    "PR": 8887,
+    "Type": "Development",
+    "Developer": "Swarneem",
+    "Module": "Location",
+    "Page": [
+      "skinProperties.aspx"
+    ],
+    "Status": "TCR Testing in progress",
+    "PR Raised Date": "05/12/2026",
+    "Reviewer": null,
+    "PR First Response Date": null,
+    "PR Approved Date": "05/25/2026",
+    "PR Merged Date": null,
+    "Dev_Sprint": null,
+    "Testing_Sprint": null,
+    "Dependent_PRs": [],
+    "Target_Release": "08/06/2026",
+    "PR_Comments": []
+  },
+  {
+    "PR": 9009,
+    "Type": "Development",
+    "Developer": "Sohith",
+    "Module": "Extended Field",
+    "Page": [
+      "categories.aspx"
+    ],
+    "Status": "TCR Testing in progress",
+    "PR Raised Date": "05/28/2026",
+    "Reviewer": null,
+    "PR First Response Date": null,
+    "PR Approved Date": "06/02/2026",
+    "PR Merged Date": null,
+    "Dev_Sprint": "2.5",
+    "Testing_Sprint": null,
+    "Dependent_PRs": [],
+    "Target_Release": "06/11/2026",
+    "PR_Comments": []
+  },
+  {
+    "PR": 8947,
+    "Type": "Development",
+    "Developer": "Amol",
+    "Module": "Location",
+    "Page": [
+      "locations / locationCalendar / locationExtended"
+    ],
+    "Status": "Development Inprogress",
+    "PR Raised Date": null,
+    "Reviewer": null,
+    "PR First Response Date": null,
+    "PR Approved Date": null,
+    "PR Merged Date": null,
+    "Dev_Sprint": null,
+    "Testing_Sprint": null,
+    "Dependent_PRs": [],
+    "Target_Release": null,
+    "PR_Comments": []
+  },
+  {
+    "PR": 8846,
+    "Type": "Development",
+    "Developer": "swarneem",
+    "Module": "Common",
+    "Page": [
+      "Shared Control"
+    ],
+    "Status": "TCR Testing in progress",
+    "PR Raised Date": "05/12/2026",
+    "Reviewer": null,
+    "PR First Response Date": "05/15/2026",
+    "PR Approved Date": "05/25/2026",
+    "PR Merged Date": null,
+    "Dev_Sprint": null,
+    "Testing_Sprint": null,
+    "Dependent_PRs": [],
+    "Target_Release": "05/28/2026",
+    "PR_Comments": []
+  },
+  {
+    "PR": 8872,
+    "Type": "Development",
+    "Developer": "swarneem",
+    "Module": "Common",
+    "Page": [
+      "Shared Control"
+    ],
+    "Status": "TCR Testing in progress",
+    "PR Raised Date": "05/12/2026",
+    "Reviewer": null,
+    "PR First Response Date": "05/21/2026",
+    "PR Approved Date": "05/21/2026",
+    "PR Merged Date": null,
+    "Dev_Sprint": null,
+    "Testing_Sprint": null,
+    "Dependent_PRs": [],
+    "Target_Release": "05/28/2026",
+    "PR_Comments": []
+  },
+  {
+    "PR": 8868,
+    "Type": "Development",
+    "Developer": "swarneem",
+    "Module": "Common",
+    "Page": [
+      "Shared Control"
+    ],
+    "Status": "TCR Testing in progress",
+    "PR Raised Date": "05/12/2026",
+    "Reviewer": null,
+    "PR First Response Date": "05/15/2026",
+    "PR Approved Date": "05/20/2026",
+    "PR Merged Date": null,
+    "Dev_Sprint": null,
+    "Testing_Sprint": null,
+    "Dependent_PRs": [],
+    "Target_Release": "05/28/2026",
+    "PR_Comments": []
+  },
+  {
+    "PR": 8917,
+    "Type": "Development",
+    "Developer": "Sohith",
+    "Module": "Extended Field",
+    "Page": [
+      "calculationGroups.aspx",
+      "fieldHistory.aspx"
+    ],
+    "Status": "Dev PR in Review",
+    "PR Raised Date": null,
+    "Reviewer": null,
+    "PR First Response Date": null,
+    "PR Approved Date": null,
+    "PR Merged Date": null,
+    "Dev_Sprint": "2.5",
+    "Testing_Sprint": null,
+    "Dependent_PRs": [],
+    "Target_Release": "06/25/2026",
+    "PR_Comments": []
+  },
+  {
+    "PR": 9059,
+    "Type": "Development",
+    "Developer": "Sohith",
+    "Module": "Extended Field",
+    "Page": [
+      "calculationGroups.aspx",
+      "fieldHistory.aspx",
+      "extendedField.aspx"
+    ],
+    "Status": "Dev PR in Review",
+    "PR Raised Date": null,
+    "Reviewer": null,
+    "PR First Response Date": null,
+    "PR Approved Date": null,
+    "PR Merged Date": null,
+    "Dev_Sprint": "2.5",
+    "Testing_Sprint": null,
+    "Dependent_PRs": [],
+    "Target_Release": "06/25/2026",
+    "PR_Comments": []
+  },
+  {
+    "PR": 9017,
+    "Type": "Development",
+    "Developer": "Anil",
+    "Module": "Extended Field",
+    "Page": [
+      "default.aspx"
+    ],
+    "Status": "Dev PR in Review",
+    "PR Raised Date": null,
+    "Reviewer": null,
+    "PR First Response Date": null,
+    "PR Approved Date": null,
+    "PR Merged Date": null,
+    "Dev_Sprint": "2.5",
+    "Testing_Sprint": null,
+    "Dependent_PRs": [],
+    "Target_Release": "06/25/2026",
+    "PR_Comments": []
+  },
+  {
+    "PR": 9006,
+    "Type": "Development",
+    "Developer": "Vijay",
+    "Module": "Assessment",
+    "Page": [
+      "default.aspx"
+    ],
+    "Status": "TCR Testing In Progress",
+    "PR Raised Date": "05/28/2026",
+    "Reviewer": null,
+    "PR First Response Date": "06/03/2026",
+    "PR Approved Date": "06/03/2026",
+    "PR Merged Date": null,
+    "Dev_Sprint": "2.5",
+    "Testing_Sprint": null,
+    "Dependent_PRs": [
+      9009
+    ],
+    "Target_Release": "05/28/2026",
+    "PR_Comments": []
+  },
+  {
+    "PR": 8888,
+    "Type": "Development",
+    "Developer": "Rizwana",
+    "Module": "Assessment",
+    "Page": [
+      "questionManager.aspx"
+    ],
+    "Status": "Dev PR in Review",
+    "PR Raised Date": "05/28/2026",
+    "Reviewer": null,
+    "PR First Response Date": null,
+    "PR Approved Date": null,
+    "PR Merged Date": null,
+    "Dev_Sprint": "2.5",
+    "Testing_Sprint": null,
+    "Dependent_PRs": [
+      9009
+    ],
+    "Target_Release": "05/28/2026",
+    "PR_Comments": []
+  },
+  {
+    "PR": 9002,
+    "Type": "Development",
+    "Developer": "Rizwana",
+    "Module": "Assessment",
+    "Page": [
+      "questionManager.aspx",
+      "analysis.aspx"
+    ],
+    "Status": "Dev PR in Review",
+    "PR Raised Date": "05/28/2026",
+    "Reviewer": null,
+    "PR First Response Date": null,
+    "PR Approved Date": null,
+    "PR Merged Date": null,
+    "Dev_Sprint": "2.5",
+    "Testing_Sprint": null,
+    "Dependent_PRs": [
+      9009
+    ],
+    "Target_Release": "05/28/2026",
+    "PR_Comments": []
+  },
+  {
+    "PR": 8865,
+    "Type": "Development",
+    "Developer": "Sohith",
+    "Module": "Assessment",
+    "Page": [
+      "analysis.aspx"
+    ],
+    "Status": "Dev PR in Review",
+    "PR Raised Date": "05/28/2026",
+    "Reviewer": null,
+    "PR First Response Date": null,
+    "PR Approved Date": null,
+    "PR Merged Date": null,
+    "Dev_Sprint": "2.5",
+    "Testing_Sprint": null,
+    "Dependent_PRs": [
+      9009
+    ],
+    "Target_Release": "05/28/2026",
+    "PR_Comments": []
+  },
+  {
+    "PR": 8852,
+    "Type": "Development",
+    "Developer": "Vijay",
+    "Module": "IssueAware",
+    "Page": [
+      "Bug fixes in .aspx pages"
+    ],
+    "Status": "Prod Deployed FF ON",
+    "PR Raised Date": "05/07/2026",
+    "Reviewer": null,
+    "PR First Response Date": null,
+    "PR Approved Date": "05/08/2026",
+    "PR Merged Date": null,
+    "Dev_Sprint": null,
+    "Testing_Sprint": null,
+    "Dependent_PRs": [],
+    "Target_Release": "05/14/2026",
+    "PR_Comments": []
+  },
+  {
+    "PR": 8828,
+    "Type": "Development",
+    "Developer": "Swarneem",
+    "Module": "AssetAware",
+    "Page": [
+      "expressassesthistory.aspx",
+      "assets.aspx"
+    ],
+    "Status": "TCR Testing In Progress",
+    "PR Raised Date": "05/06/2026",
+    "Reviewer": null,
+    "PR First Response Date": null,
+    "PR Approved Date": null,
+    "PR Merged Date": null,
+    "Dev_Sprint": "2.4",
+    "Testing_Sprint": null,
+    "Dependent_PRs": [
+      8846,
+      8872,
+      8868
+    ],
+    "Target_Release": "05/28/2026",
+    "PR_Comments": []
+  },
+  {
+    "PR": 8838,
+    "Type": "Development",
+    "Developer": "Swarneem",
+    "Module": "Library",
+    "Page": [
+      "resource.aspx",
+      "category.aspx.cs"
+    ],
+    "Status": "Development Inprogress",
+    "PR Raised Date": "06/03/2026",
+    "Reviewer": null,
+    "PR First Response Date": null,
+    "PR Approved Date": null,
+    "PR Merged Date": null,
+    "Dev_Sprint": null,
+    "Testing_Sprint": null,
+    "Dependent_PRs": [],
+    "Target_Release": "07/09/2026",
+    "PR_Comments": []
+  },
+  {
+    "PR": 8876,
+    "Type": "Development",
+    "Developer": "Prem",
+    "Module": "Library",
+    "Page": [
+      "category.aspx.cs"
+    ],
+    "Status": "Development Inprogress",
+    "PR Raised Date": "06/03/2026",
+    "Reviewer": null,
+    "PR First Response Date": null,
+    "PR Approved Date": null,
+    "PR Merged Date": null,
+    "Dev_Sprint": null,
+    "Testing_Sprint": null,
+    "Dependent_PRs": [],
+    "Target_Release": "07/09/2026",
+    "PR_Comments": []
+  },
+  {
+    "PR": 8804,
+    "Type": "Development",
+    "Developer": "Ramesh",
+    "Module": "Content",
+    "Page": [
+      "captionedVideoItem.aspx",
+      "sources/source.aspx"
+    ],
+    "Status": "TCR testing in progress",
+    "PR Raised Date": "05/04/2026",
+    "Reviewer": null,
+    "PR First Response Date": null,
+    "PR Approved Date": null,
+    "PR Merged Date": null,
+    "Dev_Sprint": "2.4",
+    "Testing_Sprint": null,
+    "Dependent_PRs": [],
+    "Target_Release": "06/11/2026",
+    "PR_Comments": []
+  },
+  {
+    "PR": 8787,
+    "Type": "Development",
+    "Developer": "Amol",
+    "Module": "Home",
+    "Page": [
+      "enrollment.aspx"
+    ],
+    "Status": "Dev PR in Review",
+    "PR Raised Date": "05/27/2026",
+    "Reviewer": null,
+    "PR First Response Date": null,
+    "PR Approved Date": null,
+    "PR Merged Date": null,
+    "Dev_Sprint": null,
+    "Testing_Sprint": null,
+    "Dependent_PRs": [],
+    "Target_Release": "07/09/2026",
+    "PR_Comments": []
+  },
+  {
+    "PR": 8932,
+    "Type": "Development",
+    "Developer": "Rizwana",
+    "Module": "Enrollment",
+    "Page": [
+      "placement/manager.aspx"
+    ],
+    "Status": "Dev PR in Review",
+    "PR Raised Date": "05/28/2026",
+    "Reviewer": null,
+    "PR First Response Date": null,
+    "PR Approved Date": null,
+    "PR Merged Date": null,
+    "Dev_Sprint": "2.5",
+    "Testing_Sprint": null,
+    "Dependent_PRs": [],
+    "Target_Release": "06/11/2026",
+    "PR_Comments": []
+  },
+  {
+    "PR": 8897,
+    "Type": "Development",
+    "Developer": "Rizwana",
+    "Module": "Enrollment",
+    "Page": [
+      "placement/manager.aspx",
+      "registration/default.aspx"
+    ],
+    "Status": "Dev PR in Review",
+    "PR Raised Date": "05/28/2026",
+    "Reviewer": null,
+    "PR First Response Date": null,
+    "PR Approved Date": null,
+    "PR Merged Date": null,
+    "Dev_Sprint": "2.5",
+    "Testing_Sprint": null,
+    "Dependent_PRs": [],
+    "Target_Release": "06/11/2026",
+    "PR_Comments": []
+  },
+  {
+    "PR": 9045,
+    "Type": "Development",
+    "Developer": "Mizan",
+    "Module": "External",
+    "Page": [
+      "Remove Feature Flag"
+    ],
+    "Status": "Dev PR in Review",
+    "PR Raised Date": "06/02/2026",
+    "Reviewer": null,
+    "PR First Response Date": null,
+    "PR Approved Date": null,
+    "PR Merged Date": null,
+    "Dev_Sprint": null,
+    "Testing_Sprint": null,
+    "Dependent_PRs": [],
+    "Target_Release": "06/25/2026",
+    "PR_Comments": []
+  },
+  {
+    "PR": 9046,
+    "Type": "Development",
+    "Developer": "Mizan",
+    "Module": "ImportStatus",
+    "Page": [
+      "Remove Feature Flag"
+    ],
+    "Status": "Dev PR in Review",
+    "PR Raised Date": "06/02/2026",
+    "Reviewer": null,
+    "PR First Response Date": null,
+    "PR Approved Date": null,
+    "PR Merged Date": null,
+    "Dev_Sprint": null,
+    "Testing_Sprint": null,
+    "Dependent_PRs": [],
+    "Target_Release": "06/25/2026",
+    "PR_Comments": []
+  },
+  {
+    "PR": 8939,
+    "Type": "Development",
+    "Developer": "Amol",
+    "Module": "Communication",
+    "Page": [
+      "webmail/webmailBox.aspx"
+    ],
+    "Status": "Dev PR in Review",
+    "PR Raised Date": "05/28/2026",
+    "Reviewer": null,
+    "PR First Response Date": null,
+    "PR Approved Date": null,
+    "PR Merged Date": null,
+    "Dev_Sprint": "2.6",
+    "Testing_Sprint": null,
+    "Dependent_PRs": [
+      9009
+    ],
+    "Target_Release": "05/28/2026",
+    "PR_Comments": []
+  },
+  {
+    "PR": 9060,
+    "Type": "Development",
+    "Developer": "Manish",
+    "Module": "Log",
+    "Page": [
+      "log/categories.aspx"
+    ],
+    "Status": "Development Inprogress",
+    "PR Raised Date": null,
+    "Reviewer": null,
+    "PR First Response Date": null,
+    "PR Approved Date": null,
+    "PR Merged Date": null,
+    "Dev_Sprint": null,
+    "Testing_Sprint": null,
+    "Dependent_PRs": [],
+    "Target_Release": "08/06/2026",
+    "PR_Comments": []
+  }
+]

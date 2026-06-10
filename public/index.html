@@ -1,0 +1,1178 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PR Tracker</title>
+<style>
+  :root {
+    --bg: #0f1117;
+    --surface: #1a1d27;
+    --surface2: #22263a;
+    --border: #2e3250;
+    --accent: #4f7ef8;
+    --accent2: #7c5cfc;
+    --green: #22c55e;
+    --yellow: #eab308;
+    --red: #ef4444;
+    --orange: #f97316;
+    --text: #e2e8f0;
+    --text2: #94a3b8;
+    --radius: 10px;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+  }
+
+  /* ── Layout ── */
+  .app { display: flex; height: 100vh; overflow: hidden; }
+
+  nav {
+    width: 220px;
+    flex-shrink: 0;
+    background: var(--surface);
+    border-right: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    padding: 20px 0;
+  }
+
+  .nav-logo {
+    padding: 0 20px 20px;
+    font-size: 17px;
+    font-weight: 700;
+    letter-spacing: .3px;
+    color: var(--text);
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .nav-logo span { font-size: 22px; }
+
+  nav ul { list-style: none; margin-top: 12px; }
+
+  nav ul li a {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 20px;
+    color: var(--text2);
+    text-decoration: none;
+    font-size: 14px;
+    border-radius: 0;
+    transition: background .15s, color .15s;
+    cursor: pointer;
+  }
+
+  nav ul li a:hover,
+  nav ul li a.active {
+    background: var(--surface2);
+    color: var(--text);
+  }
+
+  nav ul li a.active { border-left: 3px solid var(--accent); }
+
+  .main { flex: 1; overflow-y: auto; display: flex; flex-direction: column; }
+
+  header {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 16px 28px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-shrink: 0;
+  }
+
+  header h1 { font-size: 18px; font-weight: 600; }
+
+  .header-actions { display: flex; gap: 10px; align-items: center; }
+
+  .content { padding: 24px 28px; flex: 1; }
+
+  /* ── Cards / Stats ── */
+  .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 24px; }
+
+  .stat-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 18px 20px;
+  }
+
+  .stat-card .label { font-size: 12px; color: var(--text2); margin-bottom: 6px; }
+  .stat-card .value { font-size: 28px; font-weight: 700; }
+  .stat-card.accent .value { color: var(--accent); }
+  .stat-card.green .value { color: var(--green); }
+  .stat-card.yellow .value { color: var(--yellow); }
+  .stat-card.red .value { color: var(--red); }
+
+  /* ── Toolbar ── */
+  .toolbar {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 18px;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+
+  input[type="text"], select {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 8px 12px;
+    border-radius: 8px;
+    font-size: 13px;
+    outline: none;
+    transition: border-color .15s;
+  }
+
+  input[type="text"]:focus, select:focus { border-color: var(--accent); }
+
+  input[type="text"] { width: 240px; }
+
+  /* ── Buttons ── */
+  .btn {
+    padding: 8px 16px;
+    border-radius: 8px;
+    border: none;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: opacity .15s, transform .1s;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .btn:hover { opacity: .85; }
+  .btn:active { transform: scale(.97); }
+  .btn-primary { background: var(--accent); color: #fff; }
+  .btn-success { background: var(--green); color: #000; }
+  .btn-warning { background: var(--yellow); color: #000; }
+  .btn-danger { background: var(--red); color: #fff; }
+  .btn-ghost { background: var(--surface2); color: var(--text); border: 1px solid var(--border); }
+  .btn-sm { padding: 5px 10px; font-size: 12px; }
+
+  /* ── Table ── */
+  .table-wrap {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: auto;
+  }
+
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+
+  thead tr { background: var(--surface2); }
+
+  th {
+    padding: 10px 14px;
+    text-align: left;
+    font-weight: 600;
+    font-size: 12px;
+    color: var(--text2);
+    white-space: nowrap;
+    border-bottom: 1px solid var(--border);
+  }
+
+  td {
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--border);
+    vertical-align: middle;
+  }
+
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: rgba(255,255,255,.02); }
+
+  /* ── Badges ── */
+  .badge {
+    display: inline-block;
+    padding: 3px 8px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 600;
+    white-space: nowrap;
+  }
+
+  .badge-green { background: rgba(34,197,94,.15); color: var(--green); }
+  .badge-yellow { background: rgba(234,179,8,.15); color: var(--yellow); }
+  .badge-red { background: rgba(239,68,68,.15); color: var(--red); }
+  .badge-blue { background: rgba(79,126,248,.15); color: var(--accent); }
+  .badge-orange { background: rgba(249,115,22,.15); color: var(--orange); }
+  .badge-gray { background: rgba(148,163,184,.15); color: var(--text2); }
+
+  /* ── Modal ── */
+  .modal-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,.6);
+    z-index: 1000;
+    justify-content: center;
+    align-items: center;
+    padding: 20px;
+  }
+
+  .modal-overlay.open { display: flex; }
+
+  .modal {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    width: 100%;
+    max-width: 680px;
+    max-height: 90vh;
+    overflow-y: auto;
+    padding: 28px;
+    position: relative;
+  }
+
+  .modal h2 { font-size: 18px; margin-bottom: 20px; }
+
+  .modal-close {
+    position: absolute;
+    top: 20px; right: 20px;
+    background: none;
+    border: none;
+    color: var(--text2);
+    font-size: 20px;
+    cursor: pointer;
+    line-height: 1;
+  }
+
+  .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .form-grid .full { grid-column: 1 / -1; }
+
+  label { display: block; font-size: 12px; color: var(--text2); margin-bottom: 5px; }
+
+  .form-group input,
+  .form-group select,
+  .form-group textarea {
+    width: 100%;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 9px 12px;
+    border-radius: 8px;
+    font-size: 13px;
+    outline: none;
+    font-family: inherit;
+  }
+
+  .form-group textarea { resize: vertical; min-height: 70px; }
+
+  .form-group input:focus,
+  .form-group select:focus,
+  .form-group textarea:focus { border-color: var(--accent); }
+
+  .modal-footer { display: flex; justify-content: flex-end; gap: 10px; margin-top: 22px; }
+
+  /* ── Toast ── */
+  #toast {
+    position: fixed;
+    bottom: 28px; right: 28px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 12px 18px;
+    border-radius: 10px;
+    font-size: 13px;
+    z-index: 2000;
+    opacity: 0;
+    transition: opacity .3s;
+    max-width: 320px;
+  }
+
+  #toast.show { opacity: 1; }
+  #toast.success { border-color: var(--green); color: var(--green); }
+  #toast.error { border-color: var(--red); color: var(--red); }
+
+  /* ── Section ── */
+  .section { display: none; }
+  .section.active { display: block; }
+
+  /* ── Sync section ── */
+  .sync-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 24px;
+    margin-bottom: 20px;
+    max-width: 560px;
+  }
+
+  .sync-card h3 { font-size: 15px; margin-bottom: 8px; }
+  .sync-card p { font-size: 13px; color: var(--text2); margin-bottom: 16px; }
+
+  .sync-result {
+    margin-top: 16px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 14px;
+    font-size: 13px;
+    display: none;
+  }
+
+  .sync-result.show { display: block; }
+  .sync-result .row { display: flex; justify-content: space-between; padding: 3px 0; }
+  .sync-result .row span:last-child { font-weight: 600; color: var(--accent); }
+
+  /* ── Release section ── */
+  .release-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+  .release-section { margin-bottom: 18px; }
+  .release-section h3 {
+    font-size: 14px;
+    color: var(--text2);
+    text-transform: uppercase;
+    letter-spacing: .08em;
+    margin: 0 0 10px;
+  }
+
+  .release-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+  }
+
+  .release-card .accordion-trigger {
+    width: 100%;
+    text-align: left;
+    background: none;
+    border: 0;
+    padding: 18px;
+    color: inherit;
+    cursor: pointer;
+    display: block;
+  }
+
+  .release-card .accordion-trigger:hover { background: rgba(79,126,248,.04); }
+  .release-card .accordion-trigger .rel-num { font-size: 11px; color: var(--text2); margin-bottom: 4px; }
+  .release-card .accordion-trigger .rel-date { font-size: 16px; font-weight: 700; margin-bottom: 2px; }
+  .release-card .accordion-trigger .rel-meta { font-size: 12px; color: var(--text2); }
+  .release-card .accordion-trigger .rel-toggle { float: right; color: var(--accent); font-size: 12px; font-weight: 700; }
+
+  .release-card .accordion-panel { padding: 0 18px 18px; display: block; }
+  .release-card.collapsed .accordion-panel { display: none; }
+
+  .release-card .rel-num {
+    font-size: 11px;
+    color: var(--text2);
+    margin-bottom: 4px;
+  }
+
+  .release-card .rel-date {
+    font-size: 16px;
+    font-weight: 700;
+    margin-bottom: 10px;
+  }
+
+  .release-card .rel-info {
+    font-size: 12px;
+    color: var(--text2);
+    margin-bottom: 3px;
+  }
+
+  .release-card .rel-prs {
+    margin-top: 10px;
+    font-size: 12px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+  }
+
+  .pr-chip {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    padding: 2px 8px;
+    border-radius: 20px;
+    font-size: 11px;
+    color: var(--accent);
+  }
+
+  /* ── Upload area ── */
+  .upload-area {
+    border: 2px dashed var(--border);
+    border-radius: 10px;
+    padding: 32px;
+    text-align: center;
+    cursor: pointer;
+    transition: border-color .2s, background .2s;
+    margin-bottom: 16px;
+  }
+
+  .upload-area:hover, .upload-area.drag { border-color: var(--accent); background: rgba(79,126,248,.05); }
+  .upload-area .icon { font-size: 32px; margin-bottom: 8px; }
+  .upload-area p { font-size: 13px; color: var(--text2); }
+
+  #fileInput { display: none; }
+
+  .tag-list { display: flex; flex-wrap: wrap; gap: 5px; }
+  .tag {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    padding: 2px 8px;
+    border-radius: 20px;
+    font-size: 11px;
+    color: var(--text2);
+  }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- Sidebar -->
+  <nav>
+    <div class="nav-logo"><span>🔀</span> PR Tracker</div>
+    <ul>
+      <li><a href="#" class="active" data-section="dashboard">📊 Dashboard</a></li>
+      <li><a href="#" data-section="prs">🔀 Pull Requests</a></li>
+      <li><a href="#" data-section="releases">🚀 Releases</a></li>
+      <li><a href="#" data-section="sync">🔄 Sync Excel</a></li>
+    </ul>
+  </nav>
+
+  <!-- Main -->
+  <div class="main">
+    <header>
+      <h1 id="pageTitle">Dashboard</h1>
+      <div class="header-actions" id="headerActions"></div>
+    </header>
+
+    <div class="content">
+
+      <!-- DASHBOARD -->
+      <div id="section-dashboard" class="section active">
+        <div class="stats" id="statsGrid"></div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+          <div>
+            <h3 style="font-size:14px;margin-bottom:12px;color:var(--text2)">BY MODULE</h3>
+            <div class="table-wrap">
+              <table id="moduleTable">
+                <thead><tr><th>Module</th><th>PRs</th><th>Deployed</th><th>In Progress</th></tr></thead>
+                <tbody></tbody>
+              </table>
+            </div>
+          </div>
+          <div>
+            <h3 style="font-size:14px;margin-bottom:12px;color:var(--text2)">BY DEVELOPER</h3>
+            <div class="table-wrap">
+              <table id="devTable">
+                <thead><tr><th>Developer</th><th>PRs</th><th>Modules</th></tr></thead>
+                <tbody></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- PULL REQUESTS -->
+      <div id="section-prs" class="section">
+        <div class="toolbar">
+          <input type="text" id="searchInput" placeholder="🔍  Search PR, developer, module…">
+          <select id="filterModule"><option value="">All Modules</option></select>
+          <select id="filterDeveloper"><option value="">All Developers</option></select>
+          <select id="filterStatus"><option value="">All Statuses</option></select>
+        </div>
+        <div class="table-wrap">
+          <table id="prTable">
+            <thead>
+              <tr>
+                <th>PR #</th>
+                <th>Module</th>
+                <th>Developer</th>
+                <th>Pages</th>
+                <th>Sprint</th>
+                <th>Status</th>
+                <th>Raised</th>
+                <th>Target Release</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="prTableBody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- RELEASES -->
+      <div id="section-releases" class="section">
+        <div class="toolbar">
+          <button class="btn btn-primary" onclick="openAddReleaseModal()">＋ Add Release</button>
+        </div>
+        <div class="release-grid" id="releaseGrid"></div>
+      </div>
+
+      <!-- SYNC -->
+      <div id="section-sync" class="section">
+        <div class="sync-card">
+          <h3>Sync from bundled Excel</h3>
+          <p>Read <strong>Final_Estimation.xlsx → All Handson WorkShop-May-Sep</strong> and overwrite <code>PR_Details.json</code> and <code>Prod_Releases.json</code>.</p>
+          <button class="btn btn-primary" id="syncBtn" onclick="syncExcel()">🔄 Run Sync</button>
+          <div class="sync-result" id="syncResult"></div>
+        </div>
+
+        <div class="sync-card">
+          <h3>Upload &amp; Sync Excel</h3>
+          <p>Upload a new version of <strong>Final_Estimation.xlsx</strong> and sync immediately.</p>
+          <div class="upload-area" id="uploadArea" onclick="document.getElementById('fileInput').click()">
+            <div class="icon">📂</div>
+            <p>Click to browse or drag &amp; drop an .xlsx file</p>
+          </div>
+          <input type="file" id="fileInput" accept=".xlsx" onchange="uploadSync(this)">
+          <div class="sync-result" id="uploadResult"></div>
+        </div>
+      </div>
+
+    </div><!-- /content -->
+  </div><!-- /main -->
+</div>
+
+<!-- PR Modal -->
+<div class="modal-overlay" id="prModal">
+  <div class="modal">
+    <h2 id="prModalTitle">Add PR</h2>
+    <button class="modal-close" onclick="closePRModal()">✕</button>
+    <div class="form-grid">
+      <div class="form-group"><label>PR Number *</label><input type="text" id="f_pr"></div>
+      <div class="form-group"><label>Type</label><select id="f_type"><option>Development</option><option>Bug Fix</option><option>Hotfix</option></select></div>
+      <div class="form-group"><label>Module</label><select id="f_module" onchange="loadPageOptions()"><option value="">— select —</option></select></div>
+      <div class="form-group"><label>Developer</label><select id="f_developer"><option value="">— select —</option></select></div>
+      <div class="form-group full"><label>Pages (comma-separated)</label><input type="text" id="f_pages"></div>
+      <div class="form-group"><label>Status</label>
+        <select id="f_status">
+          <option value="">— select —</option>
+          <option>Development Inprogress</option>
+          <option>Dev PR in Review</option>
+          <option>TCR Testing In Progress</option>
+          <option>TCR Testing in progress</option>
+          <option>Prod Deployed FF OFF</option>
+          <option>Prod Deployed FF ON</option>
+        </select>
+      </div>
+      <div class="form-group"><label>Reviewer</label><select id="f_reviewer"><option value="">— select —</option></select></div>
+      <div class="form-group"><label>PR Raised Date (mm/dd/yyyy)</label><input type="text" id="f_raised" placeholder="05/25/2026"></div>
+      <div class="form-group"><label>First Response Date</label><input type="text" id="f_firstResponse" placeholder="05/28/2026"></div>
+      <div class="form-group"><label>PR Approved Date</label><input type="text" id="f_approved" placeholder="06/02/2026"></div>
+      <div class="form-group"><label>PR Merged Date</label><input type="text" id="f_merged" placeholder="06/03/2026"></div>
+      <div class="form-group"><label>Dev Sprint</label><input type="text" id="f_devSprint" placeholder="2.5"></div>
+      <div class="form-group"><label>Testing Sprint</label><input type="text" id="f_testSprint" placeholder="2.6"></div>
+      <div class="form-group"><label>Target Release Date</label><select id="f_target"><option value="">— select —</option></select></div>
+      <div class="form-group"><label>Dependent PRs (comma-separated)</label><input type="text" id="f_deps" placeholder="8846, 8872"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closePRModal()">Cancel</button>
+      <button class="btn btn-primary" id="savePRBtn" onclick="savePR()">Save PR</button>
+    </div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div id="toast"></div>
+
+<script>
+const API = '/api';
+let allPRs = [];
+let allReleases = [];
+let editingPR = null;
+let lookupModules = [];
+let lookupDevelopers = [];
+let lookupReviewers = [];
+let lookupTimeline = [];
+
+// ── Bootstrap ──────────────────────────────────────────────────
+async function init() {
+  await loadLookups();
+  populateFilters();
+  showSection('dashboard');
+}
+
+async function loadLookups() {
+  const [mods, devs, revs, tl] = await Promise.all([
+    fetch(`${API}/lookup/modules`).then(r => r.json()).catch(() => []),
+    fetch(`${API}/lookup/developers`).then(r => r.json()).catch(() => []),
+    fetch(`${API}/lookup/reviewers`).then(r => r.json()).catch(() => []),
+    fetch(`${API}/lookup/timeline`).then(r => r.json()).catch(() => []),
+  ]);
+  lookupModules = mods;
+  lookupDevelopers = devs;
+  lookupReviewers = revs;
+  lookupTimeline = tl;
+}
+
+function populateFilters() {
+  const modSel = document.getElementById('filterModule');
+  lookupModules.forEach(m => modSel.add(new Option(m, m)));
+
+  const devSel = document.getElementById('filterDeveloper');
+  lookupDevelopers.forEach(d => devSel.add(new Option(d, d)));
+
+  // Module select in modal
+  const fMod = document.getElementById('f_module');
+  lookupModules.forEach(m => fMod.add(new Option(m, m)));
+
+  // Developer select
+  const fDev = document.getElementById('f_developer');
+  lookupDevelopers.forEach(d => fDev.add(new Option(d, d)));
+
+  // Reviewer select
+  const fRev = document.getElementById('f_reviewer');
+  lookupReviewers.forEach(r => fRev.add(new Option(r, r)));
+
+  // Target release select
+  const fTarget = document.getElementById('f_target');
+  lookupTimeline.forEach(t => fTarget.add(new Option(`${t.Release_Date} (R${t.Release_Number})`, t.Release_Date)));
+}
+
+async function loadPageOptions() {
+  const mod = document.getElementById('f_module').value;
+  if (!mod) return;
+  const pages = await fetch(`${API}/lookup/modules/${encodeURIComponent(mod)}/pages`).then(r => r.json()).catch(() => []);
+  document.getElementById('f_pages').placeholder = pages.map(p => p.page_name).join(', ') || 'Enter pages';
+}
+
+// ── Nav ────────────────────────────────────────────────────────
+document.querySelectorAll('nav ul li a').forEach(a => {
+  a.addEventListener('click', e => {
+    e.preventDefault();
+    document.querySelectorAll('nav ul li a').forEach(x => x.classList.remove('active'));
+    a.classList.add('active');
+    showSection(a.dataset.section);
+  });
+});
+
+function showSection(name) {
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.getElementById(`section-${name}`).classList.add('active');
+
+  const titles = { dashboard: 'Dashboard', prs: 'Pull Requests', releases: 'Prod Releases', sync: 'Sync Excel' };
+  document.getElementById('pageTitle').textContent = titles[name] || name;
+
+  const ha = document.getElementById('headerActions');
+  ha.innerHTML = '';
+  if (name === 'prs') {
+    ha.innerHTML = `<button class="btn btn-primary" onclick="openAddPRModal()">＋ Add PR</button>`;
+  }
+
+  if (name === 'dashboard') renderDashboard();
+  if (name === 'prs') renderPRs();
+  if (name === 'releases') renderReleases();
+}
+
+// ── Status badge ───────────────────────────────────────────────
+function statusBadge(status) {
+  if (!status) return '<span class="badge badge-gray">—</span>';
+  const s = status.toLowerCase();
+  if (s.includes('prod deployed') && s.includes('on')) return `<span class="badge badge-green">${status}</span>`;
+  if (s.includes('prod deployed')) return `<span class="badge badge-blue">${status}</span>`;
+  if (s.includes('tcr')) return `<span class="badge badge-yellow">${status}</span>`;
+  if (s.includes('review')) return `<span class="badge badge-orange">${status}</span>`;
+  if (s.includes('inprogress') || s.includes('in progress')) return `<span class="badge badge-gray">${status}</span>`;
+  return `<span class="badge badge-gray">${status}</span>`;
+}
+
+// ── Dashboard ──────────────────────────────────────────────────
+async function renderDashboard() {
+  const data = await fetch(`${API}/prs`).then(r => r.json());
+  allPRs = data.data || [];
+
+  const total = allPRs.length;
+  const deployed = allPRs.filter(p => p.Status?.toLowerCase().includes('prod deployed')).length;
+  const inProgress = allPRs.filter(p => p.Status?.toLowerCase().includes('progress')).length;
+  const review = allPRs.filter(p => p.Status?.toLowerCase().includes('review')).length;
+
+  document.getElementById('statsGrid').innerHTML = `
+    <div class="stat-card accent"><div class="label">Total PRs</div><div class="value">${total}</div></div>
+    <div class="stat-card green"><div class="label">Deployed</div><div class="value">${deployed}</div></div>
+    <div class="stat-card yellow"><div class="label">In Progress / TCR</div><div class="value">${inProgress}</div></div>
+    <div class="stat-card red"><div class="label">In Review</div><div class="value">${review}</div></div>
+  `;
+
+  // Module breakdown
+  const modMap = {};
+  allPRs.forEach(p => {
+    const m = p.Module || 'Unknown';
+    if (!modMap[m]) modMap[m] = { total: 0, deployed: 0, inProgress: 0 };
+    modMap[m].total++;
+    if (p.Status?.toLowerCase().includes('prod deployed')) modMap[m].deployed++;
+    else modMap[m].inProgress++;
+  });
+
+  document.querySelector('#moduleTable tbody').innerHTML = Object.entries(modMap)
+    .sort((a, b) => b[1].total - a[1].total)
+    .map(([m, v]) => `<tr>
+      <td>${m}</td>
+      <td><strong>${v.total}</strong></td>
+      <td style="color:var(--green)">${v.deployed}</td>
+      <td style="color:var(--yellow)">${v.inProgress}</td>
+    </tr>`).join('');
+
+  // Dev breakdown
+  const devMap = {};
+  allPRs.forEach(p => {
+    const d = p.Developer || 'Unknown';
+    if (!devMap[d]) devMap[d] = { prs: 0, modules: new Set() };
+    devMap[d].prs++;
+    if (p.Module) devMap[d].modules.add(p.Module);
+  });
+
+  document.querySelector('#devTable tbody').innerHTML = Object.entries(devMap)
+    .sort((a, b) => b[1].prs - a[1].prs)
+    .map(([d, v]) => `<tr>
+      <td>${d}</td>
+      <td><strong>${v.prs}</strong></td>
+      <td><div class="tag-list">${[...v.modules].map(m => `<span class="tag">${m}</span>`).join('')}</div></td>
+    </tr>`).join('');
+}
+
+// ── PR Table ───────────────────────────────────────────────────
+async function renderPRs(filters = {}) {
+  const params = new URLSearchParams();
+  if (filters.module) params.set('module', filters.module);
+  if (filters.developer) params.set('developer', filters.developer);
+  if (filters.status) params.set('status', filters.status);
+
+  const data = await fetch(`${API}/prs?${params}`).then(r => r.json());
+  allPRs = data.data || [];
+
+  const search = (document.getElementById('searchInput').value || '').toLowerCase();
+  let rows = allPRs;
+  if (search) {
+    rows = rows.filter(p =>
+      String(p.PR).includes(search) ||
+      (p.Developer || '').toLowerCase().includes(search) ||
+      (p.Module || '').toLowerCase().includes(search) ||
+      (p.Status || '').toLowerCase().includes(search)
+    );
+  }
+
+  document.getElementById('prTableBody').innerHTML = rows.map(p => `
+    <tr>
+      <td><strong style="color:var(--accent)">#${p.PR}</strong></td>
+      <td>${p.Module || '—'}</td>
+      <td>${p.Developer || '—'}</td>
+      <td><div class="tag-list">${(p.Page || []).map(pg => `<span class="tag">${pg.split('/').pop()}</span>`).join('')}</div></td>
+      <td>${p.Dev_Sprint || '—'}</td>
+      <td>${statusBadge(p.Status)}</td>
+      <td style="white-space:nowrap">${p['PR Raised Date'] || '—'}</td>
+      <td style="white-space:nowrap">${p.Target_Release || '—'}</td>
+      <td style="white-space:nowrap">
+        <button class="btn btn-ghost btn-sm" onclick="openEditPRModal(${p.PR})">✏️ Edit</button>
+        <button class="btn btn-danger btn-sm" onclick="deletePR(${p.PR})">🗑</button>
+      </td>
+    </tr>
+  `).join('') || `<tr><td colspan="9" style="text-align:center;color:var(--text2);padding:32px">No PRs found</td></tr>`;
+
+  // Populate status filter from actual data
+  const statSel = document.getElementById('filterStatus');
+  const currentVal = statSel.value;
+  statSel.innerHTML = '<option value="">All Statuses</option>';
+  const statuses = [...new Set(allPRs.map(p => p.Status).filter(Boolean))].sort();
+  statuses.forEach(s => statSel.add(new Option(s, s)));
+  statSel.value = currentVal;
+}
+
+// Filter listeners
+['filterModule', 'filterDeveloper', 'filterStatus'].forEach(id => {
+  document.getElementById(id).addEventListener('change', applyFilters);
+});
+
+document.getElementById('searchInput').addEventListener('input', applyFilters);
+
+function applyFilters() {
+  renderPRs({
+    module: document.getElementById('filterModule').value,
+    developer: document.getElementById('filterDeveloper').value,
+    status: document.getElementById('filterStatus').value,
+  });
+}
+
+// ── PR Modal ───────────────────────────────────────────────────
+function openAddPRModal() {
+  editingPR = null;
+  document.getElementById('prModalTitle').textContent = 'Add PR';
+  document.getElementById('savePRBtn').textContent = 'Add PR';
+  clearPRForm();
+  document.getElementById('prModal').classList.add('open');
+}
+
+async function openEditPRModal(prNumber) {
+  const pr = await fetch(`${API}/prs/${prNumber}`).then(r => r.json());
+  editingPR = pr.PR;
+  document.getElementById('prModalTitle').textContent = `Edit PR #${pr.PR}`;
+  document.getElementById('savePRBtn').textContent = 'Update PR';
+
+  document.getElementById('f_pr').value = pr.PR;
+  document.getElementById('f_pr').disabled = true;
+  document.getElementById('f_type').value = pr.Type || 'Development';
+  document.getElementById('f_module').value = pr.Module || '';
+  document.getElementById('f_developer').value = pr.Developer || '';
+  document.getElementById('f_pages').value = (pr.Page || []).join(', ');
+  document.getElementById('f_status').value = pr.Status || '';
+  document.getElementById('f_reviewer').value = pr.Reviewer || '';
+  document.getElementById('f_raised').value = pr['PR Raised Date'] || '';
+  document.getElementById('f_firstResponse').value = pr['PR First Response Date'] || '';
+  document.getElementById('f_approved').value = pr['PR Approved Date'] || '';
+  document.getElementById('f_merged').value = pr['PR Merged Date'] || '';
+  document.getElementById('f_devSprint').value = pr.Dev_Sprint || '';
+  document.getElementById('f_testSprint').value = pr.Testing_Sprint || '';
+  document.getElementById('f_target').value = pr.Target_Release || '';
+  document.getElementById('f_deps').value = (pr.Dependent_PRs || []).join(', ');
+
+  document.getElementById('prModal').classList.add('open');
+}
+
+function closePRModal() {
+  document.getElementById('prModal').classList.remove('open');
+  document.getElementById('f_pr').disabled = false;
+  editingPR = null;
+}
+
+function clearPRForm() {
+  ['f_pr','f_pages','f_raised','f_firstResponse','f_approved','f_merged','f_devSprint','f_testSprint','f_deps'].forEach(id => {
+    document.getElementById(id).value = '';
+  });
+  ['f_type','f_module','f_developer','f_status','f_reviewer','f_target'].forEach(id => {
+    document.getElementById(id).selectedIndex = 0;
+  });
+}
+
+async function savePR() {
+  const pr = Number(document.getElementById('f_pr').value);
+  if (!pr) return showToast('PR number is required', 'error');
+
+  const body = {
+    PR: pr,
+    Type: document.getElementById('f_type').value,
+    Module: document.getElementById('f_module').value || null,
+    Developer: document.getElementById('f_developer').value || null,
+    Page: document.getElementById('f_pages').value.split(',').map(s => s.trim()).filter(Boolean),
+    Status: document.getElementById('f_status').value || null,
+    Reviewer: document.getElementById('f_reviewer').value || null,
+    'PR Raised Date': document.getElementById('f_raised').value || null,
+    'PR First Response Date': document.getElementById('f_firstResponse').value || null,
+    'PR Approved Date': document.getElementById('f_approved').value || null,
+    'PR Merged Date': document.getElementById('f_merged').value || null,
+    Dev_Sprint: document.getElementById('f_devSprint').value || null,
+    Testing_Sprint: document.getElementById('f_testSprint').value || null,
+    Target_Release: document.getElementById('f_target').value || null,
+    Dependent_PRs: document.getElementById('f_deps').value.split(',').map(s => s.trim()).filter(Boolean).map(Number),
+  };
+
+  const isEdit = !!editingPR;
+  const url = isEdit ? `${API}/prs/${editingPR}` : `${API}/prs`;
+  const method = isEdit ? 'PUT' : 'POST';
+
+  const res = await fetch(url, { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+  const json = await res.json();
+
+  if (!res.ok) return showToast(json.error, 'error');
+  showToast(isEdit ? `PR #${pr} updated` : `PR #${pr} created`, 'success');
+  closePRModal();
+  renderPRs();
+}
+
+async function deletePR(prNumber) {
+  if (!confirm(`Delete PR #${prNumber}?`)) return;
+  const res = await fetch(`${API}/prs/${prNumber}`, { method: 'DELETE' });
+  const json = await res.json();
+  if (!res.ok) return showToast(json.error, 'error');
+  showToast(`PR #${prNumber} deleted`, 'success');
+  renderPRs();
+}
+
+// ── Releases ───────────────────────────────────────────────────
+function parseReleaseDate(value) {
+  if (!value) return null;
+  const d = new Date(value);
+  return Number.isNaN(d.getTime()) ? null : d;
+}
+
+function toDateKey(value) {
+  const d = parseReleaseDate(value);
+  return d ? d.toISOString().slice(0, 10) : '';
+}
+
+function toggleReleaseCard(button) {
+  const card = button.closest('.release-card');
+  const panelId = card?.dataset.panelId;
+  if (!card || !panelId) return;
+
+  const isOpen = !card.classList.contains('collapsed');
+  document.querySelectorAll('.release-card').forEach(el => {
+    el.classList.add('collapsed');
+    const trigger = el.querySelector('.accordion-trigger');
+    if (trigger) trigger.setAttribute('aria-expanded', 'false');
+  });
+
+  if (isOpen) {
+    card.classList.add('collapsed');
+    button.setAttribute('aria-expanded', 'false');
+  } else {
+    card.classList.remove('collapsed');
+    button.setAttribute('aria-expanded', 'true');
+  }
+}
+
+async function renderReleases() {
+  // Fetch releases, PRs and module-pages in parallel so we can build the detailed view
+  const [relRes, prsRes, mpRes] = await Promise.all([
+    fetch(`${API}/releases`).then(r => r.json()).catch(() => ({ data: [] })),
+    fetch(`${API}/prs`).then(r => r.json()).catch(() => ({ data: [] })),
+    fetch(`${API}/lookup/module-pages`).then(r => r.json()).catch(() => ([])),
+  ]);
+
+  const releases = relRes.data || [];
+  const prs = prsRes.data || [];
+  const modulePages = mpRes || [];
+
+  // Build lookup maps
+  const prMap = new Map((prs || []).map(p => [p.PR, p]));
+  const modulePagesMap = {};
+  (modulePages || []).forEach(m => { modulePagesMap[m.Module] = m.Pages || []; });
+
+  function findPageMeta(moduleName, pageName) {
+    const pages = modulePagesMap[moduleName] || [];
+    if (!pageName) return null;
+    const normalized = String(pageName).trim();
+    let meta = pages.find(p => String(p.page_name || '').trim() === normalized);
+    if (meta) return meta;
+    const base = normalized.split('/').pop();
+    meta = pages.find(p => String(p.page_name || '').split('/').pop() === base);
+    return meta || null;
+  }
+
+  function readMetaValue(record, keys) {
+    for (const key of keys) {
+      const value = record?.[key];
+      if (value !== null && value !== undefined && String(value).trim() !== '') return String(value).trim();
+    }
+    return '—';
+  }
+
+  const releaseCards = (releases || []).map(r => {
+    const prNumbers = (r.PRs || []);
+    const prsForRelease = prNumbers.map(n => prMap.get(n)).filter(Boolean);
+
+    const modulesSet = new Set();
+    const pageSet = new Set();
+    prsForRelease.forEach(p => {
+      const mod = p.Module || 'Unknown';
+      modulesSet.add(mod);
+      (p.Page || []).forEach(pg => pageSet.add(String(pg).trim()));
+    });
+
+    return {
+      ...r,
+      _date: parseReleaseDate(r.Release_Date),
+      _modules: Array.from(modulesSet).sort(),
+      _pages: pageSet.size,
+      _prsForRelease: prsForRelease,
+      _moduleHtml: null,
+    };
+  }).filter(r => r._date || r.Release_Date);
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  const upcoming = releaseCards
+    .filter(r => (r._date || today) >= today)
+    .sort((a, b) => (a._date || today).getTime() - (b._date || today).getTime());
+
+  const currentRelease = upcoming[0] || null;
+  const futureReleases = upcoming.filter(r => r !== currentRelease)
+    .sort((a, b) => (b._date || today).getTime() - (a._date || today).getTime());
+  const pastReleases = releaseCards
+    .filter(r => (r._date || today) < today)
+    .sort((a, b) => (b._date || today).getTime() - (a._date || today).getTime());
+
+  function buildReleaseCard(r, open = false) {
+    const prNumbers = (r.PRs || []);
+    const prsForRelease = r._prsForRelease || [];
+    const modules = r._modules || [];
+
+    const modulesHtml = modules.map(mod => {
+        const modulePRs = prsForRelease.filter(p => (p.Module || '') === mod);
+        const userStory = modulePRs
+          .map(p => readMetaValue(p, ['User_Story', 'User Story']))
+          .find(v => v !== '—') || '—';
+
+        const pageRows = [];
+        modulePRs.forEach(p => {
+          (p.Page || []).forEach(pg => {
+            const meta = findPageMeta(mod, pg);
+            pageRows.push({
+              pageName: String(pg).trim(),
+              featureFlag: meta ? readMetaValue(meta, ['Feature_Flag', 'Feature Flag']) : '—',
+              featureFlagStatus: meta ? readMetaValue(meta, ['Feature_Flag_Status', 'Feature Flag Status']) : '—',
+              pr: p.PR,
+              task: readMetaValue(p, ['Task_Number', 'Task Number', 'Task']),
+            });
+          });
+        });
+
+        const uniquePageRows = Array.from(new Map(pageRows.map(row => [row.pageName + '|' + row.pr, row])).values());
+
+        const rowsHtml = uniquePageRows.length
+          ? uniquePageRows.map(prw => `
+              <tr>
+                <td>${prw.pageName}</td>
+                <td>${prw.featureFlag}</td>
+                <td>${prw.featureFlagStatus}</td>
+                <td style="color:var(--accent)">#${prw.pr}</td>
+                <td>${prw.task}</td>
+              </tr>
+            `).join('')
+          : `<tr><td colspan="5" style="text-align:center;color:var(--text2)">No pages</td></tr>`;
+
+        return `
+          <div style="margin-top:10px">
+            <h3 style="font-size:14px;margin:6px 0">${mod}</h3>
+            <div style="font-size:13px;color:var(--text2);margin-bottom:6px">User Story: ${userStory}</div>
+            <div class="table-wrap">
+              <table>
+                <thead><tr><th>Page Name</th><th>Feature Flag Name</th><th>Feature Flag Status</th><th>Associated PR</th><th>Task Number</th></tr></thead>
+                <tbody>${rowsHtml}</tbody>
+              </table>
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      return `
+        <article class="release-card ${open ? '' : 'collapsed'}" data-panel-id="release-${r.Release_Number || 'x'}">
+          <button class="accordion-trigger" type="button" aria-expanded="${open ? 'true' : 'false'}" onclick="toggleReleaseCard(this)">
+            <span class="rel-num">Release ${r.Release_Number || '—'}</span>
+            <div class="rel-date">📅 ${r.Release_Date || '—'}</div>
+            <div class="rel-meta">${modules.length} Modules • ${r._pages || 0} Pages</div>
+            <span class="rel-toggle">${open ? 'Hide' : 'Show'}</span>
+          </button>
+          <div class="accordion-panel">
+            <div style="margin-top:4px">${modulesHtml}</div>
+          </div>
+        </article>
+      `;
+    }
+
+    const renderSection = (title, items, openByDefault = false) => {
+      if (!items.length) return '';
+      return `
+        <section class="release-section">
+          <h3>${title}</h3>
+          <div class="release-grid">${items.map(r => buildReleaseCard(r, openByDefault && r === currentRelease)).join('')}</div>
+        </section>
+      `;
+    };
+
+    const currentSection = currentRelease ? renderSection('Current Release', [currentRelease], true) : '';
+    const futureSection = futureReleases.length ? renderSection('Future Releases', futureReleases) : '';
+    const pastSection = pastReleases.length ? renderSection('Past Releases', pastReleases) : '';
+
+    document.getElementById('releaseGrid').innerHTML = releases.length
+      ? `${currentSection}${futureSection}${pastSection}`
+      : '<p style="color:var(--text2);font-size:13px">No releases yet. Run a sync first.</p>';
+}
+
+function openAddReleaseModal() {
+  showToast('Use Sync Excel to auto-build releases, or POST to /api/releases', 'success');
+}
+
+async function deleteRelease(releaseNumber) {
+  if (!confirm(`Delete release ${releaseNumber}?`)) return;
+  const res = await fetch(`${API}/releases/${releaseNumber}`, { method: 'DELETE' });
+  const json = await res.json();
+  if (!res.ok) return showToast(json.error, 'error');
+  showToast(`Release ${releaseNumber} deleted`, 'success');
+  renderReleases();
+}
+
+// ── Sync ───────────────────────────────────────────────────────
+async function syncExcel() {
+  const btn = document.getElementById('syncBtn');
+  btn.textContent = '⏳ Syncing…';
+  btn.disabled = true;
+
+  const res = await fetch(`${API}/sync/excel`, { method: 'POST' });
+  const json = await res.json();
+  btn.textContent = '🔄 Run Sync';
+  btn.disabled = false;
+
+  const resultEl = document.getElementById('syncResult');
+  if (!res.ok) {
+    resultEl.innerHTML = `<span style="color:var(--red)">Error: ${json.error}</span>`;
+    resultEl.classList.add('show');
+    return;
+  }
+
+  resultEl.innerHTML = `
+    <div class="row"><span>PRs synced</span><span>${json.prs_synced}</span></div>
+    <div class="row"><span>Releases built</span><span>${json.releases_built}</span></div>
+    <div class="row"><span>Modules</span><span>${(json.summary?.modules || []).join(', ')}</span></div>
+  `;
+  resultEl.classList.add('show');
+  showToast(`Sync complete: ${json.prs_synced} PRs`, 'success');
+}
+
+async function uploadSync(input) {
+  if (!input.files[0]) return;
+  const formData = new FormData();
+  formData.append('excel', input.files[0]);
+
+  const res = await fetch(`${API}/sync/upload`, { method: 'POST', body: formData });
+  const json = await res.json();
+
+  const resultEl = document.getElementById('uploadResult');
+  if (!res.ok) {
+    resultEl.innerHTML = `<span style="color:var(--red)">Error: ${json.error}</span>`;
+    resultEl.classList.add('show');
+    return;
+  }
+
+  resultEl.innerHTML = `
+    <div class="row"><span>File</span><span>${json.filename}</span></div>
+    <div class="row"><span>PRs synced</span><span>${json.prs_synced}</span></div>
+    <div class="row"><span>Releases built</span><span>${json.releases_built}</span></div>
+  `;
+  resultEl.classList.add('show');
+  showToast(`Upload & sync complete: ${json.prs_synced} PRs`, 'success');
+}
+
+// Drag & drop
+const ua = document.getElementById('uploadArea');
+ua.addEventListener('dragover', e => { e.preventDefault(); ua.classList.add('drag'); });
+ua.addEventListener('dragleave', () => ua.classList.remove('drag'));
+ua.addEventListener('drop', e => {
+  e.preventDefault();
+  ua.classList.remove('drag');
+  const file = e.dataTransfer.files[0];
+  if (file) {
+    const dt = new DataTransfer();
+    dt.items.add(file);
+    document.getElementById('fileInput').files = dt.files;
+    uploadSync(document.getElementById('fileInput'));
+  }
+});
+
+// ── Toast ──────────────────────────────────────────────────────
+let toastTimer;
+function showToast(msg, type = '') {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = `show ${type}`;
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => { t.className = ''; }, 3500);
+}
+
+init();
+</script>
+</body>
+</html>
