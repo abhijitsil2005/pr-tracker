@@ -28,70 +28,68 @@
         "Feature_Flag_Status": "Enabled"
       }
     ],
-    "OutOfScope": [
-    ]
+    "OutOfScope": []
   },
   {
     "Module": "Assessment",
     "Pages": [
       {
-        "page_name": "analysis.aspx",
-        "Feature_Flag": "analysis",
-        "Feature_Flag_Status": "Enabled"
+        "page_name": "reports/assessmentAnalysis.aspx",
+        "Feature_Flag": "F989551_TelerikRefactor_AssessmentAnalysis",
+        "Feature_Flag_Status": "Disabled"
       },
       {
         "page_name": "assessment.aspx",
-        "Feature_Flag": "Assessment",
-        "Feature_Flag_Status": "Enabled"
+        "Feature_Flag": "F1040951_TelerikRefactor_Assessments_Assessment",
+        "Feature_Flag_Status": "Disabled"
       },
       {
         "page_name": "checkMyWork/checkMyWork.aspx",
-        "Feature_Flag": "CheckMyWork",
-        "Feature_Flag_Status": "Enabled"
+        "Feature_Flag": "F1042045_RefactorTelerik_Assessments_CheckMyWork",
+        "Feature_Flag_Status": "Disabled"
       },
       {
         "page_name": "checkMyWork/submissions.aspx",
-        "Feature_Flag": "CheckMyWork",
-        "Feature_Flag_Status": "Enabled"
+        "Feature_Flag": "F1042045_RefactorTelerik_Assessments_Submissions",
+        "Feature_Flag_Status": "Disabled"
       },
       {
         "page_name": "default.aspx",
-        "Feature_Flag": "Default",
-        "Feature_Flag_Status": "Enabled"
+        "Feature_Flag": "F989551_RefactorTelerik_Assessment_default",
+        "Feature_Flag_Status": "Disabled"
       },
       {
         "page_name": "import.aspx",
-        "Feature_Flag": "Import",
-        "Feature_Flag_Status": "Enabled"
+        "Feature_Flag": "F989551_RefactorTelerik_Assessment_Import",
+        "Feature_Flag_Status": "Disabled"
       },
       {
-        "page_name": "manager.aspx",
-        "Feature_Flag": "Manager",
-        "Feature_Flag_Status": "Enabled"
+        "page_name": "results/Manager.aspx",
+        "Feature_Flag": "F1037659_TelerikRefactor_Assessment_ResultsManager",
+        "Feature_Flag_Status": "Disabled"
       },
       {
         "page_name": "questions.aspx",
-        "Feature_Flag": "Questions",
-        "Feature_Flag_Status": "Enabled"
+        "Feature_Flag": "F1043543_RefactorTelerik_Assessments_Questions",
+        "Feature_Flag_Status": "Disabled"
       },
       {
         "page_name": "questionManager.aspx",
-        "Feature_Flag": "QuestionManager",
+        "Feature_Flag": "",
         "Feature_Flag_Status": "Enabled"
       },
       {
         "page_name": "reports/assessmentAnswersAccepted.aspx",
-        "Feature_Flag": "AssessmentAnswersAccepted",
-        "Feature_Flag_Status": "Enabled"
+        "Feature_Flag": "F1044500_TelerikRefactor_assessmentAnswersAccepted",
+        "Feature_Flag_Status": "Disabled"
       },
       {
         "page_name": "reports/assessmentQuestionAnalysis.aspx",
-        "Feature_Flag": "AssessmentQuestionAnalysis",
-        "Feature_Flag_Status": "Enabled"
+        "Feature_Flag": "F1044500_TelerikRefactor_AssessmentQuestionAnalysis",
+        "Feature_Flag_Status": "Disabled"
       }
     ],
-    "OutOfScope": [
-    ]
+    "OutOfScope": []
   },
   {
     "Module": "AssetAware",
@@ -130,8 +128,7 @@
         "Feature_Flag_Status": "Enabled"
       }
     ],
-    "OutOfScope": [
-    ]
+    "OutOfScope": []
   },
   {
     "Module": "Content",
@@ -173,7 +170,7 @@
       }
     ],
     "OutOfScope": [
-      "affiliate.aspx",  
+      "affiliate.aspx",
       "affiliates.aspx",
       "chrome/online/footer.aspx",
       "chrome/printed/options.aspx"
@@ -202,7 +199,7 @@
         "Feature_Flag": "RegistrationDefault",
         "Feature_Flag_Status": "Enabled"
       }
-    ],  
+    ],
     "OutOfScope": [
       "registration/registrationLocation.aspx",
       "registration/registrationLocations.aspx"
@@ -234,9 +231,8 @@
       {
         "page_name": "extendedField.aspx",
         "Feature_Flag": "ExtendedField",
-        "Feature_Flag_Status": "Enabled"  
+        "Feature_Flag_Status": "Enabled"
       }
-
     ],
     "OutOfScope": [
       "importData.aspx"
@@ -286,8 +282,7 @@
         "Feature_Flag_Status": "Enabled"
       }
     ],
-    "OutOfScope": [
-    ]
+    "OutOfScope": []
   },
   {
     "Module": "Home",
@@ -321,8 +316,7 @@
         "Feature_Flag_Status": "Enabled"
       }
     ],
-    "OutOfScope": [
-    ]
+    "OutOfScope": []
   },
   {
     "Module": "Library",
@@ -356,8 +350,7 @@
         "Feature_Flag_Status": "Enabled"
       }
     ],
-    "OutOfScope": [
-    ]
+    "OutOfScope": []
   },
   {
     "Module": "Security",
@@ -393,7 +386,6 @@
         "Feature_Flag_Status": "Enabled"
       }
     ],
-    "OutOfScope": [
-    ]
+    "OutOfScope": []
   }
 ]

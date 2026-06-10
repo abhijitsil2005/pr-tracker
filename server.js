@@ -6,9 +6,10 @@ const prRoutes = require('./routes/prRoutes');
 const releaseRoutes = require('./routes/releaseRoutes');
 const syncRoutes = require('./routes/syncRoutes');
 const lookupRoutes = require('./routes/lookupRoutes');
+const moduleRoutes = require('./routes/moduleRoutes');
 
 const app = express();
-const PORT = process.env.PORT || 3003;
+const PORT = process.env.PORT || 3005;
 
 app.use(cors());
 app.use(express.json());
@@ -19,6 +20,7 @@ app.use('/api/prs', prRoutes);
 app.use('/api/releases', releaseRoutes);
 app.use('/api/sync', syncRoutes);
 app.use('/api/lookup', lookupRoutes);
+app.use('/api/modules', moduleRoutes);
 
 // Health check
 app.get('/api/health', (req, res) => {
