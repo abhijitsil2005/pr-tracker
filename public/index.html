@@ -338,6 +338,29 @@ label{display:block;font-size:12px;color:var(--text2);margin-bottom:5px}
     </div>
   </div>
 </div>
+<!-- PR Details Modal (readonly) -->
+<div class="modal-overlay" id="prDetailsModal">
+  <div class="modal">
+    <h2 id="prDetailsTitle">PR Details</h2>
+    <button class="modal-close" onclick="closePRDetails()">✕</button>
+    <div style="margin-top:12px;display:flex;flex-direction:column;gap:8px">
+      <div><strong>PR #:</strong> <span id="pd_pr">—</span></div>
+      <!-- <div><strong>Title:</strong> <span id="pd_title">—</span></div> -->
+      <div><strong>Module:</strong> <span id="pd_module">—</span></div>
+      <div><strong>Pages:</strong> <span id="pd_pages">—</span></div>
+      <div><strong>Feature Flag:</strong> <span id="pd_flag">—</span></div>
+      <div><strong>Developer:</strong> <span id="pd_dev">—</span></div>
+      <div><strong>Sprint:</strong> <span id="pd_sprint">—</span></div>
+      <div><strong>Status:</strong> <span id="pd_status">—</span></div>
+      <div><strong>Notes:</strong>
+        <div id="pd_notes" style="white-space:pre-wrap;background:#f6f6f8;padding:10px;border-radius:6px;color:var(--text2);font-size:13px"></div>
+      </div>
+    </div>
+    <div style="margin-top:14px;text-align:right">
+      <button class="btn btn-ghost" onclick="closePRDetails()">Close</button>
+    </div>
+  </div>
+</div>
 
 <!-- ── Add Module Modal ───────────────────────────────── -->
 <div class="modal-overlay" id="addModuleModal">
@@ -792,7 +815,7 @@ function buildReleaseBlock(rel, search) {
                 <td style="font-family:monospace;font-size:11px;color:var(--text)">${row.page}</td>
                 <td style="color:var(--accent2)">${row.ff}</td>
                 <td>${ffBadge(row.ffStatus)}</td>
-                <td><span style="color:var(--accent);font-weight:600">#${row.pr}</span></td>
+                <td><a href="#" onclick="event.stopPropagation(); openPRDetails(${row.pr}); return false;" style="color:var(--accent);font-weight:600;text-decoration:none">#${row.pr}</a></td>
                 <td>${row.developer}</td>
                 <td><span class="badge badge-gray">${row.sprint}</span></td>
                 <td>${statusBadge(row.status)}</td>
@@ -837,6 +860,25 @@ function toggleRelease(id) {
   body.style.display = isOpen ? 'none' : 'block';
   chev.classList.toggle('open', !isOpen);
 }
+
+function openPRDetails(prNum) {
+  const pr = allPRs.find(p => Number(p.PR) === Number(prNum));
+  if (!pr) return showToast('PR not found','error');
+  document.getElementById('pd_pr').textContent = pr.PR || '—';
+  //document.getElementById('pd_title').textContent = pr.Title || '—';
+  document.getElementById('pd_module').textContent = pr.Module || '—';
+  document.getElementById('pd_pages').textContent = (pr.Page||[]).join(', ') || '—';
+  document.getElementById('pd_dev').textContent = pr.Developer || '—';
+  document.getElementById('pd_sprint').textContent = pr.Dev_Sprint || '—';
+  document.getElementById('pd_status').textContent = pr.Status || '—';
+  document.getElementById('pd_notes').textContent = pr.Notes || pr.Description || '—';
+  const mod = allModulePages.find(m=>m.Module===pr.Module);
+  const page = mod ? mod.Pages.find(p=>p.page_name===pr.Page[0]) : null;
+  document.getElementById('pd_flag').textContent = page.Feature_Flag || '—';
+  document.getElementById('prDetailsModal').classList.add('open');
+}
+
+function closePRDetails() { document.getElementById('prDetailsModal').classList.remove('open'); }
 
 // ── Release Modal ──────────────────────────────────────
 function openAddReleaseModal() {
