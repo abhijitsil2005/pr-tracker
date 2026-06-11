@@ -136,12 +136,21 @@ function syncFromExcel(filePath) {
       const moduleName = row['Module'] ? String(row['Module']).trim() : null;
       const pages = parsePages(pageRaw).map(p => matchPage(p, moduleName));
 
+      // Parse US# — stored as float in Excel (e.g. 1043225.0), convert to integer
+      let userStory = null;
+      const usRaw = row['US#'];
+      if (usRaw !== null && usRaw !== undefined && usRaw !== '') {
+        const usNum = Number(usRaw);
+        if (!isNaN(usNum) && usNum > 0) userStory = Math.round(usNum);
+      }
+
       if (!grouped.has(prNum)) {
         grouped.set(prNum, {
           PR: prNum,
           Type: 'Development',
           Developer: row['POC'] ? String(row['POC']).trim() : null,
           Module: moduleName,
+          User_Story: userStory,
           Page: pages,
           Status: row['Status'] ? String(row['Status']).trim() : null,
           'PR Raised Date': fmtDate(row['PR Raised Date']),
@@ -161,6 +170,8 @@ function syncFromExcel(filePath) {
         for (const p of pages) {
           if (!existing.Page.includes(p)) existing.Page.push(p);
         }
+        // Fill in User_Story if not yet set
+        if (!existing.User_Story && userStory) existing.User_Story = userStory;
       }
     }
   }
@@ -169,33 +180,87 @@ function syncFromExcel(filePath) {
   return prList;
 }
 
-// Build Prod_Releases from merged PR data + Release_Timeline
+// ─── Build Prod_Releases — new page-level Modules[] structure ──
+//
+// Each release → Modules[] → Pages[] where each page entry has:
+//   Page_Name, PR, Task (null from sync), Feature_Flag, Feature_Flag_Status
+// This matches the Prod_Releases.json schema exactly.
+//
 function buildProdReleases(prList) {
-  const timeline = dataService.getReleaseTimeline();
+  const timeline    = dataService.getReleaseTimeline();
+  const modulePages = dataService.getModulePages();
 
-  // Group PRs by Target_Release date
+  // Helper: look up one page entry from Module_Pages.json
+  function getPageFF(moduleName, pagePath) {
+    const mod = modulePages.find(m => m.Module === moduleName);
+    if (!mod) return null;
+    return mod.Pages.find(p =>
+      p.page_name === pagePath ||
+      pagePath.endsWith(p.page_name) ||
+      p.page_name.endsWith(pagePath) ||
+      p.page_name === pagePath.split('/').pop()
+    ) || null;
+  }
+
+  // Group full PR objects by Target_Release date
   const byRelease = new Map();
   for (const pr of prList) {
     const rd = pr.Target_Release;
     if (!rd) continue;
     if (!byRelease.has(rd)) byRelease.set(rd, []);
-    byRelease.get(rd).push(pr.PR);
+    byRelease.get(rd).push(pr);
   }
 
   const releases = [];
-  for (const [releaseDate, prNums] of byRelease.entries()) {
+
+  for (const [releaseDate, releasePRs] of byRelease.entries()) {
     const tlEntry = timeline.find(t => t.Release_Date === releaseDate);
+
+    // Group PRs by module, building the Pages[] array per module
+    const modMap = new Map();
+    for (const pr of releasePRs) {
+      const modName = pr.Module || 'Unknown';
+      if (!modMap.has(modName)) {
+        modMap.set(modName, { userStory: null, pages: [] });
+      }
+      const entry = modMap.get(modName);
+
+      if (!entry.userStory && pr.User_Story) entry.userStory = pr.User_Story;
+
+      // Each page of this PR becomes a row in Pages[]
+      for (const rawPage of (pr.Page || [])) {
+        const ffInfo = getPageFF(modName, rawPage);
+        entry.pages.push({
+          Page_Name:           ffInfo ? ffInfo.page_name : normalizePage(rawPage),
+          PR:                  pr.PR,
+          Task:                null,   // populated manually or from a future data source
+          Feature_Flag:        ffInfo ? (ffInfo.Feature_Flag || '') : '',
+          Feature_Flag_Status: ffInfo ? (ffInfo.Feature_Flag_Status || 'Enabled') : 'Enabled',
+        });
+      }
+    }
+
+    // Build Modules[] array sorted alphabetically
+    const modulesArr = [];
+    for (const [modName, entry] of modMap.entries()) {
+      modulesArr.push({
+        Module:     modName,
+        User_Story: entry.userStory ? String(entry.userStory) : null,
+        Pages:      entry.pages,
+      });
+    }
+    modulesArr.sort((a, b) => a.Module.localeCompare(b.Module));
+
     releases.push({
-      Release_Number: tlEntry ? tlEntry.Release_Number : null,
-      Release_Date: releaseDate,
-      Code_Freeze: tlEntry ? tlEntry['Code Freeze'] : null,
+      Release_Number:   tlEntry ? tlEntry.Release_Number : null,
+      Release_Date:     releaseDate,
+      Code_Freeze:      tlEntry ? tlEntry['Code Freeze']         : null,
       Regression_Start: tlEntry ? tlEntry['Regression Start Date'] : null,
-      PRs: prNums,
-      PR_Count: prNums.length,
+      Modules:          modulesArr,
     });
   }
 
-  // Sort by release date
+  // Sort releases chronologically
   releases.sort((a, b) => {
     const toMs = d => d ? new Date(d).getTime() : 0;
     return toMs(a.Release_Date) - toMs(b.Release_Date);

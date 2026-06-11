@@ -34,7 +34,7 @@ header h1{font-size:18px;font-weight:600}
 .section.active{display:block}
 
 /* STATS */
-.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:24px}
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:24px}
 .stat-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:18px 20px}
 .stat-card .label{font-size:12px;color:var(--text2);margin-bottom:6px}
 .stat-card .value{font-size:28px;font-weight:700}
@@ -107,28 +107,46 @@ label{display:block;font-size:12px;color:var(--text2);margin-bottom:5px}
 .tag{background:var(--surface2);border:1px solid var(--border);padding:2px 8px;border-radius:20px;font-size:11px;color:var(--text2)}
 
 /* ── RELEASES section ────────────────────────────────────────── */
-.release-block{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);margin-bottom:24px;overflow:hidden}
-.release-header{display:flex;align-items:center;justify-content:space-between;padding:16px 20px;background:var(--surface2);border-bottom:1px solid var(--border);cursor:pointer;user-select:none}
-.release-header-left{display:flex;align-items:center;gap:14px}
-.release-title{font-size:15px;font-weight:700}
-.release-meta{display:flex;gap:16px;font-size:12px;color:var(--text2)}
-.release-meta span{display:flex;align-items:center;gap:5px}
-.release-counts{display:flex;gap:8px;align-items:center}
-.release-body{padding:20px}
-.chevron{font-size:11px;color:var(--text2);transition:transform .2s}
+.rel-section-label{font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;padding:6px 0 10px;color:var(--text2);display:flex;align-items:center;gap:8px;margin-top:4px}
+.rel-section-label::after{content:'';flex:1;height:1px;background:var(--border)}
+.release-block{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);margin-bottom:14px;overflow:hidden}
+.release-block.current{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent)}
+.release-block.next-up{border-color:var(--green)}
+.release-block.past{opacity:.75}
+.release-header{display:flex;align-items:center;justify-content:space-between;padding:14px 18px;background:var(--surface2);border-bottom:1px solid var(--border);cursor:pointer;user-select:none;transition:background .15s}
+.release-header:hover{background:var(--surface3)}
+.release-block.current .release-header{background:rgba(79,126,248,.12)}
+.release-block.next-up .release-header{background:rgba(34,197,94,.08)}
+.release-header-left{display:flex;align-items:center;gap:12px}
+.release-title{font-size:14px;font-weight:700}
+.release-meta{display:flex;gap:14px;font-size:12px;color:var(--text2);margin-top:3px}
+.release-meta span{display:flex;align-items:center;gap:4px}
+.release-counts{display:flex;gap:7px;align-items:center}
+.release-body{padding:0}
+.chevron{font-size:10px;color:var(--text2);transition:transform .2s;flex-shrink:0}
 .chevron.open{transform:rotate(180deg)}
-
-/* Module group inside release */
-.mod-group{margin-bottom:20px}
-.mod-group:last-child{margin-bottom:0}
-.mod-header{display:flex;align-items:center;gap:10px;margin-bottom:10px;padding-bottom:8px;border-bottom:1px solid var(--border)}
-.mod-name{font-size:14px;font-weight:600;color:var(--text)}
-.mod-story{font-size:12px;color:var(--text2);margin-left:auto;font-style:italic}
-.pages-table{width:100%;border-collapse:collapse;font-size:12px}
-.pages-table th{padding:6px 10px;text-align:left;color:var(--text2);font-size:11px;font-weight:600;background:var(--surface3);border-bottom:1px solid var(--border)}
-.pages-table td{padding:7px 10px;border-bottom:1px solid rgba(46,50,80,.5);vertical-align:middle}
+/* Module group - fixed-layout table for column alignment */
+.mod-group{border-bottom:1px solid var(--border)}
+.mod-group:last-child{border-bottom:none}
+.mod-header{display:flex;align-items:center;gap:10px;padding:11px 18px;background:rgba(255,255,255,.02);border-bottom:1px solid var(--border)}
+.mod-name{font-size:13px;font-weight:700;color:var(--text)}
+.mod-story{font-size:11px;color:var(--accent2);margin-left:6px}
+.mod-story-label{font-size:11px;color:var(--text2)}
+.pages-table{width:100%;border-collapse:collapse;font-size:12px;table-layout:fixed}
+.pages-table col.col-page{width:28%}
+.pages-table col.col-ff{width:18%}
+.pages-table col.col-ffs{width:9%}
+.pages-table col.col-pr{width:11%}
+.pages-table col.col-task{width:10%}
+.pages-table col.col-dev{width:11%}
+.pages-table col.col-status{width:13%}
+.pages-table th{padding:7px 10px;text-align:left;color:var(--text2);font-size:11px;font-weight:600;background:var(--surface3);border-bottom:1px solid var(--border);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pages-table td{padding:7px 10px;border-bottom:1px solid rgba(46,50,80,.4);vertical-align:middle;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .pages-table tr:last-child td{border-bottom:none}
-.pages-table tr:hover td{background:rgba(255,255,255,.02)}
+.pages-table tr:hover td{background:rgba(255,255,255,.025)}
+.pages-table td.pr-cell{vertical-align:middle;text-align:left}
+.pr-pill{display:inline-flex;align-items:center;gap:4px;background:rgba(79,126,248,.12);border:1px solid rgba(79,126,248,.3);color:var(--accent);padding:2px 8px;border-radius:20px;font-size:11px;font-weight:600;white-space:nowrap;cursor:pointer;margin:2px 1px}
+.pr-pill:hover{background:rgba(79,126,248,.22)}
 
 /* ── MODULE PAGES section ────────────────────────────────────── */
 .mp-accordion{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);margin-bottom:12px;overflow:hidden}
@@ -137,19 +155,29 @@ label{display:block;font-size:12px;color:var(--text2);margin-bottom:5px}
 .mp-acc-left{display:flex;align-items:center;gap:12px}
 .mp-acc-name{font-size:14px;font-weight:600}
 .mp-acc-counts{display:flex;gap:8px}
-.mp-acc-body{display:none;padding:16px 18px;border-top:1px solid var(--border)}
+.mp-acc-body{display:none;border-top:1px solid var(--border)}
 .mp-acc-body.open{display:block}
-
-.oos-section{margin-top:14px;padding-top:14px;border-top:1px solid var(--border)}
+/* Module Pages full-width fixed table */
+.mp-pages-table{width:100%;border-collapse:collapse;font-size:12px;table-layout:fixed}
+.mp-pages-table col.mpc-page{width:22%}
+.mp-pages-table col.mpc-ff{width:28%}
+.mp-pages-table col.mpc-ffs{width:9%}
+.mp-pages-table col.mpc-demo{width:10%}
+.mp-pages-table col.mpc-demodate{width:11%}
+.mp-pages-table col.mpc-prod{width:11%}
+.mp-pages-table col.mpc-actions{width:9%}
+.mp-pages-table th{padding:7px 10px;text-align:left;color:var(--text2);font-size:11px;font-weight:600;background:var(--surface3);border-bottom:1px solid var(--border);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mp-pages-table td{padding:7px 10px;border-bottom:1px solid rgba(46,50,80,.4);vertical-align:middle;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.mp-pages-table tr:last-child td{border-bottom:none}
+.mp-pages-table tr:hover td{background:rgba(255,255,255,.025)}
+/* OOS section */
+.oos-section{padding:12px 18px;border-top:1px solid var(--border);background:rgba(239,68,68,.03)}
 .oos-title{font-size:11px;font-weight:600;color:var(--text2);margin-bottom:8px;text-transform:uppercase;letter-spacing:.5px}
 .oos-list{display:flex;flex-wrap:wrap;gap:6px}
 .oos-chip{display:inline-flex;align-items:center;gap:6px;background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.25);padding:3px 8px;border-radius:20px;font-size:11px;color:var(--red)}
 .oos-chip button{background:none;border:none;color:var(--red);cursor:pointer;font-size:13px;line-height:1;padding:0}
-
-/* inline add page row */
-.add-page-row{display:grid;grid-template-columns:1fr 1fr 140px auto;gap:8px;margin-top:10px;align-items:end}
-.add-page-row input,.add-page-row select{background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:7px 10px;border-radius:7px;font-size:12px;outline:none;width:100%}
-.add-page-row input:focus,.add-page-row select:focus{border-color:var(--accent)}
+/* status badge colours */
+.badge-teal{background:rgba(20,184,166,.15);color:#14b8a6}
 
 /* Sync/upload */
 .sync-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:24px;margin-bottom:20px;max-width:560px}
@@ -197,24 +225,34 @@ label{display:block;font-size:12px;color:var(--text2);margin-bottom:5px}
     <!-- DASHBOARD -->
     <div id="section-dashboard" class="section active">
       <div class="stats" id="statsGrid"></div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
-        <div>
-          <h3 style="font-size:14px;margin-bottom:12px;color:var(--text2)">BY MODULE</h3>
-          <div class="table-wrap">
-            <table id="moduleTable">
-              <thead><tr><th>Module</th><th>PRs</th><th>Deployed</th><th>In Progress</th></tr></thead>
-              <tbody></tbody>
-            </table>
-          </div>
+      <div style="margin-bottom:24px">
+        <h3 style="font-size:14px;margin-bottom:12px;color:var(--text2)">MODULE STATUS — PAGES IN PRODUCTION</h3>
+        <div class="table-wrap">
+          <table id="moduleTable" style="font-size:12px">
+            <thead><tr>
+              <th>Module</th>
+              <th>Total Pages</th>
+              <th>Prod Deployed</th>
+              <th>Pending</th>
+              <th>FF Enabled</th>
+              <th>FF Disabled</th>
+              <th>Demo Done</th>
+              <th>Demo Pending</th>
+              <th>PRs</th>
+              <th>PR Deployed</th>
+              <th>PR In Progress</th>
+            </tr></thead>
+            <tbody></tbody>
+          </table>
         </div>
-        <div>
-          <h3 style="font-size:14px;margin-bottom:12px;color:var(--text2)">BY DEVELOPER</h3>
-          <div class="table-wrap">
-            <table id="devTable">
-              <thead><tr><th>Developer</th><th>PRs</th><th>Modules</th></tr></thead>
-              <tbody></tbody>
-            </table>
-          </div>
+      </div>
+      <div>
+        <h3 style="font-size:14px;margin-bottom:12px;color:var(--text2)">BY DEVELOPER</h3>
+        <div class="table-wrap">
+          <table id="devTable">
+            <thead><tr><th>Developer</th><th>PRs</th><th>Modules</th></tr></thead>
+            <tbody></tbody>
+          </table>
         </div>
       </div>
     </div>
@@ -322,7 +360,7 @@ label{display:block;font-size:12px;color:var(--text2);margin-bottom:5px}
 
 <!-- ── Release Modal ──────────────────────────────────── -->
 <div class="modal-overlay" id="releaseModal">
-  <div class="modal">
+  <div class="modal modal-lg">
     <h2 id="relModalTitle">Add Release</h2>
     <button class="modal-close" onclick="closeReleaseModal()">✕</button>
     <div class="form-grid">
@@ -330,7 +368,14 @@ label{display:block;font-size:12px;color:var(--text2);margin-bottom:5px}
       <div class="form-group"><label>Release Date * (mm/dd/yyyy)</label><input type="text" id="r_date" placeholder="06/11/2026"></div>
       <div class="form-group"><label>Code Freeze Date</label><input type="text" id="r_freeze" placeholder="06/04/2026"></div>
       <div class="form-group"><label>Regression Start Date</label><input type="text" id="r_regression" placeholder="06/04/2026"></div>
-      <div class="form-group full"><label>PR Numbers (comma-separated)</label><input type="text" id="r_prs" placeholder="8828, 9016, 8886"></div>
+    </div>
+    <!-- Module builder -->
+    <div style="margin-top:20px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+        <label style="font-size:13px;font-weight:600;color:var(--text);margin:0">Modules</label>
+        <button class="btn btn-ghost btn-sm" onclick="addRelModuleRow()">＋ Add Module</button>
+      </div>
+      <div id="r_modules_list" style="display:flex;flex-direction:column;gap:10px"></div>
     </div>
     <div class="modal-footer">
       <button class="btn btn-ghost" onclick="closeReleaseModal()">Cancel</button>
@@ -338,27 +383,13 @@ label{display:block;font-size:12px;color:var(--text2);margin-bottom:5px}
     </div>
   </div>
 </div>
-<!-- PR Details Modal (readonly) -->
-<div class="modal-overlay" id="prDetailsModal">
-  <div class="modal">
-    <h2 id="prDetailsTitle">PR Details</h2>
-    <button class="modal-close" onclick="closePRDetails()">✕</button>
-    <div style="margin-top:12px;display:flex;flex-direction:column;gap:8px">
-      <div><strong>PR #:</strong> <span id="pd_pr">—</span></div>
-      <!-- <div><strong>Title:</strong> <span id="pd_title">—</span></div> -->
-      <div><strong>Module:</strong> <span id="pd_module">—</span></div>
-      <div><strong>Pages:</strong> <span id="pd_pages">—</span></div>
-      <div><strong>Feature Flag:</strong> <span id="pd_flag">—</span></div>
-      <div><strong>Developer:</strong> <span id="pd_dev">—</span></div>
-      <div><strong>Sprint:</strong> <span id="pd_sprint">—</span></div>
-      <div><strong>Status:</strong> <span id="pd_status">—</span></div>
-      <div><strong>Notes:</strong>
-        <div id="pd_notes" style="white-space:pre-wrap;background:#f6f6f8;padding:10px;border-radius:6px;color:var(--text2);font-size:13px"></div>
-      </div>
-    </div>
-    <div style="margin-top:14px;text-align:right">
-      <button class="btn btn-ghost" onclick="closePRDetails()">Close</button>
-    </div>
+
+<!-- ── PR Detail Modal ─────────────────────────────────── -->
+<div class="modal-overlay" id="prDetailModal">
+  <div class="modal modal-lg">
+    <h2 id="prDetailTitle">PR Details</h2>
+    <button class="modal-close" onclick="closeModal('prDetailModal')">✕</button>
+    <div id="prDetailBody"></div>
   </div>
 </div>
 
@@ -384,11 +415,30 @@ label{display:block;font-size:12px;color:var(--text2);margin-bottom:5px}
     <button class="modal-close" onclick="closeModal('pageModal')">✕</button>
     <div class="form-grid">
       <div class="form-group full"><label>Page Name * (e.g. checkMyWork/checkMyWork.aspx)</label><input type="text" id="pg_name"></div>
-      <div class="form-group"><label>Feature Flag</label><input type="text" id="pg_flag" placeholder="e.g. CheckMyWork"></div>
+      <div class="form-group"><label>Feature Flag</label><input type="text" id="pg_flag" placeholder="e.g. F989550_TelerikRefactor_Module"></div>
       <div class="form-group"><label>Feature Flag Status</label>
         <select id="pg_flagStatus">
           <option value="Enabled">Enabled</option>
           <option value="Disabled">Disabled</option>
+        </select>
+      </div>
+      <div class="form-group"><label>Client Demo Status</label>
+        <select id="pg_demoStatus">
+          <option value="Pending">Pending</option>
+          <option value="Done">Done</option>
+          <option value="Scheduled">Scheduled</option>
+          <option value="N/A">N/A</option>
+        </select>
+      </div>
+      <div class="form-group"><label>Client Demo Date (mm/dd/yyyy)</label>
+        <input type="text" id="pg_demoDate" placeholder="e.g. 06/25/2026">
+      </div>
+      <div class="form-group"><label>Production Deployment Status</label>
+        <select id="pg_prodStatus">
+          <option value="Pending">Pending</option>
+          <option value="Deployed">Deployed</option>
+          <option value="In Progress">In Progress</option>
+          <option value="Blocked">Blocked</option>
         </select>
       </div>
     </div>
@@ -495,29 +545,98 @@ function ffBadge(status) {
 // ═══════════════════════════════════════════════════════
 // DASHBOARD
 // ═══════════════════════════════════════════════════════
+function prodStatusBadge(s) {
+  const l = (s||'').toLowerCase();
+  if (l === 'deployed')    return `<span class="badge badge-green">Deployed</span>`;
+  if (l === 'in progress') return `<span class="badge badge-yellow">In Progress</span>`;
+  if (l === 'blocked')     return `<span class="badge badge-red">Blocked</span>`;
+  return `<span class="badge badge-gray">${s||'Pending'}</span>`;
+}
+
+function demoStatusBadge(s) {
+  const l = (s||'').toLowerCase();
+  if (l === 'done')      return `<span class="badge badge-green">Done</span>`;
+  if (l === 'scheduled') return `<span class="badge badge-blue">Scheduled</span>`;
+  if (l === 'n/a')       return `<span class="badge badge-gray">N/A</span>`;
+  return `<span class="badge badge-gray">${s||'Pending'}</span>`;
+}
+
 async function renderDashboard() {
-  const data = await api('prs');
-  allPRs = (data && data.data) || [];
-  const total = allPRs.length;
+  const [prData, mpData] = await Promise.all([api('prs'), api('modules')]);
+  allPRs         = (prData && prData.data) || [];
+  allModulePages = mpData || [];
+
+  const total    = allPRs.length;
   const deployed = allPRs.filter(p => p.Status?.toLowerCase().includes('prod deployed')).length;
-  const inProg = allPRs.filter(p => p.Status?.toLowerCase().includes('progress')).length;
-  const review = allPRs.filter(p => p.Status?.toLowerCase().includes('review')).length;
+  const inProg   = allPRs.filter(p => p.Status?.toLowerCase().includes('progress')).length;
+  const review   = allPRs.filter(p => p.Status?.toLowerCase().includes('review')).length;
+
+  // Page-level counts from Module_Pages.json
+  const totalPages  = allModulePages.reduce((s, m) => s + (m.Pages||[]).length, 0);
+  const prodDeployed = allModulePages.reduce((s, m) =>
+    s + (m.Pages||[]).filter(p => (p.Production_Deployment_Status||'').toLowerCase() === 'deployed').length, 0);
+  const demoComplete = allModulePages.reduce((s, m) =>
+    s + (m.Pages||[]).filter(p => (p.Client_Demo_Status||'').toLowerCase() === 'done').length, 0);
+  const ffEnabled = allModulePages.reduce((s, m) =>
+    s + (m.Pages||[]).filter(p => (p.Feature_Flag_Status||'').toLowerCase() === 'enabled').length, 0);
+
   document.getElementById('statsGrid').innerHTML = `
     <div class="stat-card accent"><div class="label">Total PRs</div><div class="value">${total}</div></div>
-    <div class="stat-card green"><div class="label">Deployed</div><div class="value">${deployed}</div></div>
-    <div class="stat-card yellow"><div class="label">In Progress / TCR</div><div class="value">${inProg}</div></div>
-    <div class="stat-card red"><div class="label">In Review</div><div class="value">${review}</div></div>`;
-  const modMap = {};
+    <div class="stat-card green"><div class="label">PRs Deployed</div><div class="value">${deployed}</div></div>
+    <div class="stat-card yellow"><div class="label">PR In Progress / TCR</div><div class="value">${inProg}</div></div>
+    <div class="stat-card red"><div class="label">PR In Review</div><div class="value">${review}</div></div>
+    <div class="stat-card accent"><div class="label">Total Pages</div><div class="value">${totalPages}</div></div>
+    <div class="stat-card green"><div class="label">Pages in Production</div><div class="value">${prodDeployed}</div></div>
+    <div class="stat-card yellow"><div class="label">Demo Complete</div><div class="value">${demoComplete}</div></div>
+    <div class="stat-card red"><div class="label">FF Enabled</div><div class="value">${ffEnabled}</div></div>`;
+
+  // ── Module status table (pages from Module_Pages + PRs from PR_Details) ──
+  const prByModule = {};
   allPRs.forEach(p => {
     const m = p.Module || 'Unknown';
-    if (!modMap[m]) modMap[m] = { total:0, deployed:0, inProg:0 };
-    modMap[m].total++;
-    if (p.Status?.toLowerCase().includes('prod deployed')) modMap[m].deployed++;
-    else modMap[m].inProg++;
+    if (!prByModule[m]) prByModule[m] = { total:0, deployed:0, inProg:0 };
+    prByModule[m].total++;
+    if (p.Status?.toLowerCase().includes('prod deployed')) prByModule[m].deployed++;
+    else prByModule[m].inProg++;
   });
-  document.querySelector('#moduleTable tbody').innerHTML = Object.entries(modMap)
-    .sort((a,b)=>b[1].total-a[1].total)
-    .map(([m,v])=>`<tr><td>${m}</td><td><strong>${v.total}</strong></td><td style="color:var(--green)">${v.deployed}</td><td style="color:var(--yellow)">${v.inProg}</td></tr>`).join('');
+
+  document.querySelector('#moduleTable tbody').innerHTML = allModulePages
+    .sort((a,b) => a.Module.localeCompare(b.Module))
+    .map(m => {
+      const pages      = m.Pages || [];
+      const prodDep    = pages.filter(p => (p.Production_Deployment_Status||'').toLowerCase() === 'deployed').length;
+      const prodPend   = pages.length - prodDep;
+      const ffEn       = pages.filter(p => (p.Feature_Flag_Status||'').toLowerCase() === 'enabled').length;
+      const ffDis      = pages.length - ffEn;
+      const demoDone   = pages.filter(p => (p.Client_Demo_Status||'').toLowerCase() === 'done').length;
+      const demoPend   = pages.filter(p => (p.Client_Demo_Status||'').toLowerCase() !== 'done').length;
+      const prs        = prByModule[m.Module] || { total:0, deployed:0, inProg:0 };
+
+      // Overall module prod status summary
+      const prodPct = pages.length ? Math.round(prodDep / pages.length * 100) : 0;
+      const barColor = prodPct === 100 ? 'var(--green)' : prodPct > 0 ? 'var(--yellow)' : 'var(--border)';
+
+      return `<tr>
+        <td>
+          <strong>${m.Module}</strong>
+          <div style="margin-top:4px;height:3px;border-radius:2px;background:var(--surface3);width:100%">
+            <div style="height:100%;width:${prodPct}%;background:${barColor};border-radius:2px;transition:width .3s"></div>
+          </div>
+        </td>
+        <td style="text-align:center"><strong>${pages.length}</strong></td>
+        <td style="text-align:center;color:var(--green)"><strong>${prodDep}</strong></td>
+        <td style="text-align:center;color:var(--text2)">${prodPend}</td>
+        <td style="text-align:center"><span class="badge badge-green">${ffEn}</span></td>
+        <td style="text-align:center"><span class="badge badge-red">${ffDis}</span></td>
+        <td style="text-align:center"><span class="badge badge-teal">${demoDone}</span></td>
+        <td style="text-align:center;color:var(--text2)">${demoPend}</td>
+        <td style="text-align:center"><strong>${prs.total}</strong></td>
+        <td style="text-align:center;color:var(--green)">${prs.deployed}</td>
+        <td style="text-align:center;color:var(--yellow)">${prs.inProg}</td>
+      </tr>`;
+    }).join('');
+
+  // ── Developer table ──────────────────────────────────
   const devMap = {};
   allPRs.forEach(p => {
     const d = p.Developer || 'Unknown';
@@ -526,8 +645,12 @@ async function renderDashboard() {
     if (p.Module) devMap[d].modules.add(p.Module);
   });
   document.querySelector('#devTable tbody').innerHTML = Object.entries(devMap)
-    .sort((a,b)=>b[1].prs-a[1].prs)
-    .map(([d,v])=>`<tr><td>${d}</td><td><strong>${v.prs}</strong></td><td><div class="tag-list">${[...v.modules].map(m=>`<span class="tag">${m}</span>`).join('')}</div></td></tr>`).join('');
+    .sort((a,b) => b[1].prs - a[1].prs)
+    .map(([d,v]) => `<tr>
+      <td>${d}</td>
+      <td><strong>${v.prs}</strong></td>
+      <td><div class="tag-list">${[...v.modules].map(m=>`<span class="tag">${m}</span>`).join('')}</div></td>
+    </tr>`).join('');
 }
 
 // ═══════════════════════════════════════════════════════
@@ -547,7 +670,7 @@ async function renderPRs(filters = {}) {
     (p.Developer||'').toLowerCase().includes(search) ||
     (p.Module||'').toLowerCase().includes(search) ||
     (p.Status||'').toLowerCase().includes(search));
-    document.getElementById('prTableBody').innerHTML = rows.sort((a,b)=>b.Dev_Sprint-a.Dev_Sprint).map(p => `
+  document.getElementById('prTableBody').innerHTML = rows.sort((a,b)=>b.Dev_Sprint-a.Dev_Sprint).map(p => `
     <tr>
       <td><strong style="color:var(--accent)">#${p.PR}</strong></td>
       <td>${p.Module||'—'}</td>
@@ -657,272 +780,427 @@ async function deletePR(prNumber) {
 }
 
 // ═══════════════════════════════════════════════════════
-// RELEASES  — rich grouped view
 // ═══════════════════════════════════════════════════════
+// RELEASES  — new structure from Prod_Releases.json
+// ═══════════════════════════════════════════════════════
+
+// Parse mm/dd/yyyy → Date (local midnight)
+function parseRelDate(str) {
+  if (!str) return null;
+  const [m,d,y] = str.split('/').map(Number);
+  return new Date(y, m-1, d);
+}
+
+// Classify a release relative to today
+function classifyRelease(rel) {
+  const today = new Date(); today.setHours(0,0,0,0);
+  const rd = parseRelDate(rel.Release_Date);
+  if (!rd) return 'future';
+  if (rd < today) return 'past';
+  if (rd.getTime() === today.getTime()) return 'current';
+  return 'future';
+}
+
 async function renderReleases() {
   const [relData, prData, mpData] = await Promise.all([
     api('releases'), api('prs'), api('modules')
   ]);
   allReleases = (relData && relData.data) || [];
-  allPRs = (prData && prData.data) || [];
+  allPRs      = (prData  && prData.data)  || [];
   allModulePages = mpData || [];
 
-  const search = (document.getElementById('relSearch').value||'').toLowerCase();
+  const search    = (document.getElementById('relSearch').value || '').toLowerCase();
   const container = document.getElementById('releaseContainer');
 
   if (!allReleases.length) {
     container.innerHTML = `<div class="empty"><div class="e-icon">📭</div><p>No releases yet. Run a sync first.</p></div>`;
     return;
   }
-  // also compute release buckets from lookup timeline if available
-  try {
-    const tl = lookupTimeline && lookupTimeline.length ? lookupTimeline : null;
-    if (tl) {
-      const buckets = computeReleaseBuckets(tl);
-      // expose for debugging / UI use
-      window.__releaseBuckets = buckets;
-      // optional: render a compact summary on top of releases container
-      const summary = document.createElement('div');
-      summary.style.marginBottom = '12px';
-      summary.innerHTML = `<div style="display:flex;gap:10px;flex-wrap:wrap">
-        <div class="badge badge-blue">Current: ${buckets.current?buckets.current.Release_Date+' (R'+buckets.current.Release_Number+')':'—'}</div>
-        <div class="badge badge-purple">Next: ${buckets.next?buckets.next.Release_Date+' (R'+buckets.next.Release_Number+')':'—'}</div>
-        <div class="badge badge-green">Future: ${buckets.future.length}</div>
-        <div class="badge badge-gray">Past: ${buckets.past.length}</div>
-      </div>`;
-      container.prepend(summary);
-    }
-  } catch(e){ console.warn('computeReleaseBuckets failed', e); }
 
-  // determine current and next release based on today's date
-  const today = new Date();
-  // helper to parse mm/dd/yyyy or mm/d/yyyy
-  const parse = s => { try { const parts = (s||'').split('/').map(p=>Number(p)); if (parts.length!==3) return null; return new Date(parts[2], parts[0]-1, parts[1]); } catch(e){return null}};
-  const relsWithDate = allReleases.map(r=>({
-    r,
-    date: parse(r.Release_Date) || null,
-    num: Number(r.Release_Number)
-  }));
+  // Sort all releases chronologically
+  const sorted = [...allReleases].sort((a,b) => {
+    const da = parseRelDate(a.Release_Date), db = parseRelDate(b.Release_Date);
+    return (da||0) - (db||0);
+  });
 
-  // find current = latest release with date <= today
-  const past = relsWithDate.filter(x=>x.date && x.date<=today).sort((a,b)=>b.date - a.date);
-  //const current = past.length? past[0].r : null;
-  // find next = earliest release with date > today
-  const future = relsWithDate.filter(x=>x.date && x.date>today).sort((a,b)=>a.date - b.date);
-  const current = future.length? future[0].r : null;
-  const next = future.length? future[1].r : null;
+  const today = new Date(); today.setHours(0,0,0,0);
 
-  // Build ordered list: current (if any), next (if any and not same), then remaining releases in descending Release_Number
-  const remaining = allReleases.slice();
-  const ordered = [];
-  if (current) { ordered.push(current); const idx = remaining.findIndex(r=>String(r.Release_Number)===String(current.Release_Number)); if (idx>=0) remaining.splice(idx,1); }
-  if (next && (!current || String(next.Release_Number)!==String(current.Release_Number))) { ordered.push(next); const idx = remaining.findIndex(r=>String(r.Release_Number)===String(next.Release_Number)); if (idx>=0) remaining.splice(idx,1); }
-  remaining.sort((a,b)=>Number(b.Release_Number)-Number(a.Release_Number));
-  ordered.push(...remaining);
+  // Find "current" = closest upcoming release (next release date >= today)
+  let currentIdx = sorted.findIndex(r => {
+    const d = parseRelDate(r.Release_Date);
+    return d && d >= today;
+  });
+  if (currentIdx === -1) currentIdx = sorted.length - 1; // all past → last is "current"
 
-  container.innerHTML = ordered.map(rel => buildReleaseBlock(rel, search)).join('');
+  const current  = sorted[currentIdx]     || null;
+  const nextUp   = sorted[currentIdx + 1] || null;
+  const future   = sorted.slice(currentIdx + 2);
+  const past     = sorted.slice(0, currentIdx).reverse(); // newest past first
+
+  let html = '';
+
+  const buildSection = (label, items, cssClass) => {
+    const blocks = items
+      .map(r => buildReleaseBlock(r, search, cssClass))
+      .filter(Boolean)
+      .join('');
+    if (!blocks) return '';
+    return `<div class="rel-section-label">${label}</div>${blocks}`;
+  };
+
+  if (current)       html += buildSection('🔵 Current Release', [current], 'current');
+  if (nextUp)        html += buildSection('🟢 Next Release',    [nextUp],  'next-up');
+  if (future.length) html += buildSection('📅 Upcoming',        future,    '');
+  if (past.length)   html += buildSection('🕘 Past Releases',   past,      'past');
+
+  container.innerHTML = html || `<div class="empty"><div class="e-icon">🔍</div><p>No releases match your search.</p></div>`;
 }
 
 document.getElementById('relSearch').addEventListener('input', renderReleases);
 
-function buildReleaseBlock(rel, search) {
-  const relPRNums = rel.PRs || [];
-  const relPRs = allPRs.filter(p => relPRNums.includes(p.PR));
+// ── Build one release block ────────────────────────────
+function buildReleaseBlock(rel, search, cssClass) {
+  const modules = rel.Modules || [];
 
-  // Group PRs by module
-  const modMap = {};
-  relPRs.forEach(pr => {
-    const mod = pr.Module || 'Unknown';
-    if (!modMap[mod]) modMap[mod] = [];
-    modMap[mod].push(pr);
-  });
-
-  // Apply search filter
-  let moduleEntries = Object.entries(modMap);
+  // Search filter: check release date, module name, page name, PR, user story
+  let filteredMods = modules;
   if (search) {
-    moduleEntries = moduleEntries
-      .map(([mod, prs]) => {
-        const modMatch = mod.toLowerCase().includes(search);
-        const filtPRs = prs.filter(pr =>
+    filteredMods = modules
+      .map(mod => {
+        const modMatch = (mod.Module||'').toLowerCase().includes(search) ||
+                         String(mod.User_Story||'').includes(search);
+        const filtPages = (mod.Pages||[]).filter(p =>
           modMatch ||
-          (pr.Page||[]).some(p=>p.toLowerCase().includes(search)) ||
-          String(pr.PR).includes(search) ||
-          (pr.Developer||'').toLowerCase().includes(search)
+          (p.Page_Name||'').toLowerCase().includes(search) ||
+          String(p.PR||'').includes(search) ||
+          String(p.Task||'').includes(search) ||
+          (p.Feature_Flag||'').toLowerCase().includes(search)
         );
-        return filtPRs.length ? [mod, filtPRs] : null;
+        return (modMatch || filtPages.length)
+          ? { ...mod, Pages: modMatch ? mod.Pages : filtPages }
+          : null;
       })
       .filter(Boolean);
-    if (!moduleEntries.length) return '';
+    if (!filteredMods.length) return '';
   }
 
-  const totalModules = moduleEntries.length;
-  // Total unique pages across all PRs in release
-  const totalPages = new Set(relPRs.flatMap(p => p.Page||[])).size;
+  // Stats for header badges
+  const totalMods  = filteredMods.length;
+  const totalPages = filteredMods.reduce((s, m) => s + (m.Pages||[]).length, 0);
+  // Flat unique PR list from Modules[].Pages[].PR
+  const allRelPRs  = [...new Set(
+    filteredMods.flatMap(m => (m.Pages||[]).map(p => p.PR).filter(Boolean))
+  )];
 
-  const modGroupsHtml = moduleEntries.map(([modName, prs]) => {
-    // Build page rows: each page + its feature flag info from Module_Pages lookup + PR number
-    const mpMod = allModulePages.find(m => m.Module === modName);
-    const pageRows = [];
-    const seenPages = new Set();
-
-    prs.forEach(pr => {
-      (pr.Page||[]).forEach(pagePath => {
-        const key = `${pagePath}__${pr.PR}`;
-        if (seenPages.has(key)) return;
-        seenPages.add(key);
-        const mpPage = mpMod ? mpMod.Pages.find(p =>
-          p.page_name === pagePath ||
-          p.page_name === pagePath.split('/').pop() ||
-          pagePath.includes(p.page_name)
-        ) : null;
-        pageRows.push({
-          page: pagePath,
-          ff: mpPage ? mpPage.Feature_Flag : '—',
-          ffStatus: mpPage ? mpPage.Feature_Flag_Status : '—',
-          pr: pr.PR,
-          developer: pr.Developer || '—',
-          status: pr.Status || '—',
-          sprint: pr.Dev_Sprint || '—',
-        });
-      });
-    });
-
-    const prNums = [...new Set(prs.map(p=>p.PR))];
-    return `
-      <div class="mod-group">
-        <div class="mod-header">
-          <span style="font-size:16px">📦</span>
-          <span class="mod-name">${modName}</span>
-          <span class="badge badge-blue">${prNums.length} PR${prNums.length!==1?'s':''}</span>
-          <span class="badge badge-gray">${pageRows.length} page${pageRows.length!==1?'s':''}</span>
-          <span class="mod-story">User Story: ${modName} migration</span>
-        </div>
-        <table class="pages-table">
-          <thead>
-            <tr>
-              <th>Page</th>
-              <th>Feature Flag</th>
-              <th>FF Status</th>
-              <th>PR #</th>
-              <th>Developer</th>
-              <th>Sprint</th>
-              <th>Status</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${pageRows.map(row => `
-              <tr>
-                <td style="font-family:monospace;font-size:11px;color:var(--text)">${row.page}</td>
-                <td style="color:var(--accent2)">${row.ff}</td>
-                <td>${ffBadge(row.ffStatus)}</td>
-                <td><a href="#" onclick="event.stopPropagation(); openPRDetails(${row.pr}); return false;" style="color:var(--accent);font-weight:600;text-decoration:none">#${row.pr}</a></td>
-                <td>${row.developer}</td>
-                <td><span class="badge badge-gray">${row.sprint}</span></td>
-                <td>${statusBadge(row.status)}</td>
-              </tr>`).join('')}
-          </tbody>
-        </table>
-      </div>`;
-  }).join('');
+  const modGroupsHtml = filteredMods.map(mod => buildModGroup(mod, rel)).join('');
 
   const relId = `rel-${rel.Release_Number}`;
+  const extraClass = cssClass ? ` ${cssClass}` : '';
+
   return `
-    <div class="release-block" id="block-${relId}">
-      <div class="release-header" onclick="toggleRelease('${relId}')">
-        <div class="release-header-left">
-          <span class="chevron open" id="chev-${relId}">▼</span>
-          <div>
-            <div class="release-title">📅 ${rel.Release_Date} &nbsp;<span style="color:var(--text2);font-weight:400;font-size:13px">Release ${rel.Release_Number||'—'}</span></div>
-            <div class="release-meta" style="margin-top:4px">
-              <span>❄️ Code Freeze: ${rel.Code_Freeze||'—'}</span>
-              <span>🔬 Regression: ${rel.Regression_Start||'—'}</span>
-            </div>
+  <div class="release-block${extraClass}" id="block-${relId}">
+    <div class="release-header" onclick="toggleRelease('${relId}')">
+      <div class="release-header-left">
+        <span class="chevron open" id="chev-${relId}">▼</span>
+        <div>
+          <div class="release-title">
+            📅 ${rel.Release_Date}
+            <span style="color:var(--text2);font-weight:400;font-size:12px;margin-left:6px">Release ${rel.Release_Number||'—'}</span>
+          </div>
+          <div class="release-meta">
+            ${rel.Code_Freeze     ? `<span>❄️ Code Freeze: ${rel.Code_Freeze}</span>`      : ''}
+            ${rel.Regression_Start? `<span>🔬 Regression: ${rel.Regression_Start}</span>` : ''}
           </div>
         </div>
-        <div class="release-counts" onclick="event.stopPropagation()">
-          <span class="badge badge-blue">${totalModules} module${totalModules!==1?'s':''}</span>
-          <span class="badge badge-purple">${totalPages} page${totalPages!==1?'s':''}</span>
-          <span class="badge badge-gray">${relPRNums.length} PR${relPRNums.length!==1?'s':''}</span>
-          <button class="btn btn-ghost btn-sm" onclick="openEditReleaseModal('${rel.Release_Number}')">✏️ Edit</button>
-          <button class="btn btn-danger btn-sm" onclick="deleteRelease('${rel.Release_Number}')">🗑</button>
-        </div>
       </div>
-      <div class="release-body" id="body-${relId}">
-        ${modGroupsHtml || '<div style="color:var(--text2);font-size:13px">No PR data mapped to this release.</div>'}
+      <div class="release-counts" onclick="event.stopPropagation()">
+        <span class="badge badge-blue">${totalMods} module${totalMods!==1?'s':''}</span>
+        <span class="badge badge-purple">${totalPages} page${totalPages!==1?'s':''}</span>
+        <span class="badge badge-gray">${allRelPRs.length} PR${allRelPRs.length!==1?'s':''}</span>
+        <button class="btn btn-ghost btn-sm" onclick="openEditReleaseModal('${rel.Release_Number}')">✏️ Edit</button>
+        <button class="btn btn-danger btn-sm" onclick="deleteRelease('${rel.Release_Number}')">🗑</button>
       </div>
-    </div>`;
+    </div>
+    <div class="release-body" id="body-${relId}">
+      ${modGroupsHtml || '<div style="padding:18px;color:var(--text2);font-size:13px">No module data in this release.</div>'}
+    </div>
+  </div>`;
+}
+
+// ── Build one module group table ───────────────────────
+function buildModGroup(mod, rel) {
+  const pages  = mod.Pages || [];
+  const mpMod  = allModulePages.find(m => m.Module === mod.Module);
+
+  // Group pages by PR so same-PR pages share one PR cell (rowspan)
+  // Build ordered page list, collecting PR→pageCount for rowspan
+  const prGroups = {}; // pr -> [pages in order]
+  const noPRPages = [];
+  pages.forEach(p => {
+    if (p.PR) {
+      if (!prGroups[p.PR]) prGroups[p.PR] = [];
+      prGroups[p.PR].push(p);
+    } else {
+      noPRPages.push(p);
+    }
+  });
+
+  // Build rows: for each PR group, first row has rowspan cell, rest skip PR cell
+  let rows = '';
+  const renderPageRows = (pageList) => {
+    // Group consecutive rows for the same PR
+    const byPR = [];
+    let cur = null;
+    pageList.forEach(p => {
+      const key = p.PR ? String(p.PR) : null;
+      if (!cur || cur.key !== key) { cur = { key, pages: [] }; byPR.push(cur); }
+      cur.pages.push(p);
+    });
+
+    byPR.forEach(group => {
+      const prNum   = group.key;
+      const prPages = group.pages;
+      const prDetail = prNum ? allPRs.find(p => String(p.PR) === prNum) : null;
+
+      prPages.forEach((p, i) => {
+        // Lookup feature flag from Module_Pages if not on page object
+        const ffName = p.Feature_Flag || (mpMod
+          ? (() => {
+              const mpPage = mpMod.Pages.find(mp =>
+                mp.page_name === p.Page_Name ||
+                p.Page_Name?.endsWith(mp.page_name) ||
+                mp.page_name === (p.Page_Name||'').split('/').pop()
+              );
+              return mpPage ? mpPage.Feature_Flag : '';
+            })()
+          : '');
+
+        const ffStatus = p.Feature_Flag_Status || '—';
+        const isFirst  = i === 0;
+        const rowspan  = prPages.length;
+        const prCellHtml = isFirst
+          ? `<td class="pr-cell" rowspan="${rowspan}">${prNum
+              ? `<span class="pr-pill" onclick="showPRDetail(${prNum})">#${prNum}</span>`
+              : '<span style="color:var(--text2)">—</span>'
+            }</td>
+             <td rowspan="${rowspan}" style="white-space:nowrap">${p.Task ? `<span style="color:var(--text2);font-size:11px">#${p.Task}</span>` : '—'}</td>
+             <td rowspan="${rowspan}" style="white-space:nowrap">${prDetail ? (prDetail.Developer||'—') : '—'}</td>
+             <td rowspan="${rowspan}">${prDetail ? statusBadge(prDetail.Status) : '<span class="badge badge-gray">—</span>'}</td>`
+          : '';
+
+        rows += `<tr>
+          <td style="font-family:monospace;font-size:11px" title="${p.Page_Name||''}">${p.Page_Name||'—'}</td>
+          <td style="color:var(--accent2)" title="${ffName}">${ffName||'—'}</td>
+          <td>${ffBadge(ffStatus)}</td>
+          ${prCellHtml}
+        </tr>`;
+      });
+    });
+  };
+
+  renderPageRows(pages);
+
+  const prCount = Object.keys(prGroups).length + (noPRPages.length > 0 ? 1 : 0);
+  const userStoryHtml = mod.User_Story
+    ? `<span class="mod-story-label">US#</span><span class="mod-story">${mod.User_Story}</span>`
+    : '';
+
+  return `
+  <div class="mod-group">
+    <div class="mod-header">
+      <span style="font-size:15px">📦</span>
+      <span class="mod-name">${mod.Module}</span>
+      ${userStoryHtml}
+      <span class="badge badge-blue" style="margin-left:auto">${pages.length} page${pages.length!==1?'s':''}</span>
+      <span class="badge badge-gray">${Object.keys(prGroups).length} PR${Object.keys(prGroups).length!==1?'s':''}</span>
+    </div>
+    <table class="pages-table">
+      <colgroup>
+        <col class="col-page"><col class="col-ff"><col class="col-ffs">
+        <col class="col-pr"><col class="col-task"><col class="col-dev"><col class="col-status">
+      </colgroup>
+      <thead>
+        <tr>
+          <th>Page</th><th>Feature Flag</th><th>FF Status</th>
+          <th>PR #</th><th>Task #</th><th>Developer</th><th>Status</th>
+        </tr>
+      </thead>
+      <tbody>${rows || '<tr><td colspan="7" style="text-align:center;color:var(--text2);padding:14px">No pages defined</td></tr>'}</tbody>
+    </table>
+  </div>`;
 }
 
 function toggleRelease(id) {
   const body = document.getElementById(`body-${id}`);
   const chev = document.getElementById(`chev-${id}`);
+  if (!body) return;
   const isOpen = body.style.display !== 'none';
   body.style.display = isOpen ? 'none' : 'block';
   chev.classList.toggle('open', !isOpen);
 }
 
-function openPRDetails(prNum) {
-  const pr = allPRs.find(p => Number(p.PR) === Number(prNum));
-  if (!pr) return showToast('PR not found','error');
-  document.getElementById('pd_pr').textContent = pr.PR || '—';
-  //document.getElementById('pd_title').textContent = pr.Title || '—';
-  document.getElementById('pd_module').textContent = pr.Module || '—';
-  document.getElementById('pd_pages').textContent = (pr.Page||[]).join(', ') || '—';
-  document.getElementById('pd_dev').textContent = pr.Developer || '—';
-  document.getElementById('pd_sprint').textContent = pr.Dev_Sprint || '—';
-  document.getElementById('pd_status').textContent = pr.Status || '—';
-  document.getElementById('pd_notes').textContent = pr.Notes || pr.Description || '—';
-  const mod = allModulePages.find(m=>m.Module===pr.Module);
-  const page = mod ? mod.Pages.find(p=>p.page_name===pr.Page[0]) : null;
-  document.getElementById('pd_flag').textContent = page.Feature_Flag || '—';
-  document.getElementById('prDetailsModal').classList.add('open');
+// ── PR Detail popup ────────────────────────────────────
+function showPRDetail(prNum) {
+  const pr = allPRs.find(p => p.PR === Number(prNum));
+  if (!pr) return showToast(`PR #${prNum} not found in loaded data`, 'error');
+  document.getElementById('prDetailTitle').textContent = `PR #${pr.PR} — ${pr.Module||''}`;
+  const rows = [
+    ['Developer',    pr.Developer||'—'],
+    ['Type',         pr.Type||'—'],
+    ['Status',       `<span>${statusBadge(pr.Status)}</span>`],
+    ['Dev Sprint',   pr.Dev_Sprint||'—'],
+    ['Testing Sprint', pr.Testing_Sprint||'—'],
+    ['Raised Date',  pr['PR Raised Date']||'—'],
+    ['First Response', pr['PR First Response Date']||'—'],
+    ['Approved',     pr['PR Approved Date']||'—'],
+    ['Merged',       pr['PR Merged Date']||'—'],
+    ['Target Release', pr.Target_Release||'—'],
+    ['Reviewer',     pr.Reviewer||'—'],
+    ['Dependent PRs', (pr.Dependent_PRs||[]).length ? pr.Dependent_PRs.map(n=>`<span class="pr-pill" style="cursor:default">#${n}</span>`).join(' ') : '—'],
+    ['Pages',        (pr.Page||[]).map(p=>`<code style="font-size:11px;background:var(--surface3);padding:2px 6px;border-radius:4px">${p}</code>`).join('<br>')],
+  ];
+  document.getElementById('prDetailBody').innerHTML = `
+    <div style="display:grid;grid-template-columns:140px 1fr;gap:10px 16px;font-size:13px;margin-bottom:16px">
+      ${rows.map(([k,v])=>`
+        <div style="color:var(--text2);font-weight:500;padding-top:2px">${k}</div>
+        <div>${v}</div>`).join('')}
+    </div>
+    ${(pr.PR_Comments||[]).length ? `
+      <div style="border-top:1px solid var(--border);padding-top:14px;margin-top:4px">
+        <div style="font-size:12px;font-weight:600;color:var(--text2);margin-bottom:10px">COMMENTS (${pr.PR_Comments.length})</div>
+        ${pr.PR_Comments.map(c=>`
+          <div style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:10px 12px;margin-bottom:8px;font-size:12px">
+            <div style="display:flex;gap:16px;color:var(--text2);margin-bottom:4px">
+              <span>🗨 ${c.Commenter||'—'}</span>
+              <span>📅 ${c['Comment Date']||'—'}</span>
+              ${c.Response_Dev?`<span>↩ ${c.Response_Dev} on ${c['Response Date']||'—'}</span>`:''}
+            </div>
+            <div>${c['No of Comments']?`${c['No of Comments']} comment(s)`:''}</div>
+          </div>`).join('')}
+      </div>` : ''}`;
+  document.getElementById('prDetailModal').classList.add('open');
 }
 
-function closePRDetails() { document.getElementById('prDetailsModal').classList.remove('open'); }
+// ── Release Modal (add / edit) ─────────────────────────
+let relModuleRows = []; // [{Module, User_Story, Pages:[{Page_Name,PR,Task,Feature_Flag,Feature_Flag_Status}]}]
 
-// ── Release Modal ──────────────────────────────────────
 function openAddReleaseModal() {
   editingRelease = null;
   document.getElementById('relModalTitle').textContent = 'Add Release';
   document.getElementById('saveRelBtn').textContent = 'Add Release';
-  ['r_number','r_date','r_freeze','r_regression','r_prs'].forEach(id=>document.getElementById(id).value='');
+  ['r_number','r_date','r_freeze','r_regression'].forEach(id=>document.getElementById(id).value='');
+  relModuleRows = [];
+  renderRelModuleRows();
   document.getElementById('releaseModal').classList.add('open');
 }
+
 function openEditReleaseModal(releaseNumber) {
   const rel = allReleases.find(r=>String(r.Release_Number)===String(releaseNumber));
   if (!rel) return;
   editingRelease = releaseNumber;
   document.getElementById('relModalTitle').textContent = `Edit Release ${releaseNumber}`;
   document.getElementById('saveRelBtn').textContent = 'Update Release';
-  document.getElementById('r_number').value = rel.Release_Number;
-  document.getElementById('r_date').value = rel.Release_Date||'';
-  document.getElementById('r_freeze').value = rel.Code_Freeze||'';
+  document.getElementById('r_number').value  = rel.Release_Number||'';
+  document.getElementById('r_date').value     = rel.Release_Date||'';
+  document.getElementById('r_freeze').value   = rel.Code_Freeze||'';
   document.getElementById('r_regression').value = rel.Regression_Start||'';
-  document.getElementById('r_prs').value = (rel.PRs||[]).join(', ');
+  // Deep-copy Modules for editing
+  relModuleRows = JSON.parse(JSON.stringify(rel.Modules||[]));
+  renderRelModuleRows();
   document.getElementById('releaseModal').classList.add('open');
 }
+
+function renderRelModuleRows() {
+  const container = document.getElementById('r_modules_list');
+  if (!relModuleRows.length) {
+    container.innerHTML = `<div style="color:var(--text2);font-size:12px;padding:8px 0">No modules added yet.</div>`;
+    return;
+  }
+  container.innerHTML = relModuleRows.map((mod, mi) => `
+    <div style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:12px">
+      <div style="display:flex;gap:8px;align-items:center;margin-bottom:10px">
+        <input type="text" value="${mod.Module||''}" placeholder="Module name"
+          style="flex:1;background:var(--surface3);border:1px solid var(--border);color:var(--text);padding:6px 10px;border-radius:6px;font-size:12px"
+          oninput="relModuleRows[${mi}].Module=this.value">
+        <input type="text" value="${mod.User_Story||''}" placeholder="US#"
+          style="width:100px;background:var(--surface3);border:1px solid var(--border);color:var(--text);padding:6px 10px;border-radius:6px;font-size:12px"
+          oninput="relModuleRows[${mi}].User_Story=this.value">
+        <button class="btn btn-danger btn-xs" onclick="removeRelModule(${mi})">✕</button>
+      </div>
+      <div style="font-size:11px;color:var(--text2);margin-bottom:6px;display:flex;justify-content:space-between;align-items:center">
+        <span>Pages (${(mod.Pages||[]).length})</span>
+        <button class="btn btn-ghost btn-xs" onclick="addRelPageRow(${mi})">＋ Page</button>
+      </div>
+      ${(mod.Pages||[]).map((pg, pi) => `
+        <div style="display:grid;grid-template-columns:2fr 1.2fr 80px 80px 1.2fr auto;gap:5px;margin-bottom:5px;align-items:center">
+          <input type="text" value="${pg.Page_Name||''}" placeholder="Page name"
+            style="background:var(--surface3);border:1px solid var(--border);color:var(--text);padding:5px 8px;border-radius:5px;font-size:11px"
+            oninput="relModuleRows[${mi}].Pages[${pi}].Page_Name=this.value">
+          <input type="text" value="${pg.Feature_Flag||''}" placeholder="Feature Flag"
+            style="background:var(--surface3);border:1px solid var(--border);color:var(--text);padding:5px 8px;border-radius:5px;font-size:11px"
+            oninput="relModuleRows[${mi}].Pages[${pi}].Feature_Flag=this.value">
+          <input type="text" value="${pg.PR||''}" placeholder="PR #"
+            style="background:var(--surface3);border:1px solid var(--border);color:var(--text);padding:5px 8px;border-radius:5px;font-size:11px"
+            oninput="relModuleRows[${mi}].Pages[${pi}].PR=Number(this.value)||null">
+          <input type="text" value="${pg.Task||''}" placeholder="Task #"
+            style="background:var(--surface3);border:1px solid var(--border);color:var(--text);padding:5px 8px;border-radius:5px;font-size:11px"
+            oninput="relModuleRows[${mi}].Pages[${pi}].Task=this.value">
+          <select style="background:var(--surface3);border:1px solid var(--border);color:var(--text);padding:5px 8px;border-radius:5px;font-size:11px"
+            onchange="relModuleRows[${mi}].Pages[${pi}].Feature_Flag_Status=this.value">
+            <option ${pg.Feature_Flag_Status==='Enabled'?'selected':''}>Enabled</option>
+            <option ${pg.Feature_Flag_Status==='Disabled'?'selected':''}>Disabled</option>
+          </select>
+          <button class="btn btn-danger btn-xs" onclick="removeRelPage(${mi},${pi})">✕</button>
+        </div>`).join('')}
+    </div>`).join('');
+}
+
+function addRelModuleRow() {
+  relModuleRows.push({ Module:'', User_Story:'', Pages:[] });
+  renderRelModuleRows();
+}
+function removeRelModule(mi) {
+  relModuleRows.splice(mi,1);
+  renderRelModuleRows();
+}
+function addRelPageRow(mi) {
+  relModuleRows[mi].Pages.push({ Page_Name:'', Feature_Flag:'', PR:null, Task:'', Feature_Flag_Status:'Enabled' });
+  renderRelModuleRows();
+}
+function removeRelPage(mi, pi) {
+  relModuleRows[mi].Pages.splice(pi,1);
+  renderRelModuleRows();
+}
+
 function closeReleaseModal() {
   document.getElementById('releaseModal').classList.remove('open');
   editingRelease = null;
+  relModuleRows = [];
 }
+
 async function saveRelease() {
   const num = document.getElementById('r_number').value.trim();
   if (!num) return showToast('Release number required','error');
   const body = {
     Release_Number: num,
-    Release_Date: document.getElementById('r_date').value.trim()||null,
-    Code_Freeze: document.getElementById('r_freeze').value.trim()||null,
-    Regression_Start: document.getElementById('r_regression').value.trim()||null,
-    PRs: document.getElementById('r_prs').value.split(',').map(s=>s.trim()).filter(Boolean).map(Number),
+    Release_Date:       document.getElementById('r_date').value.trim()||null,
+    Code_Freeze:        document.getElementById('r_freeze').value.trim()||null,
+    Regression_Start:   document.getElementById('r_regression').value.trim()||null,
+    Modules: relModuleRows,
   };
-  body.PR_Count = body.PRs.length;
   const isEdit = !!editingRelease;
-  const res = await fetch(`${API}/releases${isEdit?'/'+editingRelease:''}`, { method:isEdit?'PUT':'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body) });
+  const res = await fetch(`${API}/releases${isEdit?'/'+editingRelease:''}`, {
+    method: isEdit?'PUT':'POST',
+    headers:{'Content-Type':'application/json'},
+    body: JSON.stringify(body)
+  });
   const json = await res.json();
   if (!res.ok) return showToast(json.error,'error');
   showToast(isEdit?`Release ${num} updated`:`Release ${num} created`,'success');
-  closeReleaseModal(); renderReleases();
+  closeReleaseModal();
+  renderReleases();
 }
+
 async function deleteRelease(releaseNumber) {
   if (!confirm(`Delete release ${releaseNumber}?`)) return;
   const res = await fetch(`${API}/releases/${releaseNumber}`,{method:'DELETE'});
@@ -969,23 +1247,41 @@ async function renderModulePages() {
 document.getElementById('mpSearch').addEventListener('input', renderModulePages);
 
 function buildModuleAccordion(mod) {
-  const accId = `mp-${mod.Module.replace(/\s+/g,'_')}`;
-  const pagesHtml = mod.Pages.map((p, i) => `
-    <tr>
-      <td style="font-family:monospace;font-size:12px">${p.page_name}</td>
-      <td>${p.Feature_Flag||'—'}</td>
+  const accId   = `mp-${mod.Module.replace(/\s+/g,'_')}`;
+  const pages   = mod.Pages || [];
+
+  // Summary counts for header
+  const prodDep  = pages.filter(p => (p.Production_Deployment_Status||'').toLowerCase() === 'deployed').length;
+  const ffEn     = pages.filter(p => (p.Feature_Flag_Status||'').toLowerCase() === 'enabled').length;
+  const demoDone = pages.filter(p => (p.Client_Demo_Status||'').toLowerCase() === 'done').length;
+
+  const pagesHtml = pages.map(p => {
+    const prodStatus = p.Production_Deployment_Status || 'Pending';
+    const demoStatus = p.Client_Demo_Status || 'Pending';
+    const demoDate   = p.Client_Demo_Date || '—';
+    return `<tr>
+      <td style="font-family:monospace;font-size:11px" title="${p.page_name}">${p.page_name}</td>
+      <td style="font-size:11px" title="${p.Feature_Flag||''}">${p.Feature_Flag||'—'}</td>
       <td>${ffBadge(p.Feature_Flag_Status)}</td>
+      <td>${demoStatusBadge(demoStatus)}</td>
+      <td style="font-size:11px;color:var(--text2)">${demoDate}</td>
+      <td>${prodStatusBadge(prodStatus)}</td>
       <td style="white-space:nowrap">
         <button class="btn btn-ghost btn-xs" onclick="openEditPageModal('${mod.Module}','${escAttr(p.page_name)}')">✏️</button>
         <button class="btn btn-danger btn-xs" onclick="deletePageFromMod('${mod.Module}','${escAttr(p.page_name)}')">🗑</button>
       </td>
-    </tr>`).join('');
+    </tr>`;
+  }).join('');
 
   const oosHtml = (mod.OutOfScope||[]).map(p => `
     <span class="oos-chip">
       ${p}
       <button onclick="removeOOS('${mod.Module}','${escAttr(p)}')" title="Remove">✕</button>
     </span>`).join('');
+
+  // Mini progress bar for header
+  const prodPct   = pages.length ? Math.round(prodDep / pages.length * 100) : 0;
+  const barColor  = prodPct === 100 ? 'var(--green)' : prodPct > 0 ? 'var(--yellow)' : 'var(--border)';
 
   return `
     <div class="mp-accordion" id="${accId}">
@@ -994,8 +1290,14 @@ function buildModuleAccordion(mod) {
           <span class="chevron open" id="c-${accId}">▼</span>
           <span class="mp-acc-name">📦 ${mod.Module}</span>
           <div class="mp-acc-counts">
-            <span class="badge badge-blue">${mod.Pages.length} page${mod.Pages.length!==1?'s':''}</span>
-            ${mod.OutOfScope?.length ? `<span class="badge badge-red">${mod.OutOfScope.length} out-of-scope</span>` : ''}
+            <span class="badge badge-blue">${pages.length} page${pages.length!==1?'s':''}</span>
+            <span class="badge badge-green" title="Prod Deployed">${prodDep} prod</span>
+            <span class="badge badge-teal" title="Demo Done">${demoDone} demo</span>
+            <span class="badge ${ffEn===pages.length&&pages.length?'badge-green':'badge-yellow'}" title="FF Enabled">${ffEn}/${pages.length} FF</span>
+            ${mod.OutOfScope?.length ? `<span class="badge badge-red">${mod.OutOfScope.length} OOS</span>` : ''}
+          </div>
+          <div style="width:80px;height:4px;border-radius:2px;background:var(--surface3);margin-left:4px" title="${prodPct}% deployed">
+            <div style="height:100%;width:${prodPct}%;background:${barColor};border-radius:2px"></div>
           </div>
         </div>
         <div onclick="event.stopPropagation()" style="display:flex;gap:6px">
@@ -1005,12 +1307,19 @@ function buildModuleAccordion(mod) {
         </div>
       </div>
       <div class="mp-acc-body open" id="b-${accId}">
-        <div class="table-wrap" style="border:none">
-          <table>
-            <thead><tr><th>Page Name</th><th>Feature Flag</th><th>FF Status</th><th>Actions</th></tr></thead>
-            <tbody>${pagesHtml || '<tr><td colspan="4" style="color:var(--text2);text-align:center;padding:16px">No pages defined</td></tr>'}</tbody>
-          </table>
-        </div>
+        <table class="mp-pages-table">
+          <colgroup>
+            <col class="mpc-page"><col class="mpc-ff"><col class="mpc-ffs">
+            <col class="mpc-demo"><col class="mpc-demodate"><col class="mpc-prod"><col class="mpc-actions">
+          </colgroup>
+          <thead>
+            <tr>
+              <th>Page Name</th><th>Feature Flag</th><th>FF Status</th>
+              <th>Demo Status</th><th>Demo Date</th><th>Prod Status</th><th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>${pagesHtml || '<tr><td colspan="7" style="color:var(--text2);text-align:center;padding:16px">No pages defined</td></tr>'}</tbody>
+        </table>
         ${mod.OutOfScope?.length ? `
           <div class="oos-section">
             <div class="oos-title">⚠ Out of Scope</div>
@@ -1056,26 +1365,34 @@ async function deleteModule(moduleName) {
 }
 
 // ── Page modal ─────────────────────────────────────────
-function openAddPageModal(moduleName) {
-  pageModalCtx = { moduleName, pageName: null };
-  document.getElementById('pageModalTitle').textContent = `Add Page to ${moduleName}`;
-  document.getElementById('savePageBtn').textContent = 'Add Page';
-  document.getElementById('pg_name').value = '';
-  document.getElementById('pg_flag').value = '';
-  document.getElementById('pg_flagStatus').value = 'Enabled';
-  document.getElementById('pageModal').classList.add('open');
-}
+// openAddPageModal defined above
 function openEditPageModal(moduleName, pageName) {
-  const mod = allModulePages.find(m=>m.Module===moduleName);
-  const page = mod ? mod.Pages.find(p=>p.page_name===pageName) : null;
+  const mod  = allModulePages.find(m => m.Module === moduleName);
+  const page = mod ? mod.Pages.find(p => p.page_name === pageName) : null;
   if (!page) return;
   pageModalCtx = { moduleName, pageName };
   document.getElementById('pageModalTitle').textContent = `Edit Page in ${moduleName}`;
-  document.getElementById('savePageBtn').textContent = 'Update Page';
-  document.getElementById('pg_name').value = page.page_name;
-  document.getElementById('pg_name').disabled = true;
-  document.getElementById('pg_flag').value = page.Feature_Flag||'';
-  document.getElementById('pg_flagStatus').value = page.Feature_Flag_Status||'Enabled';
+  document.getElementById('savePageBtn').textContent    = 'Update Page';
+  document.getElementById('pg_name').value       = page.page_name;
+  document.getElementById('pg_name').disabled    = true;
+  document.getElementById('pg_flag').value       = page.Feature_Flag || '';
+  document.getElementById('pg_flagStatus').value = page.Feature_Flag_Status || 'Enabled';
+  document.getElementById('pg_demoStatus').value = page.Client_Demo_Status || 'Pending';
+  document.getElementById('pg_demoDate').value   = page.Client_Demo_Date  || '';
+  document.getElementById('pg_prodStatus').value = page.Production_Deployment_Status || 'Pending';
+  document.getElementById('pageModal').classList.add('open');
+}
+function openAddPageModal(moduleName) {
+  pageModalCtx = { moduleName, pageName: null };
+  document.getElementById('pageModalTitle').textContent = `Add Page to ${moduleName}`;
+  document.getElementById('savePageBtn').textContent    = 'Add Page';
+  document.getElementById('pg_name').value       = '';
+  document.getElementById('pg_name').disabled    = false;
+  document.getElementById('pg_flag').value       = '';
+  document.getElementById('pg_flagStatus').value = 'Enabled';
+  document.getElementById('pg_demoStatus').value = 'Pending';
+  document.getElementById('pg_demoDate').value   = '';
+  document.getElementById('pg_prodStatus').value = 'Pending';
   document.getElementById('pageModal').classList.add('open');
 }
 async function savePage() {
@@ -1083,21 +1400,25 @@ async function savePage() {
   const { moduleName, pageName } = pageModalCtx;
   const isEdit = !!pageName;
   const body = {
-    page_name: document.getElementById('pg_name').value.trim(),
-    Feature_Flag: document.getElementById('pg_flag').value.trim(),
-    Feature_Flag_Status: document.getElementById('pg_flagStatus').value,
+    page_name:                    document.getElementById('pg_name').value.trim(),
+    Feature_Flag:                 document.getElementById('pg_flag').value.trim(),
+    Feature_Flag_Status:          document.getElementById('pg_flagStatus').value,
+    Client_Demo_Status:           document.getElementById('pg_demoStatus').value,
+    Client_Demo_Date:             document.getElementById('pg_demoDate').value.trim(),
+    Production_Deployment_Status: document.getElementById('pg_prodStatus').value,
   };
-  if (!body.page_name) return showToast('Page name required','error');
+  if (!body.page_name) return showToast('Page name required', 'error');
   const url = isEdit
     ? `${API}/modules/${encodeURIComponent(moduleName)}/pages/${encodeURIComponent(pageName)}`
     : `${API}/modules/${encodeURIComponent(moduleName)}/pages`;
-  const res = await fetch(url, { method:isEdit?'PUT':'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body) });
+  const res  = await fetch(url, { method: isEdit ? 'PUT' : 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
   const json = await res.json();
-  if (!res.ok) return showToast(json.error,'error');
-  showToast(isEdit?'Page updated':'Page added','success');
+  if (!res.ok) return showToast(json.error, 'error');
+  showToast(isEdit ? 'Page updated' : 'Page added', 'success');
   document.getElementById('pg_name').disabled = false;
   closeModal('pageModal');
   renderModulePages();
+  if (document.getElementById('section-dashboard').classList.contains('active')) renderDashboard();
 }
 async function deletePageFromMod(moduleName, pageName) {
   if (!confirm(`Delete page "${pageName}" from ${moduleName}?`)) return;
@@ -1173,21 +1494,6 @@ function setupDragDrop() {
 // ═══════════════════════════════════════════════════════
 // UTILS
 // ═══════════════════════════════════════════════════════
-
-// compute current, next, future, past releases from a timeline array
-function computeReleaseBuckets(timeline){
-  const parse = s => { try { const parts = (s||'').split('/').map(p=>Number(p)); if (parts.length!==3) return null; return new Date(parts[2], parts[0]-1, parts[1]); } catch(e){return null}};
-  const today = new Date();
-  const arr = timeline.map(t=>({t, date: parse(t.Release_Date), num: Number(t.Release_Number)})).filter(x=>x.date);
-  arr.sort((a,b)=>a.date - b.date);
-  const past = arr.filter(x=>x.date <= today).map(x=>x.t);
-  const future = arr.filter(x=>x.date > today).map(x=>x.t);
-  const current = past.length? past[past.length-1] : null;
-  const next = future.length? future[0] : null;
-  const futureAfterNext = future.slice(next?1:0);
-  return { current, next, future: futureAfterNext, past: past.slice(0, past.length - (current?1:0)) };
-}
-
 function closeModal(id) {
   document.getElementById(id).classList.remove('open');
   // reset any disabled inputs
