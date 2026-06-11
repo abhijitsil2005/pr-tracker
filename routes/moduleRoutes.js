@@ -53,12 +53,16 @@ router.delete('/:name', (req, res) => {
 // POST /api/modules/:name/pages
 router.post('/:name/pages', (req, res) => {
   try {
-    const { page_name, Feature_Flag, Feature_Flag_Status } = req.body;
+    const { page_name, Feature_Flag, Feature_Flag_Status,
+            Client_Demo_Status, Client_Demo_Date, Production_Deployment_Status } = req.body;
     if (!page_name) return res.status(400).json({ error: 'page_name required' });
     const result = ds.addPageToModule(req.params.name, {
       page_name,
-      Feature_Flag: Feature_Flag || '',
-      Feature_Flag_Status: Feature_Flag_Status || 'Enabled',
+      Feature_Flag:                 Feature_Flag || '',
+      Feature_Flag_Status:          Feature_Flag_Status || 'Enabled',
+      Client_Demo_Status:           Client_Demo_Status || 'Pending',
+      Client_Demo_Date:             Client_Demo_Date || '',
+      Production_Deployment_Status: Production_Deployment_Status || 'Pending',
     });
     res.status(201).json({ message: 'Page added', data: result });
   } catch (e) { res.status(400).json({ error: e.message }); }

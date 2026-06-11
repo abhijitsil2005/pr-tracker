@@ -4,6 +4,7 @@
     "Type": "Development",
     "Developer": "Vijay",
     "Module": "Assessment",
+    "Task": 1043225,
     "Page": [
       "checkMyWork/submissions.aspx",
       "checkMyWork/checkMyWork.aspx"
@@ -29,6 +30,7 @@
     "Type": "Development",
     "Developer": "Anil",
     "Module": "Assessment",
+    "Task": 989551,
     "Page": [
       "import.aspx"
     ],
@@ -49,6 +51,7 @@
     "Type": "Development",
     "Developer": "Vijay",
     "Module": "Assessment",
+    "Task": 989551,
     "Page": [
       "assessment.aspx"
     ],
@@ -73,6 +76,7 @@
     "Type": "Development",
     "Developer": "Rizwana",
     "Module": "Assessment",
+    "Task": 989551,
     "Page": [
       "questions.aspx"
     ],
@@ -97,6 +101,7 @@
     "Type": "Development",
     "Developer": "Vijay",
     "Module": "Assessment",
+    "Task": 989551,
     "Page": [
       "manager.aspx"
     ],
@@ -121,6 +126,7 @@
     "Type": "Development",
     "Developer": "Sohith",
     "Module": "Assessment",
+    "Task": 989551,
     "Page": [
       "reports/assessmentAnswersAccepted.aspx",
       "reports/assessmentQuestionAnalysis.aspx"
@@ -142,6 +148,7 @@
     "Type": "Development",
     "Developer": "Vijay",
     "Module": "IssueAware",
+    "Task": null,
     "Page": [
       "Bug fixes in .aspx pages"
     ],
@@ -162,6 +169,7 @@
     "Type": "Development",
     "Developer": "Mizan",
     "Module": "AssetAware",
+    "Task": 1042808,
     "Page": [
       "assetHistory.aspx"
     ],
@@ -182,6 +190,7 @@
     "Type": "Development",
     "Developer": "Swarneem",
     "Module": "AssetAware",
+    "Task": 1049318,
     "Page": [
       "assetVendorAddressContact.aspx"
     ],
@@ -202,6 +211,7 @@
     "Type": "Development",
     "Developer": "Prem",
     "Module": "Library",
+    "Task": null,
     "Page": [
       "searchResults.aspx"
     ],
@@ -222,6 +232,7 @@
     "Type": "Development",
     "Developer": "Ramesh",
     "Module": "Content",
+    "Task": 1049384,
     "Page": [
       "elmItemInteractive.aspx"
     ],
@@ -242,6 +253,7 @@
     "Type": "Development",
     "Developer": "Rizwana",
     "Module": "Content",
+    "Task": 989555,
     "Page": [
       "hyperlink.aspx"
     ],
@@ -262,6 +274,7 @@
     "Type": "Development",
     "Developer": "Rizwana",
     "Module": "Content",
+    "Task": 1049384,
     "Page": [
       "timeline.aspx"
     ],
@@ -282,6 +295,7 @@
     "Type": "Development",
     "Developer": "Amol",
     "Module": "Content",
+    "Task": 1049384,
     "Page": [
       "grammarTool.aspx"
     ],
@@ -304,6 +318,7 @@
     "Type": "Development",
     "Developer": "Amol",
     "Module": "Content",
+    "Task": 989555,
     "Page": [
       "sources/default.aspx"
     ],
@@ -324,6 +339,7 @@
     "Type": "Development",
     "Developer": "Prem",
     "Module": "Security",
+    "Task": null,
     "Page": [
       "Ongoing PRs + CoPilot Comments + Merge Conflicts"
     ],
@@ -344,6 +360,7 @@
     "Type": "Development",
     "Developer": "Prem",
     "Module": "Security",
+    "Task": null,
     "Page": [
       "Ongoing PRs + CoPilot Comments + Merge Conflicts"
     ],
@@ -364,6 +381,7 @@
     "Type": "Development",
     "Developer": "Prem",
     "Module": "Security",
+    "Task": null,
     "Page": [
       "Ongoing PRs + CoPilot Comments + Merge Conflicts"
     ],
@@ -384,6 +402,7 @@
     "Type": "Development",
     "Developer": "Prem",
     "Module": "Security",
+    "Task": null,
     "Page": [
       "Ongoing PRs + CoPilot Comments + Merge Conflicts"
     ],
@@ -404,6 +423,7 @@
     "Type": "Development",
     "Developer": "Prem",
     "Module": "Security",
+    "Task": 98963,
     "Page": [
       "QE bug in TCR",
       "Bug"
@@ -425,6 +445,7 @@
     "Type": "Development",
     "Developer": "Amol",
     "Module": "GradeBook",
+    "Task": null,
     "Page": [
       "GradeBook open Issues(deatils tab)\r\nSPA page"
     ],
@@ -445,6 +466,7 @@
     "Type": "Development",
     "Developer": "Amol",
     "Module": "GradeBook",
+    "Task": null,
     "Page": [
       "GradeBook open Issues(deatils tab)\r\nSPA page"
     ],
@@ -465,6 +487,7 @@
     "Type": "Development",
     "Developer": "Rizwana",
     "Module": "Common",
+    "Task": null,
     "Page": [
       "Setup QA Dev Env and guide others"
     ],
@@ -485,6 +508,7 @@
     "Type": "Development",
     "Developer": "Rizwana",
     "Module": "Common",
+    "Task": null,
     "Page": [
       "Setup QA Dev Env and guide others"
     ],
@@ -505,6 +529,7 @@
     "Type": "Development",
     "Developer": "Rizwana",
     "Module": "Home",
+    "Task": null,
     "Page": [
       "overdueLessons.aspx"
     ],
@@ -525,6 +550,7 @@
     "Type": "Development",
     "Developer": "Rizwana",
     "Module": "Enrollment",
+    "Task": 989556,
     "Page": [
       "placement/default.aspx"
     ],
@@ -545,6 +571,7 @@
     "Type": "Development",
     "Developer": "Prem",
     "Module": "Location",
+    "Task": 989655,
     "Page": [
       "gradebookWeightTypes.aspx",
       "security/roleAccessRestrictions.aspx"
@@ -566,6 +593,7 @@
     "Type": "Development",
     "Developer": "Swarneem",
     "Module": "Location",
+    "Task": 989655,
     "Page": [
       "skinProperties.aspx"
     ],
@@ -586,6 +614,7 @@
     "Type": "Development",
     "Developer": "Sohith",
     "Module": "Extended Field",
+    "Task": 989557,
     "Page": [
       "categories.aspx"
     ],
@@ -606,6 +635,7 @@
     "Type": "Development",
     "Developer": "Amol",
     "Module": "Location",
+    "Task": null,
     "Page": [
       "locations / locationCalendar / locationExtended"
     ],
@@ -626,6 +656,7 @@
     "Type": "Development",
     "Developer": "swarneem",
     "Module": "Common",
+    "Task": null,
     "Page": [
       "Shared Control"
     ],
@@ -646,6 +677,7 @@
     "Type": "Development",
     "Developer": "swarneem",
     "Module": "Common",
+    "Task": null,
     "Page": [
       "Shared Control"
     ],
@@ -666,6 +698,7 @@
     "Type": "Development",
     "Developer": "swarneem",
     "Module": "Common",
+    "Task": null,
     "Page": [
       "Shared Control"
     ],
@@ -686,6 +719,7 @@
     "Type": "Development",
     "Developer": "Sohith",
     "Module": "Extended Field",
+    "Task": 989557,
     "Page": [
       "calculationGroups.aspx",
       "fieldHistory.aspx"
@@ -707,6 +741,7 @@
     "Type": "Development",
     "Developer": "Sohith",
     "Module": "Extended Field",
+    "Task": 989557,
     "Page": [
       "calculationGroups.aspx",
       "fieldHistory.aspx",
@@ -729,6 +764,7 @@
     "Type": "Development",
     "Developer": "Anil",
     "Module": "Extended Field",
+    "Task": 989557,
     "Page": [
       "default.aspx"
     ],
@@ -749,6 +785,7 @@
     "Type": "Development",
     "Developer": "Vijay",
     "Module": "Assessment",
+    "Task": 1043225,
     "Page": [
       "default.aspx"
     ],
@@ -771,6 +808,7 @@
     "Type": "Development",
     "Developer": "Rizwana",
     "Module": "Assessment",
+    "Task": 1043225,
     "Page": [
       "questionManager.aspx"
     ],
@@ -793,6 +831,7 @@
     "Type": "Development",
     "Developer": "Rizwana",
     "Module": "Assessment",
+    "Task": 1043225,
     "Page": [
       "questionManager.aspx",
       "analysis.aspx"
@@ -816,6 +855,7 @@
     "Type": "Development",
     "Developer": "Sohith",
     "Module": "Assessment",
+    "Task": 1043225,
     "Page": [
       "analysis.aspx"
     ],
@@ -838,6 +878,7 @@
     "Type": "Development",
     "Developer": "Vijay",
     "Module": "IssueAware",
+    "Task": null,
     "Page": [
       "Bug fixes in .aspx pages"
     ],
@@ -858,6 +899,7 @@
     "Type": "Development",
     "Developer": "Swarneem",
     "Module": "AssetAware",
+    "Task": 1049318,
     "Page": [
       "expressassesthistory.aspx",
       "assets.aspx"
@@ -883,6 +925,7 @@
     "Type": "Development",
     "Developer": "Swarneem",
     "Module": "Library",
+    "Task": null,
     "Page": [
       "resource.aspx",
       "category.aspx.cs"
@@ -904,6 +947,7 @@
     "Type": "Development",
     "Developer": "Prem",
     "Module": "Library",
+    "Task": null,
     "Page": [
       "category.aspx.cs"
     ],
@@ -924,6 +968,7 @@
     "Type": "Development",
     "Developer": "Ramesh",
     "Module": "Content",
+    "Task": 1049384,
     "Page": [
       "captionedVideoItem.aspx",
       "sources/source.aspx"
@@ -945,6 +990,7 @@
     "Type": "Development",
     "Developer": "Amol",
     "Module": "Home",
+    "Task": null,
     "Page": [
       "enrollment.aspx"
     ],
@@ -965,6 +1011,7 @@
     "Type": "Development",
     "Developer": "Rizwana",
     "Module": "Enrollment",
+    "Task": 989556,
     "Page": [
       "placement/manager.aspx"
     ],
@@ -985,6 +1032,7 @@
     "Type": "Development",
     "Developer": "Rizwana",
     "Module": "Enrollment",
+    "Task": 989556,
     "Page": [
       "placement/manager.aspx",
       "registration/default.aspx"
@@ -1006,6 +1054,7 @@
     "Type": "Development",
     "Developer": "Mizan",
     "Module": "External",
+    "Task": 989650,
     "Page": [
       "Remove Feature Flag"
     ],
@@ -1026,6 +1075,7 @@
     "Type": "Development",
     "Developer": "Mizan",
     "Module": "ImportStatus",
+    "Task": 989652,
     "Page": [
       "Remove Feature Flag"
     ],
@@ -1046,6 +1096,7 @@
     "Type": "Development",
     "Developer": "Amol",
     "Module": "Communication",
+    "Task": 989554,
     "Page": [
       "webmail/webmailBox.aspx"
     ],
@@ -1068,6 +1119,7 @@
     "Type": "Development",
     "Developer": "Manish",
     "Module": "Log",
+    "Task": null,
     "Page": [
       "log/categories.aspx"
     ],
@@ -1081,6 +1133,64 @@
     "Testing_Sprint": null,
     "Dependent_PRs": [],
     "Target_Release": "08/06/2026",
+    "PR_Comments": []
+  },
+  {
+    "PR": 9005,
+    "Type": "Infrastructure",
+    "Developer": null,
+    "Module": "Content",
+    "Page": [],
+    "Status": "TCR Testing In Progress",
+    "PR Raised Date": null,
+    "Reviewer": null,
+    "PR First Response Date": null,
+    "PR Approved Date": null,
+    "PR Merged Date": null,
+    "Dev_Sprint": null,
+    "Testing_Sprint": null,
+    "Dependent_PRs": [],
+    "Target_Release": "06/11/2026",
+    "PR_Comments": []
+  },
+  {
+    "PR": 8978,
+    "Type": "Infrastructure",
+    "Developer": null,
+    "Module": "Extended Field",
+    "Page": [
+      "Infrastructure pages"
+    ],
+    "Status": "TCR Testing In Progress",
+    "PR Raised Date": null,
+    "Reviewer": null,
+    "PR First Response Date": null,
+    "PR Approved Date": null,
+    "PR Merged Date": null,
+    "Dev_Sprint": null,
+    "Testing_Sprint": null,
+    "Dependent_PRs": [],
+    "Target_Release": "06/11/2026",
+    "PR_Comments": []
+  },
+  {
+    "PR": 9010,
+    "Type": "Infrastructure",
+    "Developer": null,
+    "Module": "Extended Field",
+    "Page": [
+      "Infrastructure pages"
+    ],
+    "Status": null,
+    "PR Raised Date": null,
+    "Reviewer": null,
+    "PR First Response Date": null,
+    "PR Approved Date": null,
+    "PR Merged Date": null,
+    "Dev_Sprint": null,
+    "Testing_Sprint": null,
+    "Dependent_PRs": [],
+    "Target_Release": "06/11/2026",
     "PR_Comments": []
   }
 ]

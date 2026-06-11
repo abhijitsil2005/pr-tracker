@@ -5,27 +5,42 @@
       {
         "page_name": "contacts.aspx",
         "Feature_Flag": "ContactManagement",
-        "Feature_Flag_Status": "Enabled"
+        "Feature_Flag_Status": "Enabled",
+        "Client_Demo_Status": "Pending",
+        "Client_Demo_Date": "",
+        "Production_Deployment_Status": "Pending"
       },
       {
         "page_name": "addressBook.aspx",
         "Feature_Flag": "F989550_TelerikRefactor_AddressBookModule",
-        "Feature_Flag_Status": "Enabled"
+        "Feature_Flag_Status": "Enabled",
+        "Client_Demo_Status": "Pending",
+        "Client_Demo_Date": "",
+        "Production_Deployment_Status": "Pending"
       },
       {
         "page_name": "automatedRoleAssignment.aspx",
         "Feature_Flag": "AutomatedRoleAssignment",
-        "Feature_Flag_Status": "Enabled"
+        "Feature_Flag_Status": "Enabled",
+        "Client_Demo_Status": "Pending",
+        "Client_Demo_Date": "",
+        "Production_Deployment_Status": "Pending"
       },
       {
         "page_name": "default.aspx",
         "Feature_Flag": "Default",
-        "Feature_Flag_Status": "Enabled"
+        "Feature_Flag_Status": "Enabled",
+        "Client_Demo_Status": "Pending",
+        "Client_Demo_Date": "",
+        "Production_Deployment_Status": "Pending"
       },
       {
         "page_name": "mailboxes.aspx",
         "Feature_Flag": "Mailboxes",
-        "Feature_Flag_Status": "Enabled"
+        "Feature_Flag_Status": "Enabled",
+        "Client_Demo_Status": "Pending",
+        "Client_Demo_Date": "",
+        "Production_Deployment_Status": "Pending"
       }
     ],
     "OutOfScope": []
@@ -36,57 +51,90 @@
       {
         "page_name": "reports/assessmentAnalysis.aspx",
         "Feature_Flag": "F989551_TelerikRefactor_AssessmentAnalysis",
-        "Feature_Flag_Status": "Disabled"
+        "Feature_Flag_Status": "Disabled",
+        "Client_Demo_Status": "Pending",
+        "Client_Demo_Date": "",
+        "Production_Deployment_Status": "Pending"
       },
       {
         "page_name": "assessment.aspx",
         "Feature_Flag": "F1040951_TelerikRefactor_Assessments_Assessment",
-        "Feature_Flag_Status": "Disabled"
+        "Feature_Flag_Status": "Disabled",
+        "Client_Demo_Status": "Pending",
+        "Client_Demo_Date": "",
+        "Production_Deployment_Status": "Pending"
       },
       {
         "page_name": "checkMyWork/checkMyWork.aspx",
         "Feature_Flag": "F1042045_RefactorTelerik_Assessments_CheckMyWork",
-        "Feature_Flag_Status": "Disabled"
+        "Feature_Flag_Status": "Disabled",
+        "Client_Demo_Status": "Pending",
+        "Client_Demo_Date": "",
+        "Production_Deployment_Status": "Pending"
       },
       {
         "page_name": "checkMyWork/submissions.aspx",
         "Feature_Flag": "F1042045_RefactorTelerik_Assessments_Submissions",
-        "Feature_Flag_Status": "Disabled"
+        "Feature_Flag_Status": "Disabled",
+        "Client_Demo_Status": "Pending",
+        "Client_Demo_Date": "",
+        "Production_Deployment_Status": "Pending"
       },
       {
         "page_name": "default.aspx",
         "Feature_Flag": "F989551_RefactorTelerik_Assessment_default",
-        "Feature_Flag_Status": "Disabled"
+        "Feature_Flag_Status": "Disabled",
+        "Client_Demo_Status": "Pending",
+        "Client_Demo_Date": "",
+        "Production_Deployment_Status": "Pending"
       },
       {
         "page_name": "import.aspx",
         "Feature_Flag": "F989551_RefactorTelerik_Assessment_Import",
-        "Feature_Flag_Status": "Disabled"
+        "Feature_Flag_Status": "Disabled",
+        "Client_Demo_Status": "Pending",
+        "Client_Demo_Date": "",
+        "Production_Deployment_Status": "Pending"
       },
       {
         "page_name": "results/Manager.aspx",
         "Feature_Flag": "F1037659_TelerikRefactor_Assessment_ResultsManager",
-        "Feature_Flag_Status": "Disabled"
+        "Feature_Flag_Status": "Disabled",
+        "Client_Demo_Status": "Pending",
+        "Client_Demo_Date": "",
+        "Production_Deployment_Status": "Pending"
       },
       {
         "page_name": "questions.aspx",
         "Feature_Flag": "F1043543_RefactorTelerik_Assessments_Questions",
-        "Feature_Flag_Status": "Disabled"
+        "Feature_Flag_Status": "Disabled",
+        "Client_Demo_Status": "Pending",
+        "Client_Demo_Date": "",
+        "Production_Deployment_Status": "Pending"
       },
       {
         "page_name": "questionManager.aspx",
         "Feature_Flag": "",
-        "Feature_Flag_Status": "Enabled"
+        "Feature_Flag_Status": "Enabled",
+        "Client_Demo_Status": "Pending",
+        "Client_Demo_Date": "",
+        "Production_Deployment_Status": "Pending"
       },
       {
         "page_name": "reports/assessmentAnswersAccepted.aspx",
         "Feature_Flag": "F1044500_TelerikRefactor_assessmentAnswersAccepted",
-        "Feature_Flag_Status": "Disabled"
+        "Feature_Flag_Status": "Disabled",
+        "Client_Demo_Status": "Pending",
+        "Client_Demo_Date": "",
+        "Production_Deployment_Status": "Pending"
       },
       {
         "page_name": "reports/assessmentQuestionAnalysis.aspx",
         "Feature_Flag": "F1044500_TelerikRefactor_AssessmentQuestionAnalysis",
-        "Feature_Flag_Status": "Disabled"
+        "Feature_Flag_Status": "Disabled",
+        "Client_Demo_Status": "Pending",
+        "Client_Demo_Date": "",
+        "Production_Deployment_Status": "Pending"
       }
     ],
     "OutOfScope": []
@@ -97,35 +145,54 @@
       {
         "page_name": "assets.aspx",
         "Feature_Flag": "F989552_TelerikRefactor_AssetAware_Assets",
-        "Feature_Flag_Status": "Enabled"
+        "Feature_Flag_Status": "Enabled",
+        "Client_Demo_Status": "Pending",
+        "Client_Demo_Date": "",
+        "Production_Deployment_Status": "Pending"
       },
       {
         "page_name": "assetHistory.aspx",
         "Feature_Flag": "F989552_TelerikRefactor_AssetAware_AssetHistory",
-        "Feature_Flag_Status": "Disabled"
+        "Feature_Flag_Status": "Disabled",
+        "Client_Demo_Status": "Pending",
+        "Client_Demo_Date": "",
+        "Production_Deployment_Status": "Pending"
       },
       {
         "page_name": "assetVendorAddressContact.aspx",
         "Feature_Flag": "F989552_TelerikRefactor_AssetAware_AddressContact",
-        "Feature_Flag_Status": "Enabled"
+        "Feature_Flag_Status": "Disabled",
+        "Client_Demo_Status": "Pending",
+        "Client_Demo_Date": "",
+        "Production_Deployment_Status": "Pending"
       },
       {
-        "page_name": "expressassesthistory.aspx",
-        "Feature_Flag": "F989552_TelerikRefactor_AssetAware_AssetHistory",
-        "Feature_Flag_Status": "Disabled"
+        "page_name": "expressAssetHistory.aspx",
+        "Feature_Flag": "F989552_TelerikRefactor_AssetAware_ExpressAssetHistory",
+        "Feature_Flag_Status": "Disabled",
+        "Client_Demo_Status": "Pending",
+        "Client_Demo_Date": "",
+        "Production_Deployment_Status": "Pending"
       },
       {
         "page_name": "assetWarrentyTypes.aspx",
         "Feature_Flag": "F989552_TelerikRefactor_AssetAware_WarrantyTypes",
-        "Feature_Flag_Status": "Disabled"
+        "Feature_Flag_Status": "Enabled",
+        "Client_Demo_Status": "Pending",
+        "Client_Demo_Date": "",
+        "Production_Deployment_Status": "Deployed"
       },
       {
         "page_name": "assetVendors.aspx",
         "Feature_Flag": "F989552_TelerikRefactor_AssetAware_AssetVendors",
-        "Feature_Flag_Status": "Disabled"
+        "Feature_Flag_Status": "Enabled",
+        "Client_Demo_Status": "Pending",
+        "Client_Demo_Date": "05/28/2026",
+        "Production_Deployment_Status": "Deployed"
       }
     ],
     "OutOfScope": [
+      "asset.aspx",
       "assetvendor.aspx"
     ]
   },
@@ -135,7 +202,10 @@
       {
         "page_name": "webmail/webmailBox.aspx",
         "Feature_Flag": "F1048496_RefactorTelerik_Communication_Webmail_WebmailBox",
-        "Feature_Flag_Status": "Enabled"
+        "Feature_Flag_Status": "Enabled",
+        "Client_Demo_Status": "Pending",
+        "Client_Demo_Date": "",
+        "Production_Deployment_Status": "Pending"
       }
     ],
     "OutOfScope": []
@@ -146,37 +216,66 @@
       {
         "page_name": "captionedVideoItem.aspx",
         "Feature_Flag": "F1040954_TelerikRefactor_Content_CaptionedVideoItem",
-        "Feature_Flag_Status": "Disabled"
+        "Feature_Flag_Status": "Disabled",
+        "Client_Demo_Status": "Pending",
+        "Client_Demo_Date": "",
+        "Production_Deployment_Status": "Pending"
       },
       {
         "page_name": "elmItemInteractive.aspx",
         "Feature_Flag": "F1040955_RefactorTelerik_Content_ElmItemInteractive",
-        "Feature_Flag_Status": "Disabled"
+        "Feature_Flag_Status": "Disabled",
+        "Client_Demo_Status": "Pending",
+        "Client_Demo_Date": "",
+        "Production_Deployment_Status": "Pending"
       },
       {
         "page_name": "grammarTool.aspx",
         "Feature_Flag": "F1040956_RefactorTelerik_Content_GrammarTool",
-        "Feature_Flag_Status": "Disabled"
+        "Feature_Flag_Status": "Disabled",
+        "Client_Demo_Status": "Pending",
+        "Client_Demo_Date": "",
+        "Production_Deployment_Status": "Pending"
       },
       {
         "page_name": "hyperlink.aspx",
         "Feature_Flag": "F1040957_RefactorTelerik_Content_Hyperlink",
-        "Feature_Flag_Status": "Disabled"
+        "Feature_Flag_Status": "Disabled",
+        "Client_Demo_Status": "Pending",
+        "Client_Demo_Date": "",
+        "Production_Deployment_Status": "Pending"
       },
       {
         "page_name": "sources/default.aspx",
         "Feature_Flag": "F1040963_RefactorTelerik_Content_Default",
-        "Feature_Flag_Status": "Disabled"
+        "Feature_Flag_Status": "Disabled",
+        "Client_Demo_Status": "Pending",
+        "Client_Demo_Date": "",
+        "Production_Deployment_Status": "Pending"
       },
       {
         "page_name": "sources/source.aspx",
         "Feature_Flag": "F1040964_RefactorTelerik_Content_SourcesSource",
-        "Feature_Flag_Status": "Disabled"
+        "Feature_Flag_Status": "Disabled",
+        "Client_Demo_Status": "Pending",
+        "Client_Demo_Date": "",
+        "Production_Deployment_Status": "Pending"
       },
       {
         "page_name": "timeline.aspx",
         "Feature_Flag": "F1040958_RefactorTelerik_Content_Timeline",
-        "Feature_Flag_Status": "Disabled"
+        "Feature_Flag_Status": "Disabled",
+        "Client_Demo_Status": "Pending",
+        "Client_Demo_Date": "",
+        "Production_Deployment_Status": "Pending"
+      },
+      {
+        "page_name": "Infrastructure Pages",
+        "Feature_Flag": "",
+        "Feature_Flag_Status": "Enabled",
+        "Client_Demo_Status": "Pending",
+        "Client_Demo_Date": "",
+        "Production_Deployment_Status": "Pending"
       }
     ],
     "OutOfScope": [
@@ -192,22 +291,34 @@
       {
         "page_name": "placement/default.aspx",
         "Feature_Flag": "F1045395_RefactorTelerik_Enrollment_Placement_default",
-        "Feature_Flag_Status": "Disabled"
+        "Feature_Flag_Status": "Disabled",
+        "Client_Demo_Status": "Pending",
+        "Client_Demo_Date": "",
+        "Production_Deployment_Status": "Pending"
       },
       {
         "page_name": "placement/manager.aspx",
         "Feature_Flag": "F1047732_RefactorTelerik_Enrollment_Placement_Manager",
-        "Feature_Flag_Status": "Disabled"
+        "Feature_Flag_Status": "Disabled",
+        "Client_Demo_Status": "Pending",
+        "Client_Demo_Date": "",
+        "Production_Deployment_Status": "Pending"
       },
       {
         "page_name": "placement/rejectReason.aspx",
         "Feature_Flag": "PlacementRejectReason",
-        "Feature_Flag_Status": "Disabled"
+        "Feature_Flag_Status": "Disabled",
+        "Client_Demo_Status": "Pending",
+        "Client_Demo_Date": "",
+        "Production_Deployment_Status": "Pending"
       },
       {
         "page_name": "registration/default.aspx",
         "Feature_Flag": "F1045150_RefactorTelerik_Enrollment_RegistrationDefault",
-        "Feature_Flag_Status": "Disabled"
+        "Feature_Flag_Status": "Disabled",
+        "Client_Demo_Status": "Pending",
+        "Client_Demo_Date": "",
+        "Production_Deployment_Status": "Pending"
       }
     ],
     "OutOfScope": [
@@ -221,27 +332,50 @@
       {
         "page_name": "categories.aspx",
         "Feature_Flag": "Categories",
-        "Feature_Flag_Status": "Enabled"
+        "Feature_Flag_Status": "Enabled",
+        "Client_Demo_Status": "Pending",
+        "Client_Demo_Date": "",
+        "Production_Deployment_Status": "Pending"
       },
       {
         "page_name": "calculationGroups.aspx",
         "Feature_Flag": "F1045468_RefactorTelerik_ExtendedField_CalculationGroups",
-        "Feature_Flag_Status": "Enabled"
+        "Feature_Flag_Status": "Enabled",
+        "Client_Demo_Status": "Pending",
+        "Client_Demo_Date": "",
+        "Production_Deployment_Status": "Pending"
       },
       {
         "page_name": "fieldHistory.aspx",
         "Feature_Flag": "F1047070_TelerikRefactor_ExtendedField_FieldHistory",
-        "Feature_Flag_Status": "Enabled"
+        "Feature_Flag_Status": "Enabled",
+        "Client_Demo_Status": "Pending",
+        "Client_Demo_Date": "",
+        "Production_Deployment_Status": "Pending"
       },
       {
         "page_name": "default.aspx",
         "Feature_Flag": "Default",
-        "Feature_Flag_Status": "Enabled"
+        "Feature_Flag_Status": "Enabled",
+        "Client_Demo_Status": "Pending",
+        "Client_Demo_Date": "",
+        "Production_Deployment_Status": "Pending"
       },
       {
         "page_name": "extendedField.aspx",
         "Feature_Flag": "ExtendedField",
-        "Feature_Flag_Status": "Enabled"
+        "Feature_Flag_Status": "Enabled",
+        "Client_Demo_Status": "Pending",
+        "Client_Demo_Date": "",
+        "Production_Deployment_Status": "Pending"
+      },
+      {
+        "page_name": "Infrastructure pages",
+        "Feature_Flag": "",
+        "Feature_Flag_Status": "Enabled",
+        "Client_Demo_Status": "Pending",
+        "Client_Demo_Date": "",
+        "Production_Deployment_Status": "Pending"
       }
     ],
     "OutOfScope": [
@@ -254,42 +388,66 @@
       {
         "page_name": "default.aspx",
         "Feature_Flag": "Default",
-        "Feature_Flag_Status": "Enabled"
+        "Feature_Flag_Status": "Enabled",
+        "Client_Demo_Status": "Pending",
+        "Client_Demo_Date": "",
+        "Production_Deployment_Status": "Pending"
       },
       {
         "page_name": "objectivePerformance.aspx",
         "Feature_Flag": "ObjectivePerformance",
-        "Feature_Flag_Status": "Enabled"
+        "Feature_Flag_Status": "Enabled",
+        "Client_Demo_Status": "Pending",
+        "Client_Demo_Date": "",
+        "Production_Deployment_Status": "Pending"
       },
       {
         "page_name": "progressReport/default.aspx",
         "Feature_Flag": "ProgressReportDefault",
-        "Feature_Flag_Status": "Enabled"
+        "Feature_Flag_Status": "Enabled",
+        "Client_Demo_Status": "Pending",
+        "Client_Demo_Date": "",
+        "Production_Deployment_Status": "Pending"
       },
       {
         "page_name": "progressReport/progressReport.aspx",
         "Feature_Flag": "ProgressReport",
-        "Feature_Flag_Status": "Enabled"
+        "Feature_Flag_Status": "Enabled",
+        "Client_Demo_Status": "Pending",
+        "Client_Demo_Date": "",
+        "Production_Deployment_Status": "Pending"
       },
       {
         "page_name": "progressReport/transcript/createExternalCourses.aspx",
         "Feature_Flag": "CreateExternalCourses",
-        "Feature_Flag_Status": "Enabled"
+        "Feature_Flag_Status": "Enabled",
+        "Client_Demo_Status": "Pending",
+        "Client_Demo_Date": "",
+        "Production_Deployment_Status": "Pending"
       },
       {
         "page_name": "progressReport/transcript/externalCourse.aspx",
         "Feature_Flag": "ExternalCourse",
-        "Feature_Flag_Status": "Enabled"
+        "Feature_Flag_Status": "Enabled",
+        "Client_Demo_Status": "Pending",
+        "Client_Demo_Date": "",
+        "Production_Deployment_Status": "Pending"
       },
       {
         "page_name": "progressReport/transcript/externalCourses.aspx",
         "Feature_Flag": "ExternalCourses",
-        "Feature_Flag_Status": "Enabled"
+        "Feature_Flag_Status": "Enabled",
+        "Client_Demo_Status": "Pending",
+        "Client_Demo_Date": "",
+        "Production_Deployment_Status": "Pending"
       },
       {
         "page_name": "section/* - all pages",
         "Feature_Flag": "SectionAllPages",
-        "Feature_Flag_Status": "Enabled"
+        "Feature_Flag_Status": "Enabled",
+        "Client_Demo_Status": "Pending",
+        "Client_Demo_Date": "",
+        "Production_Deployment_Status": "Pending"
       }
     ],
     "OutOfScope": []
@@ -300,12 +458,18 @@
       {
         "page_name": "enrollment.aspx",
         "Feature_Flag": "F1037582_RefactorTelerik_Home_Enrollment",
-        "Feature_Flag_Status": "Enabled"
+        "Feature_Flag_Status": "Enabled",
+        "Client_Demo_Status": "Pending",
+        "Client_Demo_Date": "",
+        "Production_Deployment_Status": "Pending"
       },
       {
         "page_name": "overdueLessons.aspx",
         "Feature_Flag": "OverdueLessons",
-        "Feature_Flag_Status": "Enabled"
+        "Feature_Flag_Status": "Enabled",
+        "Client_Demo_Status": "Pending",
+        "Client_Demo_Date": "",
+        "Production_Deployment_Status": "Pending"
       }
     ],
     "OutOfScope": [
@@ -318,12 +482,18 @@
       {
         "page_name": "automaticStakeholderRules.aspx",
         "Feature_Flag": "AutomaticStakeholderRules",
-        "Feature_Flag_Status": "Enabled"
+        "Feature_Flag_Status": "Enabled",
+        "Client_Demo_Status": "Pending",
+        "Client_Demo_Date": "",
+        "Production_Deployment_Status": "Pending"
       },
       {
         "page_name": "search.aspx",
         "Feature_Flag": "Search",
-        "Feature_Flag_Status": "Enabled"
+        "Feature_Flag_Status": "Enabled",
+        "Client_Demo_Status": "Pending",
+        "Client_Demo_Date": "",
+        "Production_Deployment_Status": "Pending"
       }
     ],
     "OutOfScope": []
@@ -334,17 +504,26 @@
       {
         "page_name": "resource.aspx",
         "Feature_Flag": "Resource",
-        "Feature_Flag_Status": "Enabled"
+        "Feature_Flag_Status": "Enabled",
+        "Client_Demo_Status": "Pending",
+        "Client_Demo_Date": "",
+        "Production_Deployment_Status": "Pending"
       },
       {
         "page_name": "searchResults.aspx",
         "Feature_Flag": "F989607_TelerikRefactor_Library_SearchResults",
-        "Feature_Flag_Status": "Enabled"
+        "Feature_Flag_Status": "Enabled",
+        "Client_Demo_Status": "Pending",
+        "Client_Demo_Date": "",
+        "Production_Deployment_Status": "Pending"
       },
       {
         "page_name": "category.aspx.cs",
         "Feature_Flag": "Category",
-        "Feature_Flag_Status": "Enabled"
+        "Feature_Flag_Status": "Enabled",
+        "Client_Demo_Status": "Pending",
+        "Client_Demo_Date": "",
+        "Production_Deployment_Status": "Pending"
       }
     ],
     "OutOfScope": [
@@ -357,22 +536,34 @@
       {
         "page_name": "default.aspx",
         "Feature_Flag": "Default",
-        "Feature_Flag_Status": "Enabled"
+        "Feature_Flag_Status": "Enabled",
+        "Client_Demo_Status": "Pending",
+        "Client_Demo_Date": "",
+        "Production_Deployment_Status": "Pending"
       },
       {
         "page_name": "gradebookWeightTypes.aspx",
         "Feature_Flag": "F989655_TelerikRefactor_Location",
-        "Feature_Flag_Status": "Enabled"
+        "Feature_Flag_Status": "Enabled",
+        "Client_Demo_Status": "Pending",
+        "Client_Demo_Date": "",
+        "Production_Deployment_Status": "Pending"
       },
       {
         "page_name": "security\\roleAccessRestrictions.aspx",
         "Feature_Flag": "F989655_TelerikRefactor_Location",
-        "Feature_Flag_Status": "Enabled"
+        "Feature_Flag_Status": "Enabled",
+        "Client_Demo_Status": "Pending",
+        "Client_Demo_Date": "",
+        "Production_Deployment_Status": "Pending"
       },
       {
         "page_name": "skinProperties.aspx",
         "Feature_Flag": "F989655_TelerikRefactor_Location",
-        "Feature_Flag_Status": "Enabled"
+        "Feature_Flag_Status": "Enabled",
+        "Client_Demo_Status": "Pending",
+        "Client_Demo_Date": "",
+        "Production_Deployment_Status": "Pending"
       }
     ],
     "OutOfScope": []
@@ -383,32 +574,50 @@
       {
         "page_name": "default.aspx",
         "Feature_Flag": "F989570_TelerikRefactor_SecurityModule",
-        "Feature_Flag_Status": "Enabled"
+        "Feature_Flag_Status": "Enabled",
+        "Client_Demo_Status": "Pending",
+        "Client_Demo_Date": "",
+        "Production_Deployment_Status": "Pending"
       },
       {
         "page_name": "permissionDisplayGroups.aspx",
         "Feature_Flag": "F989570_TelerikRefactor_SecurityModule",
-        "Feature_Flag_Status": "Enabled"
+        "Feature_Flag_Status": "Enabled",
+        "Client_Demo_Status": "Pending",
+        "Client_Demo_Date": "",
+        "Production_Deployment_Status": "Pending"
       },
       {
         "page_name": "permissionDisplayGroupPermissions.aspx",
         "Feature_Flag": "F989570_TelerikRefactor_SecurityModule",
-        "Feature_Flag_Status": "Enabled"
+        "Feature_Flag_Status": "Enabled",
+        "Client_Demo_Status": "Pending",
+        "Client_Demo_Date": "",
+        "Production_Deployment_Status": "Pending"
       },
       {
         "page_name": "permissionRoles.aspx",
         "Feature_Flag": "F989570_TelerikRefactor_SecurityModule",
-        "Feature_Flag_Status": "Enabled"
+        "Feature_Flag_Status": "Enabled",
+        "Client_Demo_Status": "Pending",
+        "Client_Demo_Date": "",
+        "Production_Deployment_Status": "Pending"
       },
       {
         "page_name": "permissionSectionRoles.aspx",
         "Feature_Flag": "F989570_TelerikRefactor_SecurityModule",
-        "Feature_Flag_Status": "Enabled"
+        "Feature_Flag_Status": "Enabled",
+        "Client_Demo_Status": "Pending",
+        "Client_Demo_Date": "",
+        "Production_Deployment_Status": "Pending"
       },
       {
         "page_name": "permissionVisibility.aspx",
         "Feature_Flag": "F989570_TelerikRefactor_SecurityModule",
-        "Feature_Flag_Status": "Enabled"
+        "Feature_Flag_Status": "Enabled",
+        "Client_Demo_Status": "Pending",
+        "Client_Demo_Date": "",
+        "Production_Deployment_Status": "Pending"
       }
     ],
     "OutOfScope": []
