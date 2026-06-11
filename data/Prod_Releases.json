@@ -278,29 +278,6 @@
         "User_Story": 1049384,
         "Pages": [
           {
-            "Page": "Assessment Answers Accepted",
-            "Feature_Flag": "F1040954_TelerikRefactor_Content_CaptionedVideoItem",
-            "Status": "Enabled",
-            "PRs": [
-              8886,
-              8798
-            ],
-            "Page_Name": "captionedVideoItem.aspx",
-            "Feature_Flag_Status": "Disabled",
-            "PR": 8804,
-            "Task": "1040954"
-          },
-          {
-            "Page": "Assessment Question Analysis",
-            "Feature_Flag": "F1040964_RefactorTelerik_Content_SourcesSource",
-            "Status": "Enabled",
-            "PRs": [],
-            "Page_Name": "sources/source.aspx",
-            "Feature_Flag_Status": "Disabled",
-            "PR": 8804,
-            "Task": "1040964"
-          },
-          {
             "Page_Name": "Infrastructure Pages",
             "Feature_Flag": "",
             "PR": 9005,
@@ -325,26 +302,6 @@
             "Feature_Flag_Status": "Disabled",
             "PR": 8895,
             "Task": "1045395"
-          },
-          {
-            "Page": "Assessment Question Analysis",
-            "Feature_Flag": "F1047732_RefactorTelerik_Enrollment_Placement_Manager",
-            "Status": "Enabled",
-            "PRs": [],
-            "Page_Name": "placement/manager.aspx",
-            "Feature_Flag_Status": "Disabled",
-            "PR": 8897,
-            "Task": "1047732"
-          },
-          {
-            "Page": "Default",
-            "Feature_Flag": "F1045150_RefactorTelerik_Enrollment_RegistrationDefault",
-            "Status": "Enabled",
-            "PRs": [],
-            "Page_Name": "registration/default.aspx",
-            "Feature_Flag_Status": "Disabled",
-            "PR": 8897,
-            "Task": "1045150"
           }
         ]
       },
@@ -366,26 +323,6 @@
             "Task": "1048271"
           },
           {
-            "Page": "Assessment Question Analysis",
-            "Feature_Flag": "F1045468_RefactorTelerik_ExtendedField_CalculationGroups",
-            "Status": "Enabled",
-            "PRs": [],
-            "Page_Name": "calculationGroups.aspx",
-            "Feature_Flag_Status": "Enabled",
-            "PR": 8815,
-            "Task": "1045468"
-          },
-          {
-            "Page": "Default",
-            "Feature_Flag": "F1047070_TelerikRefactor_ExtendedField_FieldHistory",
-            "Status": "Enabled",
-            "PRs": [],
-            "Page_Name": "fieldHistory.aspx",
-            "Feature_Flag_Status": "Enabled",
-            "PR": 8817,
-            "Task": "1047070"
-          },
-          {
             "Page": "Question Manager",
             "Feature_Flag": "",
             "Status": "Enabled",
@@ -393,21 +330,12 @@
             "Page_Name": "Infrastructure pages",
             "Feature_Flag_Status": "Enabled",
             "PR": 8978
-          },
-          {
-            "Page": "Analysis",
-            "Feature_Flag": "",
-            "Status": "Enabled",
-            "PRs": [],
-            "Page_Name": "Infrastructure pages",
-            "Feature_Flag_Status": "Enabled",
-            "PR": 9010
           }
         ]
       },
       {
         "Module": "Assessment",
-        "User_Story": "",
+        "User_Story": "1043225",
         "Pages": [
           {
             "Page_Name": "checkMyWork/checkMyWork.aspx",
@@ -417,10 +345,138 @@
             "Feature_Flag_Status": "Enabled"
           },
           {
-            "Page_Name": "questions.aspx",
+            "Page_Name": "checkMyWork/submissions.aspx",
             "Feature_Flag": "",
-            "PR": null,
+            "PR": 8886,
             "Task": "",
+            "Feature_Flag_Status": "Enabled"
+          },
+          {
+            "Page_Name": "Infrastructure Pages",
+            "Feature_Flag": "",
+            "PR": 8793,
+            "Task": "",
+            "Feature_Flag_Status": "Enabled"
+          }
+        ]
+      },
+      {
+        "Module": "AssetAware",
+        "User_Story": "1049318",
+        "Pages": [
+          {
+            "Page_Name": "assetVendorAddressContact.aspx",
+            "Feature_Flag": "",
+            "PR": 8864,
+            "Task": "1043039",
+            "Feature_Flag_Status": "Enabled"
+          },
+          {
+            "Page_Name": "LocationTree",
+            "Feature_Flag": "",
+            "PR": 8846,
+            "Task": "1042484",
+            "Feature_Flag_Status": "Enabled"
+          },
+          {
+            "Page_Name": "Infrastructure Pages",
+            "Feature_Flag": "",
+            "PR": 8977,
+            "Task": "1049741",
+            "Feature_Flag_Status": "Enabled"
+          }
+        ]
+      },
+      {
+        "Module": "GradeBook",
+        "User_Story": "983138",
+        "Pages": [
+          {
+            "Page_Name": "GradeBook API",
+            "Feature_Flag": "",
+            "PR": 8789,
+            "Task": "",
+            "Feature_Flag_Status": "Disabled"
+          },
+          {
+            "Page_Name": "GradeBook API",
+            "Feature_Flag": "",
+            "PR": 8793,
+            "Task": "",
+            "Feature_Flag_Status": "Enabled"
+          },
+          {
+            "Page_Name": "default.aspx",
+            "Feature_Flag": "",
+            "PR": 8949,
+            "Task": "1048906",
+            "Feature_Flag_Status": "Enabled"
+          }
+        ]
+      },
+      {
+        "Module": "Library",
+        "User_Story": "1020424",
+        "Pages": [
+          {
+            "Page_Name": "searchResults.aspx",
+            "Feature_Flag": "",
+            "PR": 8795,
+            "Task": "",
+            "Feature_Flag_Status": "Enabled"
+          },
+          {
+            "Page_Name": "Infrastructure Pages",
+            "Feature_Flag": "",
+            "PR": 8974,
+            "Task": "",
+            "Feature_Flag_Status": "Enabled"
+          }
+        ]
+      },
+      {
+        "Module": "Location",
+        "User_Story": "989655",
+        "Pages": [
+          {
+            "Page_Name": "gradebookWeightTypes.aspx",
+            "Feature_Flag": "",
+            "PR": 8902,
+            "Task": "",
+            "Feature_Flag_Status": "Enabled"
+          },
+          {
+            "Page_Name": "security/roleAccessRestrictions.aspx",
+            "Feature_Flag": "",
+            "PR": 8902,
+            "Task": "",
+            "Feature_Flag_Status": "Enabled"
+          },
+          {
+            "Page_Name": "skinProperties.aspx",
+            "Feature_Flag": "",
+            "PR": 8887,
+            "Task": "",
+            "Feature_Flag_Status": "Enabled"
+          },
+          {
+            "Page_Name": "Infrastructure Pages",
+            "Feature_Flag": "",
+            "PR": 8976,
+            "Task": "",
+            "Feature_Flag_Status": "Enabled"
+          }
+        ]
+      },
+      {
+        "Module": "Security",
+        "User_Story": "",
+        "Pages": [
+          {
+            "Page_Name": "Bugs",
+            "Feature_Flag": "",
+            "PR": 8782,
+            "Task": "1032253",
             "Feature_Flag_Status": "Enabled"
           }
         ]
