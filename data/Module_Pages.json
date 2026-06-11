@@ -621,5 +621,96 @@
       }
     ],
     "OutOfScope": []
+  },
+  {
+    "Module": "Shared Controls",
+    "Pages": [
+      {
+        "page_name": "LocationTree",
+        "Feature_Flag": "",
+        "Feature_Flag_Status": "Enabled",
+        "Client_Demo_Status": "N/A",
+        "Client_Demo_Date": "",
+        "Production_Deployment_Status": "Pending"
+      },
+      {
+        "page_name": "CategoryTree",
+        "Feature_Flag": "",
+        "Feature_Flag_Status": "Enabled",
+        "Client_Demo_Status": "N/A",
+        "Client_Demo_Date": "",
+        "Production_Deployment_Status": "Pending"
+      },
+      {
+        "page_name": "CategoryTreeWithCheckboxes",
+        "Feature_Flag": "",
+        "Feature_Flag_Status": "Enabled",
+        "Client_Demo_Status": "N/A",
+        "Client_Demo_Date": "",
+        "Production_Deployment_Status": "Pending"
+      },
+      {
+        "page_name": "DatePicker",
+        "Feature_Flag": "",
+        "Feature_Flag_Status": "Enabled",
+        "Client_Demo_Status": "N/A",
+        "Client_Demo_Date": "",
+        "Production_Deployment_Status": "Pending"
+      },
+      {
+        "page_name": "EditableHtmlGridHelper",
+        "Feature_Flag": "",
+        "Feature_Flag_Status": "Enabled",
+        "Client_Demo_Status": "N/A",
+        "Client_Demo_Date": "",
+        "Production_Deployment_Status": "Pending"
+      },
+      {
+        "page_name": "HtmlGridHelper",
+        "Feature_Flag": "",
+        "Feature_Flag_Status": "Enabled",
+        "Client_Demo_Status": "N/A",
+        "Client_Demo_Date": "",
+        "Production_Deployment_Status": "Pending"
+      },
+      {
+        "page_name": "ModalDialogGrid",
+        "Feature_Flag": "",
+        "Feature_Flag_Status": "Enabled",
+        "Client_Demo_Status": "N/A",
+        "Client_Demo_Date": "",
+        "Production_Deployment_Status": "Pending"
+      },
+      {
+        "page_name": "PlannerCalendar",
+        "Feature_Flag": "",
+        "Feature_Flag_Status": "Enabled",
+        "Client_Demo_Status": "N/A",
+        "Client_Demo_Date": "",
+        "Production_Deployment_Status": "Pending"
+      },
+      {
+        "page_name": "SpellCheck",
+        "Feature_Flag": "",
+        "Feature_Flag_Status": "Enabled",
+        "Client_Demo_Status": "N/A",
+        "Client_Demo_Date": "",
+        "Production_Deployment_Status": "Pending"
+      },
+      {
+        "page_name": "AllInOneTreeView",
+        "Feature_Flag": "",
+        "Feature_Flag_Status": "Enabled",
+        "Client_Demo_Status": "N/A",
+        "Client_Demo_Date": "",
+        "Production_Deployment_Status": "Pending"
+      },
+      {
+        "page_name": "TabStrip",
+        "Feature_Flag": "",
+        "Feature_Flag_Status": "Enabled"
+      }
+    ],
+    "OutOfScope": []
   }
 ]
