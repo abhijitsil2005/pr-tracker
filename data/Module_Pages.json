@@ -135,6 +135,14 @@
         "Client_Demo_Status": "Pending",
         "Client_Demo_Date": "",
         "Production_Deployment_Status": "Pending"
+      },
+      {
+        "page_name": "Infrastructure Pages",
+        "Feature_Flag": "N/A",
+        "Feature_Flag_Status": "N/A",
+        "Client_Demo_Status": "N/A",
+        "Client_Demo_Date": "",
+        "Production_Deployment_Status": "Pending"
       }
     ],
     "OutOfScope": []
@@ -189,6 +197,14 @@
         "Client_Demo_Status": "Pending",
         "Client_Demo_Date": "05/28/2026",
         "Production_Deployment_Status": "Deployed"
+      },
+      {
+        "page_name": "Infrastructure Pages",
+        "Feature_Flag": "N/A",
+        "Feature_Flag_Status": "N/A",
+        "Client_Demo_Status": "N/A",
+        "Client_Demo_Date": "",
+        "Production_Deployment_Status": "Pending"
       }
     ],
     "OutOfScope": [
@@ -204,6 +220,14 @@
         "Feature_Flag": "F1048496_RefactorTelerik_Communication_Webmail_WebmailBox",
         "Feature_Flag_Status": "Enabled",
         "Client_Demo_Status": "Pending",
+        "Client_Demo_Date": "",
+        "Production_Deployment_Status": "Pending"
+      },
+      {
+        "page_name": "Infrastructure Pages",
+        "Feature_Flag": "N/A",
+        "Feature_Flag_Status": "N/A",
+        "Client_Demo_Status": "N/A",
         "Client_Demo_Date": "",
         "Production_Deployment_Status": "Pending"
       }
@@ -271,9 +295,9 @@
       },
       {
         "page_name": "Infrastructure Pages",
-        "Feature_Flag": "",
-        "Feature_Flag_Status": "Enabled",
-        "Client_Demo_Status": "Pending",
+        "Feature_Flag": "N/A",
+        "Feature_Flag_Status": "N/A",
+        "Client_Demo_Status": "N/A",
         "Client_Demo_Date": "",
         "Production_Deployment_Status": "Pending"
       }
@@ -317,6 +341,14 @@
         "Feature_Flag": "F1045150_RefactorTelerik_Enrollment_RegistrationDefault",
         "Feature_Flag_Status": "Disabled",
         "Client_Demo_Status": "Pending",
+        "Client_Demo_Date": "",
+        "Production_Deployment_Status": "Pending"
+      },
+      {
+        "page_name": "Infrastructure Pages",
+        "Feature_Flag": "N/A",
+        "Feature_Flag_Status": "N/A",
+        "Client_Demo_Status": "N/A",
         "Client_Demo_Date": "",
         "Production_Deployment_Status": "Pending"
       }
@@ -370,10 +402,10 @@
         "Production_Deployment_Status": "Pending"
       },
       {
-        "page_name": "Infrastructure pages",
-        "Feature_Flag": "",
-        "Feature_Flag_Status": "Enabled",
-        "Client_Demo_Status": "Pending",
+        "page_name": "Infrastructure Pages",
+        "Feature_Flag": "N/A",
+        "Feature_Flag_Status": "N/A",
+        "Client_Demo_Status": "N/A",
         "Client_Demo_Date": "",
         "Production_Deployment_Status": "Pending"
       }
@@ -387,7 +419,7 @@
     "Pages": [
       {
         "page_name": "default.aspx",
-        "Feature_Flag": "Default",
+        "Feature_Flag": "F1021884_RefactorTelerik_Gradebook_Default",
         "Feature_Flag_Status": "Enabled",
         "Client_Demo_Status": "Pending",
         "Client_Demo_Date": "",
@@ -448,6 +480,14 @@
         "Client_Demo_Status": "Pending",
         "Client_Demo_Date": "",
         "Production_Deployment_Status": "Pending"
+      },
+      {
+        "page_name": "GradeBook API",
+        "Feature_Flag": "",
+        "Feature_Flag_Status": "N/A",
+        "Client_Demo_Status": "N/A",
+        "Client_Demo_Date": "",
+        "Production_Deployment_Status": "Pending"
       }
     ],
     "OutOfScope": []
@@ -465,7 +505,7 @@
       },
       {
         "page_name": "overdueLessons.aspx",
-        "Feature_Flag": "OverdueLessons",
+        "Feature_Flag": "F1037581_RefactorTelerik_Home_OverdueLessons",
         "Feature_Flag_Status": "Enabled",
         "Client_Demo_Status": "Pending",
         "Client_Demo_Date": "",
@@ -492,6 +532,14 @@
         "Feature_Flag": "Search",
         "Feature_Flag_Status": "Enabled",
         "Client_Demo_Status": "Pending",
+        "Client_Demo_Date": "",
+        "Production_Deployment_Status": "Pending"
+      },
+      {
+        "page_name": "Infrastructure Pages",
+        "Feature_Flag": "N/A",
+        "Feature_Flag_Status": "N/A",
+        "Client_Demo_Status": "N/A",
         "Client_Demo_Date": "",
         "Production_Deployment_Status": "Pending"
       }
@@ -524,6 +572,22 @@
         "Client_Demo_Status": "Pending",
         "Client_Demo_Date": "",
         "Production_Deployment_Status": "Pending"
+      },
+      {
+        "page_name": "Infrastructure Pages",
+        "Feature_Flag": "N/A",
+        "Feature_Flag_Status": "N/A",
+        "Client_Demo_Status": "N/A",
+        "Client_Demo_Date": "",
+        "Production_Deployment_Status": "Pending"
+      },
+      {
+        "page_name": "Infrastructure Pages",
+        "Feature_Flag": "N/A",
+        "Feature_Flag_Status": "N/A",
+        "Client_Demo_Status": "N/A",
+        "Client_Demo_Date": "",
+        "Production_Deployment_Status": "Pending"
       }
     ],
     "OutOfScope": [
@@ -550,7 +614,7 @@
         "Production_Deployment_Status": "Pending"
       },
       {
-        "page_name": "security\\roleAccessRestrictions.aspx",
+        "page_name": "security/roleAccessRestrictions.aspx",
         "Feature_Flag": "F989655_TelerikRefactor_Location",
         "Feature_Flag_Status": "Enabled",
         "Client_Demo_Status": "Pending",
@@ -562,6 +626,14 @@
         "Feature_Flag": "F989655_TelerikRefactor_Location",
         "Feature_Flag_Status": "Enabled",
         "Client_Demo_Status": "Pending",
+        "Client_Demo_Date": "",
+        "Production_Deployment_Status": "Pending"
+      },
+      {
+        "page_name": "Infrastructure Pages",
+        "Feature_Flag": "N/A",
+        "Feature_Flag_Status": "N/A",
+        "Client_Demo_Status": "N/A",
         "Client_Demo_Date": "",
         "Production_Deployment_Status": "Pending"
       }
@@ -618,6 +690,14 @@
         "Client_Demo_Status": "Pending",
         "Client_Demo_Date": "",
         "Production_Deployment_Status": "Pending"
+      },
+      {
+        "page_name": "Infrastructure Pages",
+        "Feature_Flag": "N/A",
+        "Feature_Flag_Status": "N/A",
+        "Client_Demo_Status": "N/A",
+        "Client_Demo_Date": "",
+        "Production_Deployment_Status": "Pending"
       }
     ],
     "OutOfScope": []
@@ -628,7 +708,7 @@
       {
         "page_name": "LocationTree",
         "Feature_Flag": "",
-        "Feature_Flag_Status": "Enabled",
+        "Feature_Flag_Status": "N/A",
         "Client_Demo_Status": "N/A",
         "Client_Demo_Date": "",
         "Production_Deployment_Status": "Pending"
@@ -636,7 +716,7 @@
       {
         "page_name": "CategoryTree",
         "Feature_Flag": "",
-        "Feature_Flag_Status": "Enabled",
+        "Feature_Flag_Status": "N/A",
         "Client_Demo_Status": "N/A",
         "Client_Demo_Date": "",
         "Production_Deployment_Status": "Pending"
@@ -644,7 +724,7 @@
       {
         "page_name": "CategoryTreeWithCheckboxes",
         "Feature_Flag": "",
-        "Feature_Flag_Status": "Enabled",
+        "Feature_Flag_Status": "N/A",
         "Client_Demo_Status": "N/A",
         "Client_Demo_Date": "",
         "Production_Deployment_Status": "Pending"
@@ -652,7 +732,7 @@
       {
         "page_name": "DatePicker",
         "Feature_Flag": "",
-        "Feature_Flag_Status": "Enabled",
+        "Feature_Flag_Status": "N/A",
         "Client_Demo_Status": "N/A",
         "Client_Demo_Date": "",
         "Production_Deployment_Status": "Pending"
@@ -660,7 +740,7 @@
       {
         "page_name": "EditableHtmlGridHelper",
         "Feature_Flag": "",
-        "Feature_Flag_Status": "Enabled",
+        "Feature_Flag_Status": "N/A",
         "Client_Demo_Status": "N/A",
         "Client_Demo_Date": "",
         "Production_Deployment_Status": "Pending"
@@ -668,7 +748,7 @@
       {
         "page_name": "HtmlGridHelper",
         "Feature_Flag": "",
-        "Feature_Flag_Status": "Enabled",
+        "Feature_Flag_Status": "N/A",
         "Client_Demo_Status": "N/A",
         "Client_Demo_Date": "",
         "Production_Deployment_Status": "Pending"
@@ -676,7 +756,7 @@
       {
         "page_name": "ModalDialogGrid",
         "Feature_Flag": "",
-        "Feature_Flag_Status": "Enabled",
+        "Feature_Flag_Status": "N/A",
         "Client_Demo_Status": "N/A",
         "Client_Demo_Date": "",
         "Production_Deployment_Status": "Pending"
@@ -684,7 +764,7 @@
       {
         "page_name": "PlannerCalendar",
         "Feature_Flag": "",
-        "Feature_Flag_Status": "Enabled",
+        "Feature_Flag_Status": "N/A",
         "Client_Demo_Status": "N/A",
         "Client_Demo_Date": "",
         "Production_Deployment_Status": "Pending"
@@ -692,7 +772,7 @@
       {
         "page_name": "SpellCheck",
         "Feature_Flag": "",
-        "Feature_Flag_Status": "Enabled",
+        "Feature_Flag_Status": "N/A",
         "Client_Demo_Status": "N/A",
         "Client_Demo_Date": "",
         "Production_Deployment_Status": "Pending"
@@ -700,7 +780,7 @@
       {
         "page_name": "AllInOneTreeView",
         "Feature_Flag": "",
-        "Feature_Flag_Status": "Enabled",
+        "Feature_Flag_Status": "N/A",
         "Client_Demo_Status": "N/A",
         "Client_Demo_Date": "",
         "Production_Deployment_Status": "Pending"
@@ -708,7 +788,10 @@
       {
         "page_name": "TabStrip",
         "Feature_Flag": "",
-        "Feature_Flag_Status": "Enabled"
+        "Feature_Flag_Status": "N/A",
+        "Client_Demo_Status": "N/A",
+        "Client_Demo_Date": "",
+        "Production_Deployment_Status": "Pending"
       }
     ],
     "OutOfScope": []
