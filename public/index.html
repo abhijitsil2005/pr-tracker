@@ -236,8 +236,8 @@ label{display:block;font-size:12px;color:var(--text2);margin-bottom:5px}
               <th>Pending</th>
               <th>FF Enabled</th>
               <th>FF Disabled</th>
-              <th>Demo Done</th>
-              <th>Demo Pending</th>
+              <!-- <th>Demo Done</th>
+              <th>Demo Pending</th> -->
               <th>PRs</th>
               <th>PR Deployed</th>
               <th>PR In Progress</th>
@@ -630,8 +630,8 @@ async function renderDashboard() {
         <td style="text-align:center;color:var(--text2)">${prodPend}</td>
         <td style="text-align:center"><span class="badge badge-green">${ffEn}</span></td>
         <td style="text-align:center"><span class="badge badge-red">${ffDis}</span></td>
-        <td style="text-align:center"><span class="badge badge-teal">${demoDone}</span></td>
-        <td style="text-align:center;color:var(--text2)">${demoPend}</td>
+        <!-- <td style="text-align:center"><span class="badge badge-teal">${demoDone}</span></td>
+         <td style="text-align:center;color:var(--text2)">${demoPend}</td> -->
         <td style="text-align:center"><strong>${prs.total}</strong></td>
         <td style="text-align:center;color:var(--green)">${prs.deployed}</td>
         <td style="text-align:center;color:var(--yellow)">${prs.inProg}</td>
@@ -888,13 +888,13 @@ function buildReleaseBlock(rel, search, cssClass) {
 
   // Stats for header badges
   const totalMods  = filteredMods.length;
-  const totalPages = filteredMods.reduce((s, m) => s + (m.Pages||[]).length, 0);
+  const totalPages = filteredMods.reduce((s, m) => s + (m.Pages||[]).map(pnm => pnm.Feature_Flag_Status !== 'N/A' ? 1 : 0).filter(Boolean).length, 0);
   // Flat unique PR list from Modules[].Pages[].PR
   const allRelPRs  = [...new Set(
     filteredMods.flatMap(m => (m.Pages||[]).map(p => p.PR).filter(Boolean))
   )];
 
-  const modGroupsHtml = filteredMods.map(mod => buildModGroup(mod, rel)).join('');
+  const modGroupsHtml = filteredMods.sort((a, b) => (a.Module||'').localeCompare(b.Module||'')).map(mod => buildModGroup(mod, rel)).join('');
 
   const relId = `rel-${rel.Release_Number}`;
   const extraClass = cssClass ? ` ${cssClass}` : '';
@@ -977,7 +977,7 @@ function buildModGroup(mod, rel) {
             })()
           : '');
 
-        const ffStatus = p.Feature_Flag_Status || '—';
+        const ffStatus = p.Feature_Flag_Status || 'N/A';
         const isFirst  = i === 0;
         const rowspan  = prPages.length;
         const prCellHtml = isFirst
@@ -992,7 +992,7 @@ function buildModGroup(mod, rel) {
 
         rows += `<tr>
           <td style="font-family:monospace;font-size:11px" title="${p.Page_Name||''}">${p.Page_Name||'—'}</td>
-          <td style="color:var(--accent2)" title="${ffName}">${ffName||'—'}</td>
+          <td style="color:var(--accent2)" title="${ffName}">${ffName||'N/A'}</td>
           <td>${ffBadge(ffStatus)}</td>
           ${prCellHtml}
         </tr>`;
@@ -1052,12 +1052,12 @@ function showPRDetail(prNum) {
     ['Status',       `<span>${statusBadge(pr.Status)}</span>`],
     ['Dev Sprint',   pr.Dev_Sprint||'—'],
     ['Testing Sprint', pr.Testing_Sprint||'—'],
-    ['Raised Date',  pr['PR Raised Date']||'—'],
-    ['First Response', pr['PR First Response Date']||'—'],
-    ['Approved',     pr['PR Approved Date']||'—'],
+    // ['Raised Date',  pr['PR Raised Date']||'—'],
+    // ['First Response', pr['PR First Response Date']||'—'],
+    // ['Approved',     pr['PR Approved Date']||'—'],
     ['Merged',       pr['PR Merged Date']||'—'],
     ['Target Release', pr.Target_Release||'—'],
-    ['Reviewer',     pr.Reviewer||'—'],
+    // ['Reviewer',     pr.Reviewer||'—'],
     ['Dependent PRs', (pr.Dependent_PRs||[]).length ? pr.Dependent_PRs.map(n=>`<span class="pr-pill" style="cursor:default">#${n}</span>`).join(' ') : '—'],
     ['Pages',        (pr.Page||[]).map(p=>`<code style="font-size:11px;background:var(--surface3);padding:2px 6px;border-radius:4px">${p}</code>`).join('<br>')],
   ];
@@ -1086,6 +1086,27 @@ function showPRDetail(prNum) {
 // ── Release Modal (add / edit) ─────────────────────────
 let relModuleRows = []; // [{Module, User_Story, Pages:[{Page_Name,PR,Task,Feature_Flag,Feature_Flag_Status}]}]
 
+// Helper: get all pages for a module from allModulePages lookup
+function getPagesForRelModule(moduleName) {
+  if (!moduleName) return [];
+  const mod = allModulePages.find(m => m.Module === moduleName);
+  return mod ? (mod.Pages || []) : [];
+}
+
+// Helper: auto-fill Feature_Flag from Module_Pages for a given page name + module
+function getFFForPage(moduleName, pageName) {
+  const pages = getPagesForRelModule(moduleName);
+  const found = pages.find(p => p.page_name === pageName);
+  return found ? (found.Feature_Flag || '') : '';
+}
+
+// Helper: get Feature_Flag_Status for a page from Module_Pages
+function getFFStatusForPage(moduleName, pageName) {
+  const pages = getPagesForRelModule(moduleName);
+  const found = pages.find(p => p.page_name === pageName);
+  return found ? (found.Feature_Flag_Status || 'Enabled') : 'N/A';
+}
+
 function openAddReleaseModal() {
   editingRelease = null;
   document.getElementById('relModalTitle').textContent = 'Add Release';
@@ -1102,14 +1123,41 @@ function openEditReleaseModal(releaseNumber) {
   editingRelease = releaseNumber;
   document.getElementById('relModalTitle').textContent = `Edit Release ${releaseNumber}`;
   document.getElementById('saveRelBtn').textContent = 'Update Release';
-  document.getElementById('r_number').value  = rel.Release_Number||'';
-  document.getElementById('r_date').value     = rel.Release_Date||'';
-  document.getElementById('r_freeze').value   = rel.Code_Freeze||'';
-  document.getElementById('r_regression').value = rel.Regression_Start||'';
+  document.getElementById('r_number').value        = rel.Release_Number||'';
+  document.getElementById('r_date').value          = rel.Release_Date||'';
+  document.getElementById('r_freeze').value        = rel.Code_Freeze||'';
+  document.getElementById('r_regression').value    = rel.Regression_Start||'';
   // Deep-copy Modules for editing
   relModuleRows = JSON.parse(JSON.stringify(rel.Modules||[]));
   renderRelModuleRows();
   document.getElementById('releaseModal').classList.add('open');
+}
+
+// Called when Module dropdown changes for a row — re-render that row
+function onRelModuleChange(mi, selectEl) {
+  relModuleRows[mi].Module = selectEl.value;
+  // Clear all pages since module changed
+  relModuleRows[mi].Pages = [];
+  renderRelModuleRows();
+}
+
+// Called when Page dropdown changes — auto-fill Feature Flag
+function onRelPageSelect(mi, pi, selectEl) {
+  const pageName = selectEl.value;
+  const moduleName = relModuleRows[mi].Module;
+  relModuleRows[mi].Pages[pi].Page_Name    = pageName;
+  relModuleRows[mi].Pages[pi].Feature_Flag = getFFForPage(moduleName, pageName);
+  relModuleRows[mi].Pages[pi].Feature_Flag_Status = getFFStatusForPage(moduleName, pageName);
+  // Re-render just that page row's FF fields without full re-render (DOM thrash)
+  const ffInput  = document.getElementById(`ff-input-${mi}-${pi}`);
+  const ffsSelect = document.getElementById(`ffs-select-${mi}-${pi}`);
+  if (ffInput)   ffInput.value = relModuleRows[mi].Pages[pi].Feature_Flag;
+  if (ffsSelect) ffsSelect.value = relModuleRows[mi].Pages[pi].Feature_Flag_Status;
+}
+
+// Called when FF input is manually edited
+function onRelFFInput(mi, pi, inputEl) {
+  relModuleRows[mi].Pages[pi].Feature_Flag = inputEl.value;
 }
 
 function renderRelModuleRows() {
@@ -1118,43 +1166,109 @@ function renderRelModuleRows() {
     container.innerHTML = `<div style="color:var(--text2);font-size:12px;padding:8px 0">No modules added yet.</div>`;
     return;
   }
-  container.innerHTML = relModuleRows.map((mod, mi) => `
+
+  // Build module dropdown options (from allModulePages)
+  const moduleOptions = allModulePages.map(m =>
+    `<option value="${m.Module}">${m.Module}</option>`
+  ).join('');
+
+  container.innerHTML = relModuleRows.map((mod, mi) => {
+    // Build page dropdown for this module's pages from Module_Pages.json
+    const availablePages = getPagesForRelModule(mod.Module);
+    const pageOptions = availablePages.length
+      ? `<option value="">— select page —</option>` +
+        availablePages.map(p =>
+          `<option value="${p.page_name}">${p.page_name}</option>`
+        ).join('')
+      : `<option value="">— select module first —</option>`;
+
+    // Column header row (only shown when pages exist)
+    const colHeader = (mod.Pages||[]).length ? `
+      <div style="display:grid;grid-template-columns:2fr 2fr 80px 90px 1fr auto;gap:5px;margin-bottom:4px;padding:0 2px">
+        <span style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase">Page</span>
+        <span style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase">Feature Flag</span>
+        <span style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase">PR #</span>
+        <span style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase">Task #</span>
+        <span style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase">FF Status</span>
+        <span></span>
+      </div>` : '';
+
+    const pageRows = (mod.Pages||[]).map((pg, pi) => {
+      const ffVal     = pg.Feature_Flag || getFFForPage(mod.Module, pg.Page_Name) || '';
+      const ffsVal    = pg.Feature_Flag_Status || getFFStatusForPage(mod.Module, pg.Page_Name) || 'N/A';
+      // Find matching page in availablePages to show display label
+      return `
+        <div style="display:grid;grid-template-columns:2fr 2fr 80px 90px 1fr auto;gap:5px;margin-bottom:5px;align-items:center">
+
+          <!-- Page dropdown — populated from Module_Pages for this module -->
+          <select id="page-sel-${mi}-${pi}"
+            style="background:var(--surface3);border:1px solid var(--border);color:var(--text);padding:5px 8px;border-radius:5px;font-size:11px;width:100%"
+            onchange="onRelPageSelect(${mi},${pi},this)">
+            <option value="">— select page —</option>
+            ${availablePages.map(p =>
+              `<option value="${p.page_name}" ${pg.Page_Name===p.page_name?'selected':''}>${p.page_name}</option>`
+            ).join('')}
+          </select>
+
+          <!-- Feature Flag — auto-filled, manually editable -->
+          <input type="text" id="ff-input-${mi}-${pi}"
+            value="${ffVal}" placeholder="Auto-filled from page"
+            style="background:var(--surface3);border:1px solid var(--border);color:var(--accent2);padding:5px 8px;border-radius:5px;font-size:11px"
+            oninput="onRelFFInput(${mi},${pi},this)">
+
+          <!-- PR # -->
+          <input type="text" value="${pg.PR||''}" placeholder="PR #"
+            style="background:var(--surface3);border:1px solid var(--border);color:var(--text);padding:5px 8px;border-radius:5px;font-size:11px"
+            oninput="relModuleRows[${mi}].Pages[${pi}].PR=Number(this.value)||null">
+
+          <!-- Task # -->
+          <input type="text" value="${pg.Task||''}" placeholder="Task #"
+            style="background:var(--surface3);border:1px solid var(--border);color:var(--text);padding:5px 8px;border-radius:5px;font-size:11px"
+            oninput="relModuleRows[${mi}].Pages[${pi}].Task=this.value">
+
+          <!-- FF Status — auto-filled, manually overridable -->
+          <select id="ffs-select-${mi}-${pi}"
+            style="background:var(--surface3);border:1px solid var(--border);color:var(--text);padding:5px 8px;border-radius:5px;font-size:11px"
+            onchange="relModuleRows[${mi}].Pages[${pi}].Feature_Flag_Status=this.value">
+            <option ${ffsVal==='Enabled'?'selected':''}>Enabled</option>
+            <option ${ffsVal==='Disabled'?'selected':''}>Disabled</option>
+            <option ${ffsVal==='N/A'?'selected':''}>N/A</option>
+          </select>
+
+          <button class="btn btn-danger btn-xs" onclick="removeRelPage(${mi},${pi})">✕</button>
+        </div>`;
+    }).join('');
+
+    return `
     <div style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:12px">
+      <!-- Module selector row -->
       <div style="display:flex;gap:8px;align-items:center;margin-bottom:10px">
-        <input type="text" value="${mod.Module||''}" placeholder="Module name"
+        <select
           style="flex:1;background:var(--surface3);border:1px solid var(--border);color:var(--text);padding:6px 10px;border-radius:6px;font-size:12px"
-          oninput="relModuleRows[${mi}].Module=this.value">
+          onchange="onRelModuleChange(${mi},this)">
+          <option value="">— select module —</option>
+          ${allModulePages.map(m =>
+            `<option value="${m.Module}" ${mod.Module===m.Module?'selected':''}>${m.Module}</option>`
+          ).join('')}
+        </select>
         <input type="text" value="${mod.User_Story||''}" placeholder="US#"
           style="width:100px;background:var(--surface3);border:1px solid var(--border);color:var(--text);padding:6px 10px;border-radius:6px;font-size:12px"
           oninput="relModuleRows[${mi}].User_Story=this.value">
         <button class="btn btn-danger btn-xs" onclick="removeRelModule(${mi})">✕</button>
       </div>
-      <div style="font-size:11px;color:var(--text2);margin-bottom:6px;display:flex;justify-content:space-between;align-items:center">
-        <span>Pages (${(mod.Pages||[]).length})</span>
-        <button class="btn btn-ghost btn-xs" onclick="addRelPageRow(${mi})">＋ Page</button>
+      <!-- Pages section -->
+      <div style="margin-top:4px">
+        <div style="font-size:11px;color:var(--text2);margin-bottom:6px;display:flex;justify-content:space-between;align-items:center">
+          <span style="font-weight:600">${mod.Module ? `Pages for ${mod.Module}` : 'Pages'} (${(mod.Pages||[]).length})</span>
+          <button class="btn btn-ghost btn-xs" onclick="addRelPageRow(${mi})"
+            ${!mod.Module?'disabled title="Select a module first"':''}>＋ Add Page</button>
+        </div>
+        ${colHeader}
+        ${pageRows}
+        ${!mod.Module && !(mod.Pages||[]).length ? `<div style="font-size:11px;color:var(--text2);padding:6px 0 2px">Select a module to add pages.</div>` : ''}
       </div>
-      ${(mod.Pages||[]).map((pg, pi) => `
-        <div style="display:grid;grid-template-columns:2fr 1.2fr 80px 80px 1.2fr auto;gap:5px;margin-bottom:5px;align-items:center">
-          <input type="text" value="${pg.Page_Name||''}" placeholder="Page name"
-            style="background:var(--surface3);border:1px solid var(--border);color:var(--text);padding:5px 8px;border-radius:5px;font-size:11px"
-            oninput="relModuleRows[${mi}].Pages[${pi}].Page_Name=this.value">
-          <input type="text" value="${pg.Feature_Flag||''}" placeholder="Feature Flag"
-            style="background:var(--surface3);border:1px solid var(--border);color:var(--text);padding:5px 8px;border-radius:5px;font-size:11px"
-            oninput="relModuleRows[${mi}].Pages[${pi}].Feature_Flag=this.value">
-          <input type="text" value="${pg.PR||''}" placeholder="PR #"
-            style="background:var(--surface3);border:1px solid var(--border);color:var(--text);padding:5px 8px;border-radius:5px;font-size:11px"
-            oninput="relModuleRows[${mi}].Pages[${pi}].PR=Number(this.value)||null">
-          <input type="text" value="${pg.Task||''}" placeholder="Task #"
-            style="background:var(--surface3);border:1px solid var(--border);color:var(--text);padding:5px 8px;border-radius:5px;font-size:11px"
-            oninput="relModuleRows[${mi}].Pages[${pi}].Task=this.value">
-          <select style="background:var(--surface3);border:1px solid var(--border);color:var(--text);padding:5px 8px;border-radius:5px;font-size:11px"
-            onchange="relModuleRows[${mi}].Pages[${pi}].Feature_Flag_Status=this.value">
-            <option ${pg.Feature_Flag_Status==='Enabled'?'selected':''}>Enabled</option>
-            <option ${pg.Feature_Flag_Status==='Disabled'?'selected':''}>Disabled</option>
-          </select>
-          <button class="btn btn-danger btn-xs" onclick="removeRelPage(${mi},${pi})">✕</button>
-        </div>`).join('')}
-    </div>`).join('');
+    </div>`;
+  }).join('');
 }
 
 function addRelModuleRow() {
@@ -1166,7 +1280,9 @@ function removeRelModule(mi) {
   renderRelModuleRows();
 }
 function addRelPageRow(mi) {
-  relModuleRows[mi].Pages.push({ Page_Name:'', Feature_Flag:'', PR:null, Task:'', Feature_Flag_Status:'Enabled' });
+  const moduleName = relModuleRows[mi].Module;
+  if (!moduleName) return showToast('Select a module first', 'error');
+  relModuleRows[mi].Pages.push({ Page_Name:'', Feature_Flag:'', PR:null, Task:'', Feature_Flag_Status:'N/A' });
   renderRelModuleRows();
 }
 function removeRelPage(mi, pi) {
@@ -1378,7 +1494,7 @@ function openEditPageModal(moduleName, pageName) {
   document.getElementById('pg_name').value       = page.page_name;
   document.getElementById('pg_name').disabled    = true;
   document.getElementById('pg_flag').value       = page.Feature_Flag || '';
-  document.getElementById('pg_flagStatus').value = page.Feature_Flag_Status || 'Enabled';
+  document.getElementById('pg_flagStatus').value = page.Feature_Flag_Status || 'N/A';
   document.getElementById('pg_demoStatus').value = page.Client_Demo_Status || 'Pending';
   document.getElementById('pg_demoDate').value   = page.Client_Demo_Date  || '';
   document.getElementById('pg_prodStatus').value = page.Production_Deployment_Status || 'Pending';
@@ -1391,7 +1507,7 @@ function openAddPageModal(moduleName) {
   document.getElementById('pg_name').value       = '';
   document.getElementById('pg_name').disabled    = false;
   document.getElementById('pg_flag').value       = '';
-  document.getElementById('pg_flagStatus').value = 'Enabled';
+  document.getElementById('pg_flagStatus').value = 'N/A';
   document.getElementById('pg_demoStatus').value = 'Pending';
   document.getElementById('pg_demoDate').value   = '';
   document.getElementById('pg_prodStatus').value = 'Pending';
