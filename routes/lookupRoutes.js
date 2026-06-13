@@ -1,20 +1,20 @@
 const express = require('express');
 const router = express.Router();
-const dataService = require('../services/dataService');
+const dataService = require('../services/dynamoService');
 
 // GET /api/lookup/modules
-router.get('/modules', (req, res) => {
+router.get('/modules', async (req, res) => {
   try {
-    res.json(dataService.getModuleNames());
+    res.json(await dataService.getModuleNames());
   } catch (e) {
     res.status(500).json({ error: e.message });
   }
 });
 
 // GET /api/lookup/modules/:moduleName/pages
-router.get('/modules/:moduleName/pages', (req, res) => {
+router.get('/modules/:moduleName/pages', async (req, res) => {
   try {
-    const pages = dataService.getPagesForModule(req.params.moduleName);
+    const pages = await dataService.getPagesForModule(req.params.moduleName);
     res.json(pages);
   } catch (e) {
     res.status(500).json({ error: e.message });
@@ -22,45 +22,45 @@ router.get('/modules/:moduleName/pages', (req, res) => {
 });
 
 // GET /api/lookup/team
-router.get('/team', (req, res) => {
+router.get('/team', async (req, res) => {
   try {
-    res.json(dataService.getTeam());
+    res.json(await dataService.getTeam());
   } catch (e) {
     res.status(500).json({ error: e.message });
   }
 });
 
 // GET /api/lookup/developers
-router.get('/developers', (req, res) => {
+router.get('/developers', async (req, res) => {
   try {
-    res.json(dataService.getDevelopers());
+    res.json(await dataService.getDevelopers());
   } catch (e) {
     res.status(500).json({ error: e.message });
   }
 });
 
 // GET /api/lookup/reviewers
-router.get('/reviewers', (req, res) => {
+router.get('/reviewers', async (req, res) => {
   try {
-    res.json(dataService.getReviewers());
+    res.json(await dataService.getReviewers());
   } catch (e) {
     res.status(500).json({ error: e.message });
   }
 });
 
 // GET /api/lookup/timeline
-router.get('/timeline', (req, res) => {
+router.get('/timeline', async (req, res) => {
   try {
-    res.json(dataService.getReleaseTimeline());
+    res.json(await dataService.getReleaseTimeline());
   } catch (e) {
     res.status(500).json({ error: e.message });
   }
 });
 
-// GET /api/lookup/module-pages  — full Module_Pages.json
-router.get('/module-pages', (req, res) => {
+// GET /api/lookup/module-pages  — full ModulePages table
+router.get('/module-pages', async (req, res) => {
   try {
-    res.json(dataService.getModulePages());
+    res.json(await dataService.getModulePages());
   } catch (e) {
     res.status(500).json({ error: e.message });
   }

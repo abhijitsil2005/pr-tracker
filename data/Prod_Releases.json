@@ -313,6 +313,13 @@
             "PR": 8793,
             "Task": "",
             "Feature_Flag_Status": "N/A"
+          },
+          {
+            "Page_Name": "questions.aspx",
+            "Feature_Flag": "F1043543_RefactorTelerik_Assessments_Questions",
+            "PR": 9006,
+            "Task": "",
+            "Feature_Flag_Status": "Enabled"
           }
         ]
       },

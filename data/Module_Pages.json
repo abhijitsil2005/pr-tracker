@@ -67,10 +67,10 @@
       {
         "page_name": "checkMyWork/checkMyWork.aspx",
         "Feature_Flag": "F1042045_RefactorTelerik_Assessments_CheckMyWork",
-        "Feature_Flag_Status": "Disabled",
+        "Feature_Flag_Status": "Enabled",
         "Client_Demo_Status": "Pending",
         "Client_Demo_Date": "",
-        "Production_Deployment_Status": "Pending"
+        "Production_Deployment_Status": "Deployed"
       },
       {
         "page_name": "checkMyWork/submissions.aspx",
@@ -107,10 +107,10 @@
       {
         "page_name": "questions.aspx",
         "Feature_Flag": "F1043543_RefactorTelerik_Assessments_Questions",
-        "Feature_Flag_Status": "Disabled",
+        "Feature_Flag_Status": "Enabled",
         "Client_Demo_Status": "Pending",
         "Client_Demo_Date": "",
-        "Production_Deployment_Status": "Pending"
+        "Production_Deployment_Status": "Deployed"
       },
       {
         "page_name": "questionManager.aspx",
@@ -169,10 +169,10 @@
       {
         "page_name": "assetVendorAddressContact.aspx",
         "Feature_Flag": "F989552_TelerikRefactor_AssetAware_AddressContact",
-        "Feature_Flag_Status": "Disabled",
+        "Feature_Flag_Status": "Enabled",
         "Client_Demo_Status": "Pending",
         "Client_Demo_Date": "",
-        "Production_Deployment_Status": "Pending"
+        "Production_Deployment_Status": "Deployed"
       },
       {
         "page_name": "expressAssetHistory.aspx",
@@ -315,10 +315,10 @@
       {
         "page_name": "placement/default.aspx",
         "Feature_Flag": "F1045395_RefactorTelerik_Enrollment_Placement_default",
-        "Feature_Flag_Status": "Disabled",
+        "Feature_Flag_Status": "Enabled",
         "Client_Demo_Status": "Pending",
         "Client_Demo_Date": "",
-        "Production_Deployment_Status": "Pending"
+        "Production_Deployment_Status": "Deployed"
       },
       {
         "page_name": "placement/manager.aspx",
@@ -367,7 +367,7 @@
         "Feature_Flag_Status": "Enabled",
         "Client_Demo_Status": "Pending",
         "Client_Demo_Date": "",
-        "Production_Deployment_Status": "Pending"
+        "Production_Deployment_Status": "Deployed"
       },
       {
         "page_name": "calculationGroups.aspx",
@@ -423,15 +423,7 @@
         "Feature_Flag_Status": "Enabled",
         "Client_Demo_Status": "Pending",
         "Client_Demo_Date": "",
-        "Production_Deployment_Status": "Pending"
-      },
-      {
-        "page_name": "objectivePerformance.aspx",
-        "Feature_Flag": "ObjectivePerformance",
-        "Feature_Flag_Status": "Enabled",
-        "Client_Demo_Status": "Pending",
-        "Client_Demo_Date": "",
-        "Production_Deployment_Status": "Pending"
+        "Production_Deployment_Status": "Deployed"
       },
       {
         "page_name": "progressReport/default.aspx",
@@ -439,7 +431,7 @@
         "Feature_Flag_Status": "Enabled",
         "Client_Demo_Status": "Pending",
         "Client_Demo_Date": "",
-        "Production_Deployment_Status": "Pending"
+        "Production_Deployment_Status": "Deployed"
       },
       {
         "page_name": "progressReport/progressReport.aspx",
@@ -447,7 +439,7 @@
         "Feature_Flag_Status": "Enabled",
         "Client_Demo_Status": "Pending",
         "Client_Demo_Date": "",
-        "Production_Deployment_Status": "Pending"
+        "Production_Deployment_Status": "Deployed"
       },
       {
         "page_name": "progressReport/transcript/createExternalCourses.aspx",
@@ -455,7 +447,7 @@
         "Feature_Flag_Status": "Enabled",
         "Client_Demo_Status": "Pending",
         "Client_Demo_Date": "",
-        "Production_Deployment_Status": "Pending"
+        "Production_Deployment_Status": "Deployed"
       },
       {
         "page_name": "progressReport/transcript/externalCourse.aspx",
@@ -471,7 +463,7 @@
         "Feature_Flag_Status": "Enabled",
         "Client_Demo_Status": "Pending",
         "Client_Demo_Date": "",
-        "Production_Deployment_Status": "Pending"
+        "Production_Deployment_Status": "Deployed"
       },
       {
         "page_name": "section/* - all pages",
@@ -490,7 +482,9 @@
         "Production_Deployment_Status": "Pending"
       }
     ],
-    "OutOfScope": []
+    "OutOfScope": [
+      "objectivePerformance.aspx"
+    ]
   },
   {
     "Module": "Home",
@@ -509,7 +503,7 @@
         "Feature_Flag_Status": "Enabled",
         "Client_Demo_Status": "Pending",
         "Client_Demo_Date": "",
-        "Production_Deployment_Status": "Pending"
+        "Production_Deployment_Status": "Deployed"
       }
     ],
     "OutOfScope": [
@@ -563,21 +557,13 @@
         "Feature_Flag_Status": "Enabled",
         "Client_Demo_Status": "Pending",
         "Client_Demo_Date": "",
-        "Production_Deployment_Status": "Pending"
+        "Production_Deployment_Status": "Deployed"
       },
       {
         "page_name": "category.aspx.cs",
         "Feature_Flag": "Category",
         "Feature_Flag_Status": "Enabled",
         "Client_Demo_Status": "Pending",
-        "Client_Demo_Date": "",
-        "Production_Deployment_Status": "Pending"
-      },
-      {
-        "page_name": "Infrastructure Pages",
-        "Feature_Flag": "N/A",
-        "Feature_Flag_Status": "N/A",
-        "Client_Demo_Status": "N/A",
         "Client_Demo_Date": "",
         "Production_Deployment_Status": "Pending"
       },
@@ -611,7 +597,7 @@
         "Feature_Flag_Status": "Enabled",
         "Client_Demo_Status": "Pending",
         "Client_Demo_Date": "",
-        "Production_Deployment_Status": "Pending"
+        "Production_Deployment_Status": "Deployed"
       },
       {
         "page_name": "security/roleAccessRestrictions.aspx",
@@ -619,7 +605,7 @@
         "Feature_Flag_Status": "Enabled",
         "Client_Demo_Status": "Pending",
         "Client_Demo_Date": "",
-        "Production_Deployment_Status": "Pending"
+        "Production_Deployment_Status": "Deployed"
       },
       {
         "page_name": "skinProperties.aspx",
@@ -627,7 +613,7 @@
         "Feature_Flag_Status": "Enabled",
         "Client_Demo_Status": "Pending",
         "Client_Demo_Date": "",
-        "Production_Deployment_Status": "Pending"
+        "Production_Deployment_Status": "Deployed"
       },
       {
         "page_name": "Infrastructure Pages",
@@ -792,6 +778,17 @@
         "Client_Demo_Status": "N/A",
         "Client_Demo_Date": "",
         "Production_Deployment_Status": "Pending"
+      }
+    ],
+    "OutOfScope": []
+  },
+  {
+    "Module": "Registration",
+    "Pages": [
+      {
+        "page_name": "registration.aspx",
+        "Feature_Flag": "",
+        "Feature_Flag_Status": "N/A"
       }
     ],
     "OutOfScope": []

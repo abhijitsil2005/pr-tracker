@@ -1,6 +1,6 @@
 const XLSX = require('xlsx');
 const path = require('path');
-const dataService = require('./dataService');
+const dataService = require('./dynamoService');
 
 const SHEET_NAME = 'All Handson WorkShop-May-Sep';
 const EXCEL_PATH = path.join(__dirname, '..', 'data', 'Final_Estimation.xlsx');
