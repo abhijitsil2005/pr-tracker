@@ -1,37 +1,36 @@
 const express = require('express');
 const router = express.Router();
-const ds = require('../services/dataService');
+const ds = require('../services/dynamoService');
 
-// GET  /api/modules                    → all modules
-router.get('/', (req, res) => {
-  try { res.json(ds.getModulePages()); }
+// GET  /api/modules
+router.get('/', async (req, res) => {
+  try { res.json(await ds.getModulePages()); }
   catch (e) { res.status(500).json({ error: e.message }); }
 });
 
-// GET  /api/modules/:name              → single module
-router.get('/:name', (req, res) => {
+// GET  /api/modules/:name
+router.get('/:name', async (req, res) => {
   try {
-    const all = ds.getModulePages();
-    const mod = all.find(m => m.Module === req.params.name);
+    const mod = await ds.getModulePage(req.params.name);
     if (!mod) return res.status(404).json({ error: `Module "${req.params.name}" not found` });
     res.json(mod);
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
-// POST /api/modules                    → add module
-router.post('/', (req, res) => {
+// POST /api/modules
+router.post('/', async (req, res) => {
   try {
     const { Module, Pages, OutOfScope } = req.body;
     if (!Module) return res.status(400).json({ error: 'Module name required' });
-    const result = ds.addModule({ Module, Pages: Pages || [], OutOfScope: OutOfScope || [] });
+    const result = await ds.addModule({ Module, Pages: Pages || [], OutOfScope: OutOfScope || [] });
     res.status(201).json({ message: 'Module created', data: result });
   } catch (e) { res.status(400).json({ error: e.message }); }
 });
 
-// PUT  /api/modules/:name              → rename / update top-level fields
-router.put('/:name', (req, res) => {
+// PUT  /api/modules/:name
+router.put('/:name', async (req, res) => {
   try {
-    const result = ds.updateModule(req.params.name, req.body);
+    const result = await ds.updateModule(req.params.name, req.body);
     res.json({ message: 'Module updated', data: result });
   } catch (e) {
     res.status(e.message.includes('not found') ? 404 : 400).json({ error: e.message });
@@ -39,24 +38,24 @@ router.put('/:name', (req, res) => {
 });
 
 // DELETE /api/modules/:name
-router.delete('/:name', (req, res) => {
+router.delete('/:name', async (req, res) => {
   try {
-    const removed = ds.deleteModule(req.params.name);
-    res.json({ message: `Module "${req.params.name}" deleted`, data: removed });
+    await ds.deleteModule(req.params.name);
+    res.json({ message: `Module "${req.params.name}" deleted` });
   } catch (e) {
     res.status(e.message.includes('not found') ? 404 : 500).json({ error: e.message });
   }
 });
 
-// ── Pages within a module ─────────────────────────────────────
+// ── Pages within a module ─────────────────────────────────────────
 
 // POST /api/modules/:name/pages
-router.post('/:name/pages', (req, res) => {
+router.post('/:name/pages', async (req, res) => {
   try {
     const { page_name, Feature_Flag, Feature_Flag_Status,
             Client_Demo_Status, Client_Demo_Date, Production_Deployment_Status } = req.body;
     if (!page_name) return res.status(400).json({ error: 'page_name required' });
-    const result = ds.addPageToModule(req.params.name, {
+    const result = await ds.addPageToModule(req.params.name, {
       page_name,
       Feature_Flag:                 Feature_Flag || '',
       Feature_Flag_Status:          Feature_Flag_Status || 'Enabled',
@@ -69,10 +68,10 @@ router.post('/:name/pages', (req, res) => {
 });
 
 // PUT  /api/modules/:name/pages/:pageName
-router.put('/:name/pages/:pageName', (req, res) => {
+router.put('/:name/pages/:pageName', async (req, res) => {
   try {
     const pageName = decodeURIComponent(req.params.pageName);
-    const result = ds.updatePageInModule(req.params.name, pageName, req.body);
+    const result = await ds.updatePageInModule(req.params.name, pageName, req.body);
     res.json({ message: 'Page updated', data: result });
   } catch (e) {
     res.status(e.message.includes('not found') ? 404 : 400).json({ error: e.message });
@@ -80,33 +79,33 @@ router.put('/:name/pages/:pageName', (req, res) => {
 });
 
 // DELETE /api/modules/:name/pages/:pageName
-router.delete('/:name/pages/:pageName', (req, res) => {
+router.delete('/:name/pages/:pageName', async (req, res) => {
   try {
     const pageName = decodeURIComponent(req.params.pageName);
-    const removed = ds.deletePageFromModule(req.params.name, pageName);
-    res.json({ message: 'Page deleted', data: removed });
+    const result = await ds.deletePageFromModule(req.params.name, pageName);
+    res.json({ message: 'Page deleted', data: result });
   } catch (e) {
     res.status(e.message.includes('not found') ? 404 : 500).json({ error: e.message });
   }
 });
 
-// ── Out-of-scope pages ────────────────────────────────────────
+// ── Out-of-scope pages ────────────────────────────────────────────
 
 // POST /api/modules/:name/out-of-scope
-router.post('/:name/out-of-scope', (req, res) => {
+router.post('/:name/out-of-scope', async (req, res) => {
   try {
     const { page_name } = req.body;
     if (!page_name) return res.status(400).json({ error: 'page_name required' });
-    const result = ds.addOutOfScopePage(req.params.name, page_name);
+    const result = await ds.addOutOfScopePage(req.params.name, page_name);
     res.status(201).json({ message: 'Out-of-scope page added', data: result });
   } catch (e) { res.status(400).json({ error: e.message }); }
 });
 
 // DELETE /api/modules/:name/out-of-scope/:pageName
-router.delete('/:name/out-of-scope/:pageName', (req, res) => {
+router.delete('/:name/out-of-scope/:pageName', async (req, res) => {
   try {
     const pageName = decodeURIComponent(req.params.pageName);
-    const result = ds.removeOutOfScopePage(req.params.name, pageName);
+    const result = await ds.removeOutOfScopePage(req.params.name, pageName);
     res.json({ message: 'Out-of-scope page removed', data: result });
   } catch (e) {
     res.status(e.message.includes('not found') ? 404 : 500).json({ error: e.message });

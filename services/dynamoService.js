@@ -1,0 +1,146 @@
+// services/dynamoService.js
+require('dotenv').config();
+const { DynamoDBClient } = require('@aws-sdk/client-dynamodb');
+const { DynamoDBDocumentClient, GetCommand, PutCommand,
+        DeleteCommand, ScanCommand } = require('@aws-sdk/lib-dynamodb');
+
+const client = new DynamoDBClient({
+  region: process.env.AWS_REGION || 'us-east-1',
+  credentials: {
+    accessKeyId:     process.env.AWS_ACCESS_KEY_ID,
+    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
+  },
+});
+const docClient = DynamoDBDocumentClient.from(client);
+
+// ── Core helpers ──────────────────────────────────────────────────
+async function scanTable(tableName) {
+  const result = await docClient.send(new ScanCommand({ TableName: tableName }));
+  return result.Items || [];
+}
+
+async function getItem(tableName, key) {
+  const result = await docClient.send(new GetCommand({ TableName: tableName, Key: key }));
+  return result.Item || null;
+}
+
+async function putItem(tableName, item) {
+  await docClient.send(new PutCommand({ TableName: tableName, Item: item }));
+  return item;
+}
+
+async function deleteItem(tableName, key) {
+  await docClient.send(new DeleteCommand({ TableName: tableName, Key: key }));
+}
+
+// ── PRDetails ─────────────────────────────────────────────────────
+const getPRs        = ()     => scanTable('PRDetails');
+const getPRByNumber = (pr)   => getItem('PRDetails', { PR: Number(pr) });
+const addPR         = (item) => putItem('PRDetails', item);
+const deletePR      = (pr)   => deleteItem('PRDetails', { PR: Number(pr) });
+
+async function updatePR(prNumber, updates) {
+  const existing = await getPRByNumber(prNumber);
+  if (!existing) throw new Error(`PR ${prNumber} not found`);
+  return putItem('PRDetails', { ...existing, ...updates, PR: existing.PR });
+}
+
+// ── ProdReleases ──────────────────────────────────────────────────
+const getProdReleases   = ()     => scanTable('ProdReleases');
+const getProdRelease    = (num)  => getItem('ProdReleases', { Release_Number: String(num) });
+const upsertProdRelease = (item) => putItem('ProdReleases', item);
+const deleteProdRelease = (num)  => deleteItem('ProdReleases', { Release_Number: String(num) });
+
+// ── ModulePages ───────────────────────────────────────────────────
+const getModulePages = ()    => scanTable('ModulePages');
+const getModulePage  = (mod) => getItem('ModulePages', { Module: mod });
+
+async function getModuleNames() {
+  const items = await scanTable('ModulePages');
+  return items.map(m => m.Module);
+}
+
+async function getPagesForModule(moduleName) {
+  const mod = await getModulePage(moduleName);
+  if (!mod) throw new Error(`Module "${moduleName}" not found`);
+  return mod.Pages || [];
+}
+
+async function addModule(item) {
+  return putItem('ModulePages', item);
+}
+
+async function updateModule(name, updates) {
+  const existing = await getModulePage(name);
+  if (!existing) throw new Error(`Module "${name}" not found`);
+  return putItem('ModulePages', { ...existing, ...updates, Module: existing.Module });
+}
+
+const deleteModule = (mod) => deleteItem('ModulePages', { Module: mod });
+
+async function addPageToModule(moduleName, page) {
+  const mod = await getModulePage(moduleName);
+  if (!mod) throw new Error(`Module "${moduleName}" not found`);
+  const pages = [...(mod.Pages || []), page];
+  return putItem('ModulePages', { ...mod, Pages: pages });
+}
+
+async function updatePageInModule(moduleName, pageName, updates) {
+  const mod = await getModulePage(moduleName);
+  if (!mod) throw new Error(`Module "${moduleName}" not found`);
+  const pages = mod.Pages || [];
+  const idx = pages.findIndex(p => p.page_name === pageName);
+  if (idx === -1) throw new Error(`Page "${pageName}" not found in module "${moduleName}"`);
+  pages[idx] = { ...pages[idx], ...updates };
+  return putItem('ModulePages', { ...mod, Pages: pages });
+}
+
+async function deletePageFromModule(moduleName, pageName) {
+  const mod = await getModulePage(moduleName);
+  if (!mod) throw new Error(`Module "${moduleName}" not found`);
+  const before = mod.Pages || [];
+  const after = before.filter(p => p.page_name !== pageName);
+  if (before.length === after.length) throw new Error(`Page "${pageName}" not found in module "${moduleName}"`);
+  return putItem('ModulePages', { ...mod, Pages: after });
+}
+
+async function addOutOfScopePage(moduleName, pageName) {
+  const mod = await getModulePage(moduleName);
+  if (!mod) throw new Error(`Module "${moduleName}" not found`);
+  const oos = mod.OutOfScope || [];
+  if (!oos.includes(pageName)) oos.push(pageName);
+  return putItem('ModulePages', { ...mod, OutOfScope: oos });
+}
+
+async function removeOutOfScopePage(moduleName, pageName) {
+  const mod = await getModulePage(moduleName);
+  if (!mod) throw new Error(`Module "${moduleName}" not found`);
+  const oos = (mod.OutOfScope || []).filter(p => p !== pageName);
+  return putItem('ModulePages', { ...mod, OutOfScope: oos });
+}
+
+// ── Team ──────────────────────────────────────────────────────────
+const getTeam = () => scanTable('Team');
+
+async function getDevelopers() {
+  const item = await getItem('Team', { Role: 'Developer' });
+  return item ? item.Members : [];
+}
+
+async function getReviewers() {
+  const item = await getItem('Team', { Role: 'PR Reviewer' });
+  return item ? item.Members : [];
+}
+
+// ── ReleaseTimeline ───────────────────────────────────────────────
+const getReleaseTimeline = () => scanTable('ReleaseTimeline');
+
+module.exports = {
+  getPRs, getPRByNumber, addPR, deletePR, updatePR,
+  getProdReleases, getProdRelease, upsertProdRelease, deleteProdRelease,
+  getModulePages, getModulePage, getModuleNames, getPagesForModule,
+  addModule, updateModule, deleteModule,
+  addPageToModule, updatePageInModule, deletePageFromModule,
+  addOutOfScopePage, removeOutOfScopePage,
+  getReleaseTimeline, getTeam, getDevelopers, getReviewers,
+};
