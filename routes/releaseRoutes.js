@@ -62,6 +62,17 @@ router.put('/:releaseNumber', async (req, res) => {
   }
 });
 
+// POST /api/releases/:releaseNumber/complete
+router.post('/:releaseNumber/complete', async (req, res) => {
+  try {
+    const result = await dataService.completeRelease(req.params.releaseNumber);
+    res.json({ message: `Release ${req.params.releaseNumber} completed`, ...result });
+  } catch (e) {
+    const code = e.message.includes('not found') ? 404 : 500;
+    res.status(code).json({ error: e.message });
+  }
+});
+
 // DELETE /api/releases/:releaseNumber
 router.delete('/:releaseNumber', async (req, res) => {
   try {

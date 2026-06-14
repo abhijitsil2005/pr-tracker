@@ -9,7 +9,11 @@ const lookupRoutes = require('./routes/lookupRoutes');
 const moduleRoutes = require('./routes/moduleRoutes');
 
 const app = express();
-const PORT = process.env.PORT || 3005;
+const PORT = process.env.PORT || 3000;
+
+app.listen(PORT, () => {
+  console.log(`Running on port ${PORT}`)
+});
 
 app.use(cors());
 app.use(express.json());
