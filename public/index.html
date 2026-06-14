@@ -159,12 +159,13 @@ label{display:block;font-size:12px;color:var(--text2);margin-bottom:5px}
 .mp-acc-body.open{display:block}
 /* Module Pages full-width fixed table */
 .mp-pages-table{width:100%;border-collapse:collapse;font-size:12px;table-layout:fixed}
-.mp-pages-table col.mpc-page{width:22%}
-.mp-pages-table col.mpc-ff{width:28%}
+.mp-pages-table col.mpc-page{width:19%}
+.mp-pages-table col.mpc-ff{width:22%}
 .mp-pages-table col.mpc-ffs{width:9%}
-.mp-pages-table col.mpc-demo{width:10%}
-.mp-pages-table col.mpc-demodate{width:11%}
-.mp-pages-table col.mpc-prod{width:11%}
+.mp-pages-table col.mpc-demo{width:9%}
+.mp-pages-table col.mpc-demodate{width:10%}
+.mp-pages-table col.mpc-prod{width:10%}
+.mp-pages-table col.mpc-releasedate{width:12%}
 .mp-pages-table col.mpc-actions{width:9%}
 .mp-pages-table th{padding:7px 10px;text-align:left;color:var(--text2);font-size:11px;font-weight:600;background:var(--surface3);border-bottom:1px solid var(--border);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .mp-pages-table td{padding:7px 10px;border-bottom:1px solid rgba(46,50,80,.4);vertical-align:middle;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -196,6 +197,14 @@ label{display:block;font-size:12px;color:var(--text2);margin-bottom:5px}
 /* empty state */
 .empty{text-align:center;padding:48px 20px;color:var(--text2);font-size:13px}
 .empty .e-icon{font-size:36px;margin-bottom:10px}
+
+/* ── Page chip multi-select ───────────────────────────── */
+.page-chips{min-height:72px;max-height:160px;overflow-y:auto;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:8px;display:flex;flex-wrap:wrap;gap:6px;align-content:flex-start;transition:border-color .15s;cursor:default}
+.page-chips.has-focus{border-color:var(--accent)}
+.page-chip{display:inline-flex;align-items:center;padding:4px 12px;border-radius:20px;font-size:11px;font-family:monospace;background:var(--surface3);border:1px solid var(--border);color:var(--text2);cursor:pointer;user-select:none;white-space:nowrap;transition:background .15s,color .15s,border-color .15s}
+.page-chip:hover{border-color:var(--accent);color:var(--text)}
+.page-chip.selected{background:rgba(79,126,248,.18);border-color:var(--accent);color:var(--accent);font-weight:600}
+.page-chip-hint{color:var(--text2);font-size:12px;padding:2px 2px;width:100%}
 </style>
 </head>
 <body>
@@ -209,7 +218,7 @@ label{display:block;font-size:12px;color:var(--text2);margin-bottom:5px}
     <li><a href="#" data-section="prs">🔀 Pull Requests</a></li>
     <li><a href="#" data-section="releases">🚀 Releases</a></li>
     <li><a href="#" data-section="modules">📦 Module Pages</a></li>
-    <li><a href="#" data-section="sync">🔄 Sync Excel</a></li>
+    <!-- <li><a href="#" data-section="sync">🔄 Sync Excel</a></li> -->
   </ul>
 </nav>
 
@@ -330,7 +339,12 @@ label{display:block;font-size:12px;color:var(--text2);margin-bottom:5px}
       <div class="form-group"><label>Type</label><select id="f_type"><option>Development</option><option>Bug Fix</option><option>Hotfix</option></select></div>
       <div class="form-group"><label>Module</label><select id="f_module" onchange="loadPageOptions()"><option value="">— select —</option></select></div>
       <div class="form-group"><label>Developer</label><select id="f_developer"><option value="">— select —</option></select></div>
-      <div class="form-group full"><label>Pages (comma-separated)</label><input type="text" id="f_pages"></div>
+      <div class="form-group full">
+        <label>Pages <span style="color:var(--text2);font-weight:400">— click to select, click again to deselect</span></label>
+        <div id="f_pages" class="page-chips">
+          <span class="page-chip-hint">— select a module first —</span>
+        </div>
+      </div>
       <div class="form-group"><label>Status</label>
         <select id="f_status">
           <option value="">— select —</option>
@@ -442,6 +456,9 @@ label{display:block;font-size:12px;color:var(--text2);margin-bottom:5px}
           <option value="In Progress">In Progress</option>
           <option value="Blocked">Blocked</option>
         </select>
+      </div>
+      <div class="form-group"><label>Release Date (mm/dd/yyyy)</label>
+        <input type="text" id="pg_releaseDate" placeholder="e.g. 06/11/2026">
       </div>
     </div>
     <div class="modal-footer">
@@ -718,7 +735,11 @@ async function openEditPRModal(prNumber) {
   document.getElementById('f_type').value = pr.Type||'Development';
   document.getElementById('f_module').value = pr.Module||'';
   document.getElementById('f_developer').value = pr.Developer||'';
-  document.getElementById('f_pages').value = (pr.Page||[]).join(', ');
+  await loadPageOptions();
+  const savedPages = new Set(pr.Page||[]);
+  document.getElementById('f_pages').querySelectorAll('.page-chip').forEach(chip => {
+    if (savedPages.has(chip.dataset.value)) chip.classList.add('selected');
+  });
   document.getElementById('f_status').value = pr.Status||'';
   document.getElementById('f_reviewer').value = pr.Reviewer||'';
   document.getElementById('f_raised').value = pr['PR Raised Date']||'';
@@ -737,14 +758,31 @@ function closePRModal() {
   editingPR = null;
 }
 function clearPRForm() {
-  ['f_pr','f_pages','f_raised','f_firstResponse','f_approved','f_merged','f_devSprint','f_testSprint','f_deps'].forEach(id=>{ document.getElementById(id).value=''; });
+  ['f_pr','f_raised','f_firstResponse','f_approved','f_merged','f_devSprint','f_testSprint','f_deps'].forEach(id=>{ document.getElementById(id).value=''; });
   ['f_type','f_module','f_developer','f_status','f_reviewer','f_target'].forEach(id=>{ document.getElementById(id).selectedIndex=0; });
+  document.getElementById('f_pages').innerHTML = '<span class="page-chip-hint">— select a module first —</span>';
 }
 async function loadPageOptions() {
   const mod = document.getElementById('f_module').value;
-  if (!mod) return;
+  const container = document.getElementById('f_pages');
+  container.innerHTML = '';
+  if (!mod) {
+    container.innerHTML = '<span class="page-chip-hint">— select a module first —</span>';
+    return;
+  }
   const pages = await api(`lookup/modules/${encodeURIComponent(mod)}/pages`);
-  document.getElementById('f_pages').placeholder = (pages||[]).map(p=>p.page_name).join(', ') || 'Enter pages';
+  if (!pages || !pages.length) {
+    container.innerHTML = '<span class="page-chip-hint">No pages defined for this module</span>';
+    return;
+  }
+  pages.forEach(p => {
+    const chip = document.createElement('span');
+    chip.className = 'page-chip';
+    chip.textContent = p.page_name;
+    chip.dataset.value = p.page_name;
+    chip.onclick = () => chip.classList.toggle('selected');
+    container.appendChild(chip);
+  });
 }
 async function savePR() {
   const pr = Number(document.getElementById('f_pr').value);
@@ -753,7 +791,7 @@ async function savePR() {
     PR:pr, Type:document.getElementById('f_type').value,
     Module:document.getElementById('f_module').value||null,
     Developer:document.getElementById('f_developer').value||null,
-    Page:document.getElementById('f_pages').value.split(',').map(s=>s.trim()).filter(Boolean),
+    Page:[...document.getElementById('f_pages').querySelectorAll('.page-chip.selected')].map(c=>c.dataset.value),
     Status:document.getElementById('f_status').value||null,
     Reviewer:document.getElementById('f_reviewer').value||null,
     'PR Raised Date':document.getElementById('f_raised').value||null,
@@ -919,6 +957,7 @@ function buildReleaseBlock(rel, search, cssClass) {
         <span class="badge badge-blue">${totalMods} module${totalMods!==1?'s':''}</span>
         <span class="badge badge-purple">${totalPages} page${totalPages!==1?'s':''}</span>
         <span class="badge badge-gray">${allRelPRs.length} PR${allRelPRs.length!==1?'s':''}</span>
+        <button class="btn btn-success btn-sm" onclick="completeRelease('${rel.Release_Number}')">✅ Complete</button>
         <button class="btn btn-ghost btn-sm" onclick="openEditReleaseModal('${rel.Release_Number}')">✏️ Edit</button>
         <button class="btn btn-danger btn-sm" onclick="deleteRelease('${rel.Release_Number}')">🗑</button>
       </div>
@@ -1328,6 +1367,24 @@ async function deleteRelease(releaseNumber) {
   renderReleases();
 }
 
+async function completeRelease(releaseNumber) {
+  if (!confirm(
+    `Mark Release ${releaseNumber} as complete?\n\n` +
+    `This will:\n` +
+    `• Set Production Deployment Status → Deployed for all release pages\n` +
+    `• Update Feature Flag Status per release settings\n` +
+    `• Stamp Release_Date on all affected pages\n` +
+    `• Update all associated PRs → "Prod Deployed" + stamp Release_Date`
+  )) return;
+  const res  = await fetch(`${API}/releases/${releaseNumber}/complete`, { method: 'POST' });
+  const json = await res.json();
+  if (!res.ok) return showToast(json.error, 'error');
+  showToast(`Release ${releaseNumber} completed — ${json.prCount} PR(s) updated`, 'success');
+  renderReleases();
+  // Refresh Module Pages if it's currently visible
+  if (document.getElementById('section-modules').classList.contains('active')) renderModulePages();
+}
+
 // ═══════════════════════════════════════════════════════
 // MODULE PAGES
 // ═══════════════════════════════════════════════════════
@@ -1382,8 +1439,9 @@ function buildModuleAccordion(mod) {
       <td style="font-size:11px" title="${p.Feature_Flag||''}">${p.Feature_Flag||'—'}</td>
       <td>${ffBadge(p.Feature_Flag_Status)}</td>
       <td>${demoStatusBadge(demoStatus)}</td>
-      <td style="font-size:11px;color:var(--text2)">${demoDate}</td>
+      <!-- <td style="font-size:11px;color:var(--text2)">${demoDate}</td> -->
       <td>${prodStatusBadge(prodStatus)}</td>
+      <td style="font-size:11px;color:var(--text2)">${p.Release_Date||'—'}</td>
       <td style="white-space:nowrap">
         <button class="btn btn-ghost btn-xs" onclick="openEditPageModal('${mod.Module}','${escAttr(p.page_name)}')">✏️</button>
         <button class="btn btn-danger btn-xs" onclick="deletePageFromMod('${mod.Module}','${escAttr(p.page_name)}')">🗑</button>
@@ -1428,12 +1486,16 @@ function buildModuleAccordion(mod) {
         <table class="mp-pages-table">
           <colgroup>
             <col class="mpc-page"><col class="mpc-ff"><col class="mpc-ffs">
-            <col class="mpc-demo"><col class="mpc-demodate"><col class="mpc-prod"><col class="mpc-actions">
+            <!-- <col class="mpc-demo"><col class="mpc-demodate"><col class="mpc-prod"> -->
+            <col class="mpc-demo"><col class="mpc-prod">
+            <col class="mpc-releasedate"><col class="mpc-actions">
           </colgroup>
           <thead>
             <tr>
               <th>Page Name</th><th>Feature Flag</th><th>FF Status</th>
-              <th>Demo Status</th><th>Demo Date</th><th>Prod Status</th><th>Actions</th>
+              <!-- <th>Demo Status</th><th>Demo Date</th><th>Prod Status</th> -->
+              <th>Demo Status</th><th>Prod Status</th>
+              <th>Release Date</th><th>Actions</th>
             </tr>
           </thead>
           <tbody>${pagesHtml || '<tr><td colspan="7" style="color:var(--text2);text-align:center;padding:16px">No pages defined</td></tr>'}</tbody>
@@ -1495,9 +1557,10 @@ function openEditPageModal(moduleName, pageName) {
   document.getElementById('pg_name').disabled    = true;
   document.getElementById('pg_flag').value       = page.Feature_Flag || '';
   document.getElementById('pg_flagStatus').value = page.Feature_Flag_Status || 'N/A';
-  document.getElementById('pg_demoStatus').value = page.Client_Demo_Status || 'Pending';
-  document.getElementById('pg_demoDate').value   = page.Client_Demo_Date  || '';
-  document.getElementById('pg_prodStatus').value = page.Production_Deployment_Status || 'Pending';
+  document.getElementById('pg_demoStatus').value   = page.Client_Demo_Status || 'Pending';
+  document.getElementById('pg_demoDate').value     = page.Client_Demo_Date  || '';
+  document.getElementById('pg_prodStatus').value   = page.Production_Deployment_Status || 'Pending';
+  document.getElementById('pg_releaseDate').value  = page.Release_Date || '';
   document.getElementById('pageModal').classList.add('open');
 }
 function openAddPageModal(moduleName) {
@@ -1508,9 +1571,10 @@ function openAddPageModal(moduleName) {
   document.getElementById('pg_name').disabled    = false;
   document.getElementById('pg_flag').value       = '';
   document.getElementById('pg_flagStatus').value = 'N/A';
-  document.getElementById('pg_demoStatus').value = 'Pending';
-  document.getElementById('pg_demoDate').value   = '';
-  document.getElementById('pg_prodStatus').value = 'Pending';
+  document.getElementById('pg_demoStatus').value  = 'Pending';
+  document.getElementById('pg_demoDate').value    = '';
+  document.getElementById('pg_prodStatus').value  = 'Pending';
+  document.getElementById('pg_releaseDate').value = '';
   document.getElementById('pageModal').classList.add('open');
 }
 async function savePage() {
@@ -1524,6 +1588,7 @@ async function savePage() {
     Client_Demo_Status:           document.getElementById('pg_demoStatus').value,
     Client_Demo_Date:             document.getElementById('pg_demoDate').value.trim(),
     Production_Deployment_Status: document.getElementById('pg_prodStatus').value,
+    Release_Date:                 document.getElementById('pg_releaseDate').value.trim() || null,
   };
   if (!body.page_name) return showToast('Page name required', 'error');
   const url = isEdit

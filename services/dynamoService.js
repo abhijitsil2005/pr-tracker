@@ -135,9 +135,77 @@ async function getReviewers() {
 // ── ReleaseTimeline ───────────────────────────────────────────────
 const getReleaseTimeline = () => scanTable('ReleaseTimeline');
 
+// ── Complete Release ──────────────────────────────────────────────
+async function completeRelease(releaseNumber) {
+  const releases = await getProdReleases();
+  const rel = releases.find(r => String(r.Release_Number) === String(releaseNumber));
+  if (!rel) throw new Error(`Release ${releaseNumber} not found`);
+
+  const releaseDate = rel.Release_Date;
+  const modules = rel.Modules || [];
+
+  // Collect all unique PR numbers from the release
+  const prNumbers = new Set();
+  modules.forEach(mod => {
+    (mod.Pages || []).forEach(page => {
+      if (page.PR) prNumbers.add(page.PR);
+    });
+  });
+
+  // Update ModulePages for each module/page in the release
+  for (const mod of modules) {
+    if (!mod.Module) continue;
+    const mpMod = await getModulePage(mod.Module);
+    if (!mpMod) continue;
+
+    const mpPages = mpMod.Pages || [];
+    let changed = false;
+
+    for (const relPage of (mod.Pages || [])) {
+      const pageName = relPage.Page_Name;
+      const ffStatus = relPage.Feature_Flag_Status;
+
+      // Fuzzy match: exact, suffix, or basename
+      const idx = mpPages.findIndex(mp =>
+        mp.page_name === pageName ||
+        (pageName || '').endsWith(mp.page_name) ||
+        mp.page_name === (pageName || '').split('/').pop()
+      );
+
+      if (idx !== -1) {
+        mpPages[idx] = {
+          ...mpPages[idx],
+          Production_Deployment_Status: 'Deployed',
+          Feature_Flag_Status: ffStatus || mpPages[idx].Feature_Flag_Status,
+          Release_Date: releaseDate,
+        };
+        changed = true;
+      }
+    }
+
+    if (changed) {
+      await putItem('ModulePages', { ...mpMod, Pages: mpPages });
+    }
+  }
+
+  // Update PRDetails for each PR associated with this release
+  for (const prNum of prNumbers) {
+    const pr = await getPRByNumber(prNum);
+    if (!pr) continue;
+    await putItem('PRDetails', {
+      ...pr,
+      Status: 'Prod Deployed',
+      Release_Date: releaseDate,
+    });
+  }
+
+  return { moduleCount: modules.length, prCount: prNumbers.size };
+}
+
 module.exports = {
   getPRs, getPRByNumber, addPR, deletePR, updatePR,
   getProdReleases, getProdRelease, upsertProdRelease, deleteProdRelease,
+  completeRelease,
   getModulePages, getModulePage, getModuleNames, getPagesForModule,
   addModule, updateModule, deleteModule,
   addPageToModule, updatePageInModule, deletePageFromModule,
