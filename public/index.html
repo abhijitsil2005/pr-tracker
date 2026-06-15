@@ -107,13 +107,7 @@
 
     <!-- STATUS TRACKER -->
     <div id="section-status" class="section">
-      <div class="toolbar" style="justify-content:space-between">
-        <div style="display:flex;align-items:center;gap:6px">
-          <button class="btn btn-ghost btn-sm" onclick="stPrevWeek()">‹ Prev</button>
-          <span id="stWeekLabel" style="font-size:13px;font-weight:600;color:var(--text);min-width:210px;text-align:center;display:inline-block"></span>
-          <button class="btn btn-ghost btn-sm" onclick="stNextWeek()">Next ›</button>
-          <button class="btn btn-ghost btn-sm" onclick="stGoToday()" style="margin-left:6px">Today</button>
-        </div>
+      <div class="toolbar" style="justify-content:flex-end">
         <div style="display:flex;gap:8px;align-items:center">
           <select id="stFilterDev" style="width:180px" onchange="renderStatusTracker()">
             <option value="">All Developers</option>
@@ -172,6 +166,7 @@
           <option>Ready for Prod Deploy</option>
           <option>Prod Deployed FF OFF</option>
           <option>Prod Deployed</option>
+          <option>Closed</option>
         </select>
       </div>
       <div class="form-group"><label>Reviewer</label><select id="f_reviewer"><option value="">— select —</option></select></div>

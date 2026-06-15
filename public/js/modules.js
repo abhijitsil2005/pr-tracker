@@ -34,7 +34,7 @@ async function renderModulePages() {
   allPRs.forEach(pr => (pr.Page||[]).forEach(pg => { (prsByPage[pg] = prsByPage[pg]||[]).push(pr); }));
 
   const openIds = getOpenAccordions();
-  container.innerHTML = modules.map(m => buildModuleAccordion(m, prsByPage)).join('');
+  container.innerHTML = modules.sort((a, b) => a.Module.localeCompare(b.Module)).map(m => buildModuleAccordion(m, prsByPage)).join('');
   reopenAccordions(openIds);
 }
 

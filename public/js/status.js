@@ -26,11 +26,8 @@ function weekLabel(d) {
 
 // ── Main render ─────────────────────────────────────────
 async function renderStatusTracker() {
-  const wk = weekKey(currentWeek);
-  document.getElementById('stWeekLabel').textContent = weekLabel(currentWeek);
-
   const [assignments, prsData] = await Promise.all([
-    api(`status?week=${wk}`),
+    api('status'),
     api('prs'),
   ]);
   stAssignments = assignments || [];
@@ -79,9 +76,12 @@ function buildDevCard(dev, items) {
       ? `<span class="pr-pill" onclick="openEditPRModal(${a.PR})">#${a.PR}</span>`
       : '<span style="color:var(--text2);font-size:11px">—</span>';
     const pageName = (a.Page || '').split('/').pop() || a.Page || '—';
+    const weekDisplay = a.Week
+      ? `<div style="font-size:10px;color:var(--text2);margin-top:2px">wk ${a.Week}</div>`
+      : '';
     return `<tr>
       <td style="font-family:monospace;font-size:11px;overflow:hidden;text-overflow:ellipsis" title="${escHtml(a.Module||'')} / ${escHtml(a.Page||'')}">
-        ${escHtml(a.Module||'—')} / ${escHtml(pageName)}
+        ${escHtml(a.Module||'—')} / ${escHtml(pageName)}${weekDisplay}
       </td>
       <td>${stStatusBadge(a.Status)}</td>
       <td>${prBadge}</td>
@@ -463,7 +463,7 @@ async function unlinkPRFromAssignment() {
 }
 
 async function refreshActivityModal() {
-  const updated = await api(`status?week=${weekKey(currentWeek)}`);
+  const updated = await api('status');
   stAssignments  = updated || [];
   const fresh    = stAssignments.find(x => x.id === stCtx.id);
   if (!fresh) return;

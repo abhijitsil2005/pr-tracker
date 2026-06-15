@@ -47,7 +47,7 @@ function applyFilters() {
 function populatePRModuleSelect(selectedValue) {
   const sel = document.getElementById('f_module');
   sel.innerHTML = '<option value="">— select —</option>';
-  lookupModules.forEach(m => sel.add(new Option(m, m)));
+  lookupModules.sort((a, b) => a.localeCompare(b)).forEach(m => sel.add(new Option(m, m)));
   if (selectedValue) sel.value = selectedValue;
 }
 
