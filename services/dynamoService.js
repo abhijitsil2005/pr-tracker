@@ -135,6 +135,56 @@ async function getReviewers() {
 // ── ReleaseTimeline ───────────────────────────────────────────────
 const getReleaseTimeline = () => scanTable('ReleaseTimeline');
 
+// ── StatusTracker ─────────────────────────────────────────────────
+const { randomUUID } = require('crypto');
+
+const getStatusAssignments = () => scanTable('StatusTracker');
+const getStatusAssignment  = (id) => getItem('StatusTracker', { id });
+
+async function addStatusAssignment(data) {
+  const now  = new Date().toISOString();
+  const item = {
+    id:        randomUUID(),
+    Developer: data.Developer,
+    Module:    data.Module  || null,
+    Page:      data.Page    || null,
+    Week:      data.Week,
+    PR:        data.PR ? Number(data.PR) : null,
+    Status:    data.Status  || 'Pending',
+    ActivityLog: [{
+      timestamp: now,
+      note:      data.note || 'Assignment created',
+      type:      'created',
+    }],
+    CreatedAt: now,
+    UpdatedAt: now,
+  };
+  return putItem('StatusTracker', item);
+}
+
+async function updateStatusAssignment(id, updates) {
+  const existing = await getStatusAssignment(id);
+  if (!existing) throw new Error(`Assignment ${id} not found`);
+  const now    = new Date().toISOString();
+  const merged = { ...existing, ...updates, id: existing.id, UpdatedAt: now };
+  if ('PR' in updates) merged.PR = updates.PR ? Number(updates.PR) : null;
+  return putItem('StatusTracker', merged);
+}
+
+const deleteStatusAssignment = (id) => deleteItem('StatusTracker', { id });
+
+async function addActivityToAssignment(id, activity) {
+  const existing = await getStatusAssignment(id);
+  if (!existing) throw new Error(`Assignment ${id} not found`);
+  const now = new Date().toISOString();
+  const log = [...(existing.ActivityLog || []), {
+    timestamp: now,
+    note:      activity.note,
+    type:      activity.type || 'update',
+  }];
+  return putItem('StatusTracker', { ...existing, ActivityLog: log, UpdatedAt: now });
+}
+
 // ── Complete Release ──────────────────────────────────────────────
 async function completeRelease(releaseNumber) {
   const releases = await getProdReleases();
@@ -199,6 +249,9 @@ async function completeRelease(releaseNumber) {
     });
   }
 
+  // Stamp the release itself as completed
+  await putItem('ProdReleases', { ...rel, Completed: true, Completed_At: new Date().toISOString() });
+
   return { moduleCount: modules.length, prCount: prNumbers.size };
 }
 
@@ -211,4 +264,7 @@ module.exports = {
   addPageToModule, updatePageInModule, deletePageFromModule,
   addOutOfScopePage, removeOutOfScopePage,
   getReleaseTimeline, getTeam, getDevelopers, getReviewers,
+  getStatusAssignments, getStatusAssignment,
+  addStatusAssignment, updateStatusAssignment, deleteStatusAssignment,
+  addActivityToAssignment,
 };

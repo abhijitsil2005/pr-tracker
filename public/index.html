@@ -17,6 +17,7 @@
     <li><a href="#" data-section="prs">🔀 Pull Requests</a></li>
     <li><a href="#" data-section="releases">🚀 Releases</a></li>
     <li><a href="#" data-section="modules">📦 Module Pages</a></li>
+    <li><a href="#" data-section="status">📋 Status Tracker</a></li>
     <!-- <li><a href="#" data-section="sync">🔄 Sync Excel</a></li> -->
   </ul>
 </nav>
@@ -102,6 +103,24 @@
         <button class="btn btn-primary" onclick="openAddModuleModal()">＋ Add Module</button>
       </div>
       <div id="mpContainer"></div>
+    </div>
+
+    <!-- STATUS TRACKER -->
+    <div id="section-status" class="section">
+      <div class="toolbar" style="justify-content:space-between">
+        <div style="display:flex;align-items:center;gap:6px">
+          <button class="btn btn-ghost btn-sm" onclick="stPrevWeek()">‹ Prev</button>
+          <span id="stWeekLabel" style="font-size:13px;font-weight:600;color:var(--text);min-width:210px;text-align:center;display:inline-block"></span>
+          <button class="btn btn-ghost btn-sm" onclick="stNextWeek()">Next ›</button>
+          <button class="btn btn-ghost btn-sm" onclick="stGoToday()" style="margin-left:6px">Today</button>
+        </div>
+        <div style="display:flex;gap:8px;align-items:center">
+          <select id="stFilterDev" style="width:180px" onchange="renderStatusTracker()">
+            <option value="">All Developers</option>
+          </select>
+        </div>
+      </div>
+      <div id="stContainer"></div>
     </div>
 
     <!-- SYNC -->
@@ -298,6 +317,158 @@
   </div>
 </div>
 
+<!-- ── Assignment Modal ────────────────────────────────── -->
+<div class="modal-overlay" id="assignmentModal">
+  <div class="modal modal-lg">
+    <h2 id="amTitle">Assign Page</h2>
+    <button class="modal-close" onclick="closeModal('assignmentModal')">✕</button>
+    <div style="font-size:12px;color:var(--text2);margin-bottom:18px">
+      Week: <strong id="am_week" style="color:var(--text)"></strong>
+    </div>
+    <div class="form-grid">
+      <div class="form-group">
+        <label>Developer *</label>
+        <select id="am_dev"><option value="">— select —</option></select>
+      </div>
+      <div class="form-group">
+        <label>Status</label>
+        <select id="am_status">
+          <option value="Pending">Pending</option>
+          <option value="In Progress" selected>In Progress</option>
+          <option value="In Review">In Review</option>
+          <option value="Blocked">Blocked</option>
+          <option value="Done">Done</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Module *</label>
+        <select id="am_module" onchange="amLoadPageOptions()"><option value="">— select —</option></select>
+      </div>
+      <div class="form-group"></div>
+      <div class="form-group full">
+        <label>Page * <span style="color:var(--text2);font-weight:400">— click to select</span></label>
+        <div id="am_pages" class="page-chips"><span class="page-chip-hint">— select a module first —</span></div>
+      </div>
+      <div class="form-group full">
+        <label>Linked PR <span style="color:var(--text2);font-weight:400">(optional)</span></label>
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+          <select id="am_pr" style="flex:1;background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:9px 12px;border-radius:8px;font-size:13px;outline:none">
+            <option value="">— no PR —</option>
+          </select>
+          <button class="btn btn-ghost btn-sm" id="amToggleQPR" onclick="toggleAmQuickPRForm()" type="button">＋ New PR</button>
+        </div>
+        <div id="amQuickPRForm" style="display:none;margin-top:10px;padding:12px;background:var(--surface);border:1px solid var(--border);border-radius:8px">
+          <div style="display:grid;grid-template-columns:1fr 1fr auto;gap:8px;align-items:flex-end">
+            <div>
+              <label style="font-size:11px;color:var(--text2);margin-bottom:4px;display:block">PR Number *</label>
+              <input type="number" id="am_qpr_number" placeholder="e.g. 8890" style="background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:8px 12px;border-radius:8px;font-size:13px;outline:none;width:100%;box-sizing:border-box">
+            </div>
+            <div>
+              <label style="font-size:11px;color:var(--text2);margin-bottom:4px;display:block">Status</label>
+              <select id="am_qpr_status" style="background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:8px 12px;border-radius:8px;font-size:13px;outline:none;width:100%">
+                <option>Development Inprogress</option>
+                <option>Dev PR in Review</option>
+                <option>TCR Testing In Progress</option>
+                <option>Ready for Prod Deploy</option>
+                <option>Prod Deployed FF OFF</option>
+                <option>Prod Deployed</option>
+              </select>
+            </div>
+            <button class="btn btn-success btn-sm" onclick="saveAmQuickPR()" type="button" style="white-space:nowrap">Create &amp; Select</button>
+          </div>
+        </div>
+      </div>
+      <div class="form-group full">
+        <label>Initial Note <span style="color:var(--text2);font-weight:400">(optional)</span></label>
+        <textarea id="am_note" placeholder="e.g. Starting work on the main component today…"></textarea>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('assignmentModal')">Cancel</button>
+      <button class="btn btn-primary" id="amSaveBtn" onclick="saveAssignment()">Assign</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── Activity Modal ──────────────────────────────────── -->
+<div class="modal-overlay" id="activityModal">
+  <div class="modal modal-lg">
+    <h2 id="actTitle">Activity</h2>
+    <button class="modal-close" onclick="closeModal('activityModal')">✕</button>
+    <div style="font-size:12px;color:var(--text2);margin-bottom:14px" id="actAssignInfo"></div>
+
+    <!-- Status + linked PR -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:18px">
+      <div>
+        <label style="font-size:12px;color:var(--text2);margin-bottom:5px;display:block">Status</label>
+        <div style="display:flex;gap:8px;align-items:center">
+          <select id="actStatus" style="flex:1;background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:9px 12px;border-radius:8px;font-size:13px;outline:none">
+            <option value="Pending">Pending</option>
+            <option value="In Progress">In Progress</option>
+            <option value="In Review">In Review</option>
+            <option value="Blocked">Blocked</option>
+            <option value="Done">Done</option>
+          </select>
+          <button class="btn btn-primary btn-sm" onclick="updateStatusFromModal()">Update</button>
+        </div>
+      </div>
+      <div>
+        <label style="font-size:12px;color:var(--text2);margin-bottom:5px;display:block">Linked PR</label>
+        <div id="actLinkedPR" style="display:flex;align-items:center;gap:8px;min-height:38px;flex-wrap:wrap"></div>
+      </div>
+    </div>
+
+    <!-- PR association -->
+    <div style="margin-bottom:18px;padding:14px;background:var(--surface2);border-radius:10px;border:1px solid var(--border)">
+      <label style="font-size:11px;font-weight:700;color:var(--text2);margin-bottom:10px;display:block;text-transform:uppercase;letter-spacing:.5px">PR Association</label>
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+        <select id="actPRSelect" style="flex:1;min-width:200px;background:var(--surface);border:1px solid var(--border);color:var(--text);padding:8px 12px;border-radius:8px;font-size:13px;outline:none">
+          <option value="">— link existing PR —</option>
+        </select>
+        <button class="btn btn-primary btn-sm" onclick="linkPRFromActivity()">Link</button>
+        <button class="btn btn-ghost btn-sm" id="actToggleQPR" onclick="toggleQuickPRForm()">＋ New PR</button>
+      </div>
+      <!-- Quick PR creation form (hidden by default) -->
+      <div id="actQuickPRForm" style="display:none;margin-top:12px;padding-top:12px;border-top:1px solid var(--border)">
+        <div style="display:grid;grid-template-columns:1fr 1fr auto;gap:8px;align-items:flex-end">
+          <div>
+            <label style="font-size:11px;color:var(--text2);margin-bottom:4px;display:block">PR Number *</label>
+            <input type="text" id="qpr_number" placeholder="e.g. 8890" style="background:var(--surface);border:1px solid var(--border);color:var(--text);padding:8px 12px;border-radius:8px;font-size:13px;outline:none;width:100%">
+          </div>
+          <div>
+            <label style="font-size:11px;color:var(--text2);margin-bottom:4px;display:block">Status</label>
+            <select id="qpr_status" style="background:var(--surface);border:1px solid var(--border);color:var(--text);padding:8px 12px;border-radius:8px;font-size:13px;outline:none;width:100%">
+              <option>Development Inprogress</option>
+              <option>Dev PR in Review</option>
+              <option>TCR Testing In Progress</option>
+              <option>Ready for Prod Deploy</option>
+              <option>Prod Deployed FF OFF</option>
+              <option>Prod Deployed</option>
+            </select>
+          </div>
+          <button class="btn btn-success btn-sm" onclick="saveQuickPR()" style="white-space:nowrap">Create &amp; Link</button>
+        </div>
+        <div style="font-size:11px;color:var(--text2);margin-top:6px">Developer, module and page will be pre-filled from the assignment.</div>
+      </div>
+    </div>
+
+    <!-- Add note -->
+    <div style="margin-bottom:18px">
+      <label style="font-size:11px;font-weight:700;color:var(--text2);margin-bottom:8px;display:block;text-transform:uppercase;letter-spacing:.5px">Add Update</label>
+      <div style="display:flex;gap:8px;align-items:flex-start">
+        <textarea id="actNote" placeholder="What's the update? e.g. Fixed layout issue, waiting for review…" style="flex:1;background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:9px 12px;border-radius:8px;font-size:13px;outline:none;resize:vertical;min-height:60px;font-family:inherit"></textarea>
+        <button class="btn btn-primary" onclick="addActivityNote()" style="align-self:flex-end">Post</button>
+      </div>
+    </div>
+
+    <!-- Activity log -->
+    <div>
+      <label style="font-size:11px;font-weight:700;color:var(--text2);margin-bottom:10px;display:block;text-transform:uppercase;letter-spacing:.5px">Activity Log</label>
+      <div id="actLog" style="max-height:300px;overflow-y:auto;border:1px solid var(--border);border-radius:8px;background:var(--surface2)"></div>
+    </div>
+  </div>
+</div>
+
 <!-- ── Toast ──────────────────────────────────────────── -->
 <div id="toast"></div>
 
@@ -306,6 +477,7 @@
 <script src="js/prs.js"></script>
 <script src="js/releases.js"></script>
 <script src="js/modules.js"></script>
+<script src="js/status.js"></script>
 <script src="js/sync.js"></script>
 <script>init();</script>
 </body>
