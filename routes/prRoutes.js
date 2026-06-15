@@ -54,7 +54,9 @@ router.post('/', async (req, res) => {
     };
 
     const created = await dataService.addPR(newPR);
-    res.status(201).json({ message: 'PR created', data: created });
+    let syncResult = { synced: false };
+    try { syncResult = await dataService.syncPRToRelease(created); } catch (e) { syncResult = { synced: false, reason: e.message }; }
+    res.status(201).json({ message: 'PR created', data: created, sync: syncResult });
   } catch (e) {
     res.status(400).json({ error: e.message });
   }
@@ -68,7 +70,9 @@ router.put('/:prNumber', async (req, res) => {
     if (updates.Dependent_PRs) updates.Dependent_PRs = updates.Dependent_PRs.map(Number);
     if (updates.Page && !Array.isArray(updates.Page)) updates.Page = [updates.Page];
     const updated = await dataService.updatePR(req.params.prNumber, updates);
-    res.json({ message: 'PR updated', data: updated });
+    let syncResult = { synced: false };
+    try { syncResult = await dataService.syncPRToRelease(updated); } catch (e) { syncResult = { synced: false, reason: e.message }; }
+    res.json({ message: 'PR updated', data: updated, sync: syncResult });
   } catch (e) {
     const code = e.message.includes('not found') ? 404 : 400;
     res.status(code).json({ error: e.message });

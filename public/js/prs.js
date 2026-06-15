@@ -15,7 +15,20 @@ async function renderPRs(filters = {}) {
     (p.Developer||'').toLowerCase().includes(search) ||
     (p.Module||'').toLowerCase().includes(search) ||
     (p.Status||'').toLowerCase().includes(search));
-  document.getElementById('prTableBody').innerHTML = rows.sort((a,b)=>b.Dev_Sprint-a.Dev_Sprint).map(p => `
+  const STATUS_ORDER = {
+    'development inprogress': 1,
+    'dev pr in review':       2,
+    'tcr testing in progress':3,
+    'ready for prod deploy':  4,
+    'prod deployed ff off':   5,
+    'prod deployed':          6,
+  };
+  const statusRank = s => STATUS_ORDER[(s||'').toLowerCase()] ?? 99;
+  document.getElementById('prTableBody').innerHTML = rows.sort((a,b) => {
+    const sd = statusRank(a.Status) - statusRank(b.Status);
+    if (sd !== 0) return sd;
+    return b.PR - a.PR;
+  }).map(p => `
     <tr>
       <td><strong style="color:var(--accent)">#${p.PR}</strong></td>
       <td>${p.Module||'—'}</td>
@@ -160,10 +173,20 @@ async function savePR() {
   const res = await fetch(`${API}/prs${isEdit?'/'+editingPR:''}`, { method:isEdit?'PUT':'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body) });
   const json = await res.json();
   if (!res.ok) return showToast(json.error,'error');
-  showToast(isEdit?`PR #${pr} updated`:`PR #${pr} created`,'success');
+
+  const sync = json.sync || {};
+  if (sync.synced) {
+    showToast(`${isEdit ? `PR #${pr} updated` : `PR #${pr} created`} · Release ${sync.releaseNumber} synced`, 'success');
+  } else if (body.Target_Release && sync.reason && sync.reason.startsWith('no_release_for_date')) {
+    showToast(`PR saved · No release found for date ${body.Target_Release} — add it in Releases tab first`, 'error');
+  } else {
+    showToast(isEdit?`PR #${pr} updated`:`PR #${pr} created`,'success');
+  }
+
   closePRModal();
   renderPRs();
   if (document.getElementById('section-modules').classList.contains('active')) renderModulePages();
+  if (document.getElementById('section-releases').classList.contains('active')) renderReleases();
 }
 
 async function deletePR(prNumber) {
