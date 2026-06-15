@@ -185,6 +185,64 @@ async function addActivityToAssignment(id, activity) {
   return putItem('StatusTracker', { ...existing, ActivityLog: log, UpdatedAt: now });
 }
 
+// ── Sync PR → Release ─────────────────────────────────────────────
+// Returns { synced: bool, releaseNumber?, reason? }
+async function syncPRToRelease(pr) {
+  if (!pr.Target_Release) return { synced: false, reason: 'no_target_release' };
+  if (!pr.Module)         return { synced: false, reason: 'no_module' };
+
+  const targetDate = (pr.Target_Release || '').trim();
+  const releases = await getProdReleases();
+  const rel = releases.find(r => (r.Release_Date || '').trim() === targetDate);
+  if (!rel) return { synced: false, reason: `no_release_for_date:${targetDate}` };
+
+  const prPages = new Set((pr.Page || []).map(p => (p || '').trim()).filter(Boolean));
+
+  // Resolve FF info from ModulePages
+  const mpMod = await getModulePage(pr.Module).catch(() => null);
+  const mpPageList = mpMod ? (mpMod.Pages || []) : [];
+  const findMpPage = (pageName) => mpPageList.find(p =>
+    p.page_name === pageName ||
+    (pageName || '').endsWith(p.page_name) ||
+    p.page_name === (pageName || '').split('/').pop()
+  );
+
+  const modules = (rel.Modules || []).map(m => ({ ...m }));
+  const moduleIdx = modules.findIndex(m => m.Module === pr.Module);
+  let relPages = moduleIdx !== -1 ? [...(modules[moduleIdx].Pages || [])] : [];
+
+  // Add or update pages now in pr.Page
+  for (const pageName of prPages) {
+    const idx = relPages.findIndex(p => (p.Page_Name || '').trim() === pageName);
+    if (idx !== -1) {
+      relPages[idx] = { ...relPages[idx], PR: pr.PR };
+    } else {
+      const mp = findMpPage(pageName);
+      relPages.push({
+        Page_Name: pageName,
+        Feature_Flag: mp ? (mp.Feature_Flag || '') : '',
+        Feature_Flag_Status: mp ? (mp.Feature_Flag_Status || 'N/A') : 'N/A',
+        PR: pr.PR,
+        Task: '',
+      });
+    }
+  }
+
+  // Clear PR from pages that were previously linked to this PR but are no longer in pr.Page
+  relPages = relPages.map(p =>
+    (p.PR === pr.PR && !prPages.has((p.Page_Name || '').trim())) ? { ...p, PR: null } : p
+  );
+
+  if (moduleIdx !== -1) {
+    modules[moduleIdx] = { ...modules[moduleIdx], Pages: relPages };
+  } else {
+    modules.push({ Module: pr.Module, User_Story: '', Pages: relPages });
+  }
+
+  await putItem('ProdReleases', { ...rel, Modules: modules });
+  return { synced: true, releaseNumber: rel.Release_Number };
+}
+
 // ── Complete Release ──────────────────────────────────────────────
 async function completeRelease(releaseNumber) {
   const releases = await getProdReleases();
@@ -258,7 +316,7 @@ async function completeRelease(releaseNumber) {
 module.exports = {
   getPRs, getPRByNumber, addPR, deletePR, updatePR,
   getProdReleases, getProdRelease, upsertProdRelease, deleteProdRelease,
-  completeRelease,
+  completeRelease, syncPRToRelease,
   getModulePages, getModulePage, getModuleNames, getPagesForModule,
   addModule, updateModule, deleteModule,
   addPageToModule, updatePageInModule, deletePageFromModule,

@@ -62,7 +62,7 @@ function buildModuleAccordion(mod, prsByPage = {}) {
   const ffEn     = pages.filter(p => (p.Feature_Flag_Status||'').toLowerCase() === 'enabled').length;
   const demoDone = pages.filter(p => (p.Client_Demo_Status||'').toLowerCase() === 'done').length;
 
-  const pagesHtml = pages.map(p => {
+  const pagesHtml = pages.sort((a, b) => a.page_name.localeCompare(b.page_name)).map(p => {
     const prodStatus = p.Production_Deployment_Status || 'Pending';
     const demoStatus = p.Client_Demo_Status || 'Pending';
     const linkedPRs  = prsByPage[p.page_name] || [];
