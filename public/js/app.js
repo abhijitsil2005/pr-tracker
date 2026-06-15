@@ -6,6 +6,7 @@ let lookupModules = [], lookupDevelopers = [], lookupReviewers = [], lookupTimel
 let editingPR = null, editingRelease = null;
 let pageModalCtx = null; // { moduleName, pageName (for edit) }
 let pagePRCtx   = null; // { moduleName, pageName } for PR-page association modal
+let stCtx       = null; // { id, developer, module, page, ... } for activity modal
 
 // ── Init ───────────────────────────────────────────────
 async function init() {
@@ -36,14 +37,16 @@ async function api(path, opts = {}) {
 function populateFilters() {
   const modSel = document.getElementById('filterModule');
   lookupModules.forEach(m => modSel.add(new Option(m, m)));
-  const fMod = document.getElementById('f_module');
-  lookupModules.forEach(m => fMod.add(new Option(m, m)));
   const fDev = document.getElementById('f_developer');
   lookupDevelopers.forEach(d => fDev.add(new Option(d, d)));
   const fRev = document.getElementById('f_reviewer');
   lookupReviewers.forEach(r => fRev.add(new Option(r, r)));
   const fTarget = document.getElementById('f_target');
   lookupTimeline.forEach(t => fTarget.add(new Option(`${t.Release_Date} (R${t.Release_Number})`, t.Release_Date)));
+  const stDev = document.getElementById('stFilterDev');
+  lookupDevelopers.forEach(d => stDev.add(new Option(d, d)));
+  const filterDev = document.getElementById('filterDeveloper');
+  lookupDevelopers.forEach(d => filterDev.add(new Option(d, d)));
 }
 
 // ── Navigation ─────────────────────────────────────────
@@ -59,15 +62,17 @@ document.querySelectorAll('nav ul li a').forEach(a => {
 function showSection(name) {
   document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
   document.getElementById(`section-${name}`).classList.add('active');
-  const titles = { dashboard:'Dashboard', prs:'Pull Requests', releases:'Releases', modules:'Module Pages', sync:'Sync Excel' };
+  const titles = { dashboard:'Dashboard', prs:'Pull Requests', releases:'Releases', modules:'Module Pages', status:'Status Tracker', sync:'Sync Excel' };
   document.getElementById('pageTitle').textContent = titles[name] || name;
   const ha = document.getElementById('headerActions');
   ha.innerHTML = '';
-  if (name === 'prs') ha.innerHTML = `<button class="btn btn-primary" onclick="openAddPRModal()">＋ Add PR</button>`;
+  if (name === 'prs')    ha.innerHTML = `<button class="btn btn-primary" onclick="openAddPRModal()">＋ Add PR</button>`;
+  if (name === 'status') ha.innerHTML = `<button class="btn btn-primary" onclick="openAssignmentModal()">＋ Assign</button>`;
   if (name === 'dashboard') renderDashboard();
-  if (name === 'prs') renderPRs();
+  if (name === 'prs')    renderPRs();
   if (name === 'releases') renderReleases();
-  if (name === 'modules') renderModulePages();
+  if (name === 'modules')  renderModulePages();
+  if (name === 'status')   renderStatusTracker();
 }
 
 // ── Status badges ───────────────────────────────────────

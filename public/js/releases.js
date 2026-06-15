@@ -114,6 +114,20 @@ function buildReleaseBlock(rel, search, cssClass) {
   const relId = `rel-${rel.Release_Number}`;
   const extraClass = cssClass ? ` ${cssClass}` : '';
 
+  // Build Complete button before the template string to avoid nested backtick issues
+  const isFuture = cssClass === 'next-up' || cssClass === '';
+  let completeBtn;
+  if (rel.Completed) {
+    const doneOn = rel.Completed_At
+      ? new Date(rel.Completed_At).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+      : '';
+    completeBtn = '<button class="btn btn-success btn-sm" disabled style="opacity:.45;cursor:not-allowed" title="Completed' + (doneOn ? ' on ' + doneOn : '') + '">✅ Completed</button>';
+  } else if (isFuture) {
+    completeBtn = '<button class="btn btn-success btn-sm" disabled style="opacity:.35;cursor:not-allowed" title="Cannot complete a future release">✅ Complete</button>';
+  } else {
+    completeBtn = '<button class="btn btn-success btn-sm" onclick="completeRelease(\'' + rel.Release_Number + '\')">✅ Complete</button>';
+  }
+
   return `
   <div class="release-block${extraClass}" id="block-${relId}">
     <div class="release-header" onclick="toggleRelease('${relId}')">
@@ -125,8 +139,8 @@ function buildReleaseBlock(rel, search, cssClass) {
             <span style="color:var(--text2);font-weight:400;font-size:12px;margin-left:6px">Release ${rel.Release_Number||'—'}</span>
           </div>
           <div class="release-meta">
-            ${rel.Code_Freeze     ? `<span>❄️ Code Freeze: ${rel.Code_Freeze}</span>`      : ''}
-            ${rel.Regression_Start? `<span>🔬 Regression: ${rel.Regression_Start}</span>` : ''}
+            ${rel.Code_Freeze     ? '<span>❄️ Code Freeze: ' + rel.Code_Freeze + '</span>'      : ''}
+            ${rel.Regression_Start? '<span>🔬 Regression: ' + rel.Regression_Start + '</span>' : ''}
           </div>
         </div>
       </div>
@@ -134,7 +148,7 @@ function buildReleaseBlock(rel, search, cssClass) {
         <span class="badge badge-blue">${totalMods} module${totalMods!==1?'s':''}</span>
         <span class="badge badge-purple">${totalPages} page${totalPages!==1?'s':''}</span>
         <span class="badge badge-gray">${allRelPRs.length} PR${allRelPRs.length!==1?'s':''}</span>
-        <button class="btn btn-success btn-sm" onclick="completeRelease('${rel.Release_Number}')">✅ Complete</button>
+        ${completeBtn}
         <button class="btn btn-ghost btn-sm" onclick="openEditReleaseModal('${rel.Release_Number}')">✏️ Edit</button>
         <button class="btn btn-danger btn-sm" onclick="deleteRelease('${rel.Release_Number}')">🗑</button>
       </div>

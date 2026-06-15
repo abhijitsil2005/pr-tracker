@@ -44,11 +44,19 @@ function applyFilters() {
 }
 
 // ── PR Modal ───────────────────────────────────────────
+function populatePRModuleSelect(selectedValue) {
+  const sel = document.getElementById('f_module');
+  sel.innerHTML = '<option value="">— select —</option>';
+  lookupModules.forEach(m => sel.add(new Option(m, m)));
+  if (selectedValue) sel.value = selectedValue;
+}
+
 function openAddPRModal() {
   editingPR = null;
   document.getElementById('prModalTitle').textContent = 'Add PR';
   document.getElementById('savePRBtn').textContent = 'Add PR';
   clearPRForm();
+  populatePRModuleSelect();
   document.getElementById('prModal').classList.add('open');
 }
 
@@ -57,6 +65,7 @@ async function openAddPRModalForPage(moduleName, pageName) {
   document.getElementById('prModalTitle').textContent = 'Add PR';
   document.getElementById('savePRBtn').textContent = 'Add PR';
   clearPRForm();
+  populatePRModuleSelect();
   document.getElementById('f_module').value = moduleName;
   await loadPageOptions();
   document.getElementById('f_pages').querySelectorAll('.page-chip').forEach(chip => {
@@ -73,7 +82,7 @@ async function openEditPRModal(prNumber) {
   document.getElementById('f_pr').value = pr.PR;
   document.getElementById('f_pr').disabled = true;
   document.getElementById('f_type').value = pr.Type||'Development';
-  document.getElementById('f_module').value = pr.Module||'';
+  populatePRModuleSelect(pr.Module||'');
   document.getElementById('f_developer').value = pr.Developer||'';
   await loadPageOptions();
   const savedPages = new Set(pr.Page||[]);

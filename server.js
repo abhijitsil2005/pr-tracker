@@ -7,6 +7,7 @@ const releaseRoutes = require('./routes/releaseRoutes');
 const syncRoutes = require('./routes/syncRoutes');
 const lookupRoutes = require('./routes/lookupRoutes');
 const moduleRoutes = require('./routes/moduleRoutes');
+const statusRoutes = require('./routes/statusRoutes');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -25,6 +26,7 @@ app.use('/api/releases', releaseRoutes);
 app.use('/api/sync', syncRoutes);
 app.use('/api/lookup', lookupRoutes);
 app.use('/api/modules', moduleRoutes);
+app.use('/api/status', statusRoutes);
 
 // Health check
 app.get('/api/health', (req, res) => {
