@@ -17,38 +17,46 @@ function demoStatusBadge(s) {
   return `<span class="badge badge-gray">${s||'Pending'}</span>`;
 }
 
+// Excluded from ALL stats (PRs, pages, module table, developer table)
+const EXCLUDED_FROM_MODULE   = new Set(['Shared Controls']);
+// Excluded from page-count stats and module table only (PRs still counted)
+const EXCLUDED_FROM_PAGES = new Set(['Infrastructure Pages']);
+
 async function renderDashboard() {
   const [prData, mpData] = await Promise.all([api('prs'), api('modules')]);
   allPRs         = (prData && prData.data) || [];
   allModulePages = mpData || [];
 
-  const total    = allPRs.length;
-  const deployed = allPRs.filter(p => p.Status?.toLowerCase().includes('prod deployed')).length;
-  const inProg   = allPRs.filter(p => p.Status?.toLowerCase().includes('progress')).length;
-  const review   = allPRs.filter(p => p.Status?.toLowerCase().includes('review')).length;
+  const filteredPRs     = allPRs.filter(p => !EXCLUDED_FROM_MODULE.has(p.Module));
+  const filteredModules = allModulePages.filter(m => !EXCLUDED_FROM_MODULE.has(m.Module));
 
-  // Page-level counts from Module_Pages
-  const totalPages  = allModulePages.reduce((s, m) => s + (m.Pages||[]).length, 0);
-  const prodDeployed = allModulePages.reduce((s, m) =>
-    s + (m.Pages||[]).filter(p => (p.Production_Deployment_Status||'').toLowerCase() === 'deployed').length, 0);
-  const demoComplete = allModulePages.reduce((s, m) =>
-    s + (m.Pages||[]).filter(p => (p.Client_Demo_Status||'').toLowerCase() === 'done').length, 0);
-  const ffEnabled = allModulePages.reduce((s, m) =>
-    s + (m.Pages||[]).filter(p => (p.Feature_Flag_Status||'').toLowerCase() === 'enabled').length, 0);
+  const total    = filteredPRs.length;
+  const deployed = filteredPRs.filter(p => p.Status?.toLowerCase().includes('prod deployed')).length;
+  const inProg   = filteredPRs.filter(p => p.Status?.toLowerCase().includes('progress')).length;
+  const review   = filteredPRs.filter(p => p.Status?.toLowerCase().includes('review')).length;
+
+  // Page-level counts from Module_Pages (excludes Infrastructure Pages + Shared Control)
+  const totalPages  = filteredModules.reduce((s, m) => s + (m.Pages.filter(p => !EXCLUDED_FROM_PAGES.has(p.page_name))||[]).length, 0);
+  const prodDeployed = filteredModules.reduce((s, m) =>
+    s + (m.Pages.filter(p => !EXCLUDED_FROM_PAGES.has(p.page_name))||[]).filter(p => (p.Production_Deployment_Status||'').toLowerCase() === 'deployed').length, 0);
+  const demoComplete = filteredModules.reduce((s, m) =>
+    s + (m.Pages.filter(p => !EXCLUDED_FROM_PAGES.has(p.page_name))||[]).filter(p => (p.Client_Demo_Status||'').toLowerCase() === 'done').length, 0);
+  const ffEnabled = filteredModules.reduce((s, m) =>
+    s + (m.Pages.filter(p => !EXCLUDED_FROM_PAGES.has(p.page_name))||[]).filter(p => (p.Feature_Flag_Status||'').toLowerCase() === 'enabled').length, 0);
 
   document.getElementById('statsGrid').innerHTML = `
-    <div class="stat-card accent"><div class="label">Total PRs</div><div class="value">${total}</div></div>
-    <div class="stat-card green"><div class="label">PRs Deployed</div><div class="value">${deployed}</div></div>
-    <div class="stat-card yellow"><div class="label">PR In Progress / TCR</div><div class="value">${inProg}</div></div>
-    <div class="stat-card red"><div class="label">PR In Review</div><div class="value">${review}</div></div>
     <div class="stat-card accent"><div class="label">Total Pages</div><div class="value">${totalPages}</div></div>
     <div class="stat-card green"><div class="label">Pages in Production</div><div class="value">${prodDeployed}</div></div>
     <div class="stat-card yellow"><div class="label">Demo Complete</div><div class="value">${demoComplete}</div></div>
-    <div class="stat-card red"><div class="label">FF Enabled</div><div class="value">${ffEnabled}</div></div>`;
+    <div class="stat-card red"><div class="label">FF Enabled</div><div class="value">${ffEnabled}</div></div>  
+    <div class="stat-card accent"><div class="label">Total PRs</div><div class="value">${total}</div></div>
+    <div class="stat-card green"><div class="label">PRs Deployed</div><div class="value">${deployed}</div></div>
+    <div class="stat-card yellow"><div class="label">PR In Progress / TCR</div><div class="value">${inProg}</div></div>
+    <div class="stat-card red"><div class="label">PR In Review</div><div class="value">${review}</div></div>`;
 
   // ── Module status table ──
   const prByModule = {};
-  allPRs.forEach(p => {
+  filteredPRs.forEach(p => {
     const m = p.Module || 'Unknown';
     if (!prByModule[m]) prByModule[m] = { total:0, deployed:0, inProg:0 };
     prByModule[m].total++;
@@ -56,10 +64,10 @@ async function renderDashboard() {
     else prByModule[m].inProg++;
   });
 
-  document.querySelector('#moduleTable tbody').innerHTML = allModulePages
+  document.querySelector('#moduleTable tbody').innerHTML = filteredModules
     .sort((a,b) => a.Module.localeCompare(b.Module))
     .map(m => {
-      const pages      = m.Pages || [];
+      const pages      = m.Pages.filter(p => !EXCLUDED_FROM_PAGES.has(p.page_name)) || [];
       const prodDep    = pages.filter(p => (p.Production_Deployment_Status||'').toLowerCase() === 'deployed').length;
       const prodPend   = pages.length - prodDep;
       const ffEn       = pages.filter(p => (p.Feature_Flag_Status||'').toLowerCase() === 'enabled').length;
@@ -93,7 +101,7 @@ async function renderDashboard() {
 
   // ── Developer table ──
   const devMap = {};
-  allPRs.forEach(p => {
+  filteredPRs.forEach(p => {
     const d = p.Developer || 'Unknown';
     if (!devMap[d]) devMap[d] = { prs:0, modules:new Set() };
     devMap[d].prs++;
