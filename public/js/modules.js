@@ -89,7 +89,8 @@ function buildModuleAccordion(mod, prsByPage = {}) {
       <button onclick="removeOOS('${mod.Module}','${escAttr(p)}')" title="Remove">✕</button>
     </span>`).join('');
 
-  const prodPct   = pages.length ? Math.round(prodDep / pages.length * 100) : 0;
+  const modulePages = pages.filter(p=>p.page_name != 'Infrastructure Pages'); //alert(modulePages.length);
+  const prodPct   = modulePages.length ? Math.round(prodDep / modulePages.length * 100) : 0;
   const barColor  = prodPct === 100 ? 'var(--green)' : prodPct > 0 ? 'var(--yellow)' : 'var(--border)';
 
   return `
@@ -99,10 +100,10 @@ function buildModuleAccordion(mod, prsByPage = {}) {
           <span class="chevron" id="c-${accId}">▼</span>
           <span class="mp-acc-name">📦 ${mod.Module}</span>
           <div class="mp-acc-counts">
-            <span class="badge badge-blue">${pages.length} page${pages.length!==1?'s':''}</span>
+            <span class="badge badge-blue">${modulePages.length} page${modulePages.length!==1?'s':''}</span>
             <span class="badge badge-green" title="Prod Deployed">${prodDep} prod</span>
             <span class="badge badge-teal" title="Demo Done">${demoDone} demo</span>
-            <span class="badge ${ffEn===pages.length&&pages.length?'badge-green':'badge-yellow'}" title="FF Enabled">${ffEn}/${pages.length} FF</span>
+            <span class="badge ${ffEn===modulePages.length&&modulePages.length?'badge-green':'badge-yellow'}" title="FF Enabled">${ffEn}/${modulePages.length} FF</span>
             ${mod.OutOfScope?.length ? `<span class="badge badge-red">${mod.OutOfScope.length} OOS</span>` : ''}
           </div>
           <div style="width:80px;height:4px;border-radius:2px;background:var(--surface3);margin-left:4px" title="${prodPct}% deployed">

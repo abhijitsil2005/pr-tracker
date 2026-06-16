@@ -176,12 +176,12 @@ function openAssignmentModal(prefilledDev) {
   // Populate developer select
   const devSel = document.getElementById('am_dev');
   devSel.innerHTML = '<option value="">— select —</option>';
-  lookupDevelopers.forEach(d => devSel.add(new Option(d, d)));
+  lookupDevelopers.sort((a, b) => (a||'').localeCompare(b||'')).forEach(d => devSel.add(new Option(d, d)));
   devSel.value = prefilledDev || '';
   // Populate module select
   const modSel = document.getElementById('am_module');
   modSel.innerHTML = '<option value="">— select —</option>';
-  lookupModules.forEach(m => modSel.add(new Option(m, m)));
+  lookupModules.sort((a, b) => (a||'').localeCompare(b||'')).forEach(m => modSel.add(new Option(m, m)));
   modSel.value = '';
   // PR section
   populateAmPRSelect();
@@ -196,31 +196,31 @@ function openAssignmentModalForDev(dev) {
 }
 
 async function openEditAssignmentModal(id) {
-  const a = stAssignments.find(x => x.id === id);
-  if (!a) return;
-  stCtx = a;
+  const assignments = stAssignments.find(x => x.id === id);
+  if (!assignments) return;
+  stCtx = assignments;
   document.getElementById('amTitle').textContent     = 'Edit Assignment';
   document.getElementById('amSaveBtn').textContent   = 'Update';
   document.getElementById('am_week').textContent     = weekLabel(currentWeek);
-  document.getElementById('am_status').value         = a.Status || 'In Progress';
+  document.getElementById('am_status').value         = assignments.Status || 'In Progress';
   document.getElementById('am_note').value           = '';
   // Populate selects
   const devSel = document.getElementById('am_dev');
   devSel.innerHTML = '<option value="">— select —</option>';
-  lookupDevelopers.forEach(d => devSel.add(new Option(d, d)));
-  devSel.value = a.Developer || '';
+  lookupDevelopers.sort((a, b) => (a||'').localeCompare(b||'')).forEach(d => devSel.add(new Option(d, d)));
+  devSel.value = assignments.Developer || '';
   const modSel = document.getElementById('am_module');
   modSel.innerHTML = '<option value="">— select —</option>';
-  lookupModules.forEach(m => modSel.add(new Option(m, m)));
-  modSel.value = a.Module || '';
+  lookupModules.sort((a, b) => (a||'').localeCompare(b||'')).forEach(m => modSel.add(new Option(m, m)));
+  modSel.value = assignments.Module || '';
   await amLoadPageOptions();
-  if (a.Page) {
+  if (assignments.Page) {
     document.getElementById('am_pages').querySelectorAll('.page-chip').forEach(chip => {
-      if (chip.dataset.value === a.Page) chip.classList.add('selected');
+      if (chip.dataset.value === assignments.Page) chip.classList.add('selected');
     });
   }
   // PR section
-  populateAmPRSelect(a.PR);
+  populateAmPRSelect(assignments.PR);
   const qf2 = document.getElementById('amQuickPRForm'); if (qf2) qf2.style.display = 'none';
   const tb2 = document.getElementById('amToggleQPR');   if (tb2) tb2.textContent = '＋ New PR';
   const qn2 = document.getElementById('am_qpr_number'); if (qn2) qn2.value = '';
