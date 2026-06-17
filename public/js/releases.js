@@ -206,21 +206,23 @@ function buildModGroup(mod, rel) {
         const ffStatus = p.Feature_Flag_Status || 'N/A';
         const isFirst  = i === 0;
         const rowspan  = prPages.length;
+        // PR# cell is merged across pages that share a PR; Task#/Developer/Status are per-row
         const prCellHtml = isFirst
           ? `<td class="pr-cell" rowspan="${rowspan}">${prNum
               ? `<span class="pr-pill" onclick="showPRDetail(${prNum})">#${prNum}</span>`
               : '<span style="color:var(--text2)">—</span>'
-            }</td>
-             <td rowspan="${rowspan}" style="white-space:nowrap">${p.Task ? `<span style="color:var(--text2);font-size:11px">#${p.Task}</span>` : '—'}</td>
-             <td rowspan="${rowspan}" style="white-space:nowrap">${prDetail ? (prDetail.Developer||'—') : '—'}</td>
-             <td rowspan="${rowspan}">${prDetail ? statusBadge(prDetail.Status) : '<span class="badge badge-gray">—</span>'}</td>`
+            }</td>`
           : '';
 
         rows += `<tr>
+          <td></td>
           <td style="font-family:monospace;font-size:11px" title="${p.Page_Name||''}">${p.Page_Name||'—'}</td>
           <td style="color:var(--accent2)" title="${ffName}">${ffName||'N/A'}</td>
           <td>${ffBadge(ffStatus)}</td>
           ${prCellHtml}
+          <td style="white-space:nowrap">${p.Task ? `<span style="color:var(--text2);font-size:11px">#${p.Task}</span>` : '—'}</td>
+          <td style="white-space:nowrap">${prDetail ? (prDetail.Developer||'—') : '—'}</td>
+          <td>${prDetail ? statusBadge(prDetail.Status) : '<span class="badge badge-gray">—</span>'}</td>
         </tr>`;
       });
     });
@@ -243,16 +245,18 @@ function buildModGroup(mod, rel) {
     </div>
     <table class="pages-table">
       <colgroup>
+        <col class="col-margin">
         <col class="col-page"><col class="col-ff"><col class="col-ffs">
         <col class="col-pr"><col class="col-task"><col class="col-dev"><col class="col-status">
       </colgroup>
       <thead>
         <tr>
+          <th></th>
           <th>Page</th><th>Feature Flag</th><th>FF Status</th>
           <th>PR #</th><th>Task #</th><th>Developer</th><th>Status</th>
         </tr>
       </thead>
-      <tbody>${rows || '<tr><td colspan="7" style="text-align:center;color:var(--text2);padding:14px">No pages defined</td></tr>'}</tbody>
+      <tbody>${rows || '<tr><td colspan="8" style="text-align:center;color:var(--text2);padding:14px">No pages defined</td></tr>'}</tbody>
     </table>
   </div>`;
 }

@@ -126,8 +126,9 @@ label{display:block;font-size:12px;color:var(--text2);margin-bottom:5px}
 .mod-story{font-size:11px;color:var(--accent2);margin-left:6px}
 .mod-story-label{font-size:11px;color:var(--text2)}
 .pages-table{width:100%;border-collapse:collapse;font-size:12px;table-layout:fixed}
-.pages-table col.col-page{width:28%}
-.pages-table col.col-ff{width:18%}
+.pages-table col.col-margin{width:2%}
+.pages-table col.col-page{width:22%}
+.pages-table col.col-ff{width:25%}
 .pages-table col.col-ffs{width:9%}
 .pages-table col.col-pr{width:11%}
 .pages-table col.col-task{width:10%}
