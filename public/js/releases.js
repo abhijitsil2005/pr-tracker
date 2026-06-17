@@ -148,9 +148,9 @@ function buildReleaseBlock(rel, search, cssClass) {
         <span class="badge badge-blue">${totalMods} module${totalMods!==1?'s':''}</span>
         <span class="badge badge-purple">${totalPages} page${totalPages!==1?'s':''}</span>
         <span class="badge badge-gray">${allRelPRs.length} PR${allRelPRs.length!==1?'s':''}</span>
-        ${completeBtn}
-        <button class="btn btn-ghost btn-sm" onclick="openEditReleaseModal('${rel.Release_Number}')">✏️ Edit</button>
-        <button class="btn btn-danger btn-sm" onclick="deleteRelease('${rel.Release_Number}')">🗑</button>
+        ${canWrite() ? completeBtn : ''}
+        ${canWrite() ? `<button class="btn btn-ghost btn-sm" onclick="openEditReleaseModal('${rel.Release_Number}')">✏️ Edit</button>` : ''}
+        ${canWrite() ? `<button class="btn btn-danger btn-sm" onclick="deleteRelease('${rel.Release_Number}')">🗑</button>` : ''}
       </div>
     </div>
     <div class="release-body" id="body-${relId}"${cssClass !== 'current' ? ' style="display:none"' : ''}>
@@ -334,7 +334,7 @@ function showPRDetail(prNum) {
 async function updatePRStatusFromDetail(prNum) {
   const newStatus = document.getElementById('prDetailStatusSel').value;
   if (!newStatus) return showToast('Select a status', 'error');
-  const res = await fetch(`${API}/prs/${prNum}`, {
+  const res = await authFetch(`${API}/prs/${prNum}`, {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ Status: newStatus }),
@@ -539,7 +539,7 @@ async function saveRelease() {
     Modules: relModuleRows,
   };
   const isEdit = !!editingRelease;
-  const res = await fetch(`${API}/releases${isEdit?'/'+editingRelease:''}`, {
+  const res = await authFetch(`${API}/releases${isEdit?'/'+editingRelease:''}`, {
     method: isEdit?'PUT':'POST',
     headers:{'Content-Type':'application/json'},
     body: JSON.stringify(body)
@@ -553,7 +553,7 @@ async function saveRelease() {
 
 async function deleteRelease(releaseNumber) {
   if (!confirm(`Delete release ${releaseNumber}?`)) return;
-  const res = await fetch(`${API}/releases/${releaseNumber}`,{method:'DELETE'});
+  const res = await authFetch(`${API}/releases/${releaseNumber}`,{method:'DELETE'});
   const json = await res.json();
   if (!res.ok) return showToast(json.error,'error');
   showToast(`Release ${releaseNumber} deleted`,'success');
@@ -569,7 +569,7 @@ async function completeRelease(releaseNumber) {
     `• Stamp Release_Date on all affected pages\n` +
     `• Update all associated PRs → "Prod Deployed" + stamp Release_Date`
   )) return;
-  const res  = await fetch(`${API}/releases/${releaseNumber}/complete`, { method: 'POST' });
+  const res  = await authFetch(`${API}/releases/${releaseNumber}/complete`, { method: 'POST' });
   const json = await res.json();
   if (!res.ok) return showToast(json.error, 'error');
   showToast(`Release ${releaseNumber} completed — ${json.prCount} PR(s) updated`, 'success');

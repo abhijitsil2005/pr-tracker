@@ -7,7 +7,19 @@
 <link rel="stylesheet" href="css/styles.css">
 </head>
 <body>
-<div class="app">
+
+<!-- ── Login Overlay ──────────────────────────────────── -->
+<div class="login-overlay" id="loginOverlay">
+  <div class="login-card">
+    <div class="login-logo">🔀 PR Tracker</div>
+    <div class="form-group"><label>Email</label><input type="email" id="loginEmail" placeholder="you@company.com" autocomplete="username"></div>
+    <div class="form-group"><label>Password</label><input type="password" id="loginPassword" placeholder="••••••••" autocomplete="current-password"></div>
+    <div id="loginError" class="login-error"></div>
+    <button class="btn btn-primary" id="loginBtn" onclick="doLogin()" style="width:100%;margin-top:4px">Sign In</button>
+  </div>
+</div>
+
+<div class="app" id="appShell" style="display:none">
 
 <!-- ── Sidebar ─────────────────────────────────────────── -->
 <nav id="mainNav">
@@ -22,6 +34,7 @@
     <li><a href="#" data-section="releases" title="Releases"><span class="nav-icon">🚀</span><span class="nav-label"> Releases</span></a></li>
     <li><a href="#" data-section="modules" title="Module Pages"><span class="nav-icon">📦</span><span class="nav-label"> Module Pages</span></a></li>
     <li><a href="#" data-section="status" title="Status Tracker"><span class="nav-icon">📋</span><span class="nav-label"> Status Tracker</span></a></li>
+    <li id="navUsersLi" style="display:none"><a href="#" data-section="users" title="User Management"><span class="nav-icon">👥</span><span class="nav-label"> Users</span></a></li>
   </ul>
 </nav>
 
@@ -29,7 +42,10 @@
 <div class="main">
   <header>
     <h1 id="pageTitle">Dashboard</h1>
-    <div class="header-actions" id="headerActions"></div>
+    <div style="display:flex;align-items:center;gap:12px">
+      <div class="header-actions" id="headerActions"></div>
+      <div id="headerUser" style="display:flex;align-items:center;gap:8px"></div>
+    </div>
   </header>
 
   <div class="content">
@@ -118,6 +134,17 @@
         </div>
       </div>
       <div id="stContainer"></div>
+    </div>
+
+    <!-- USERS -->
+    <div id="section-users" class="section">
+      <div class="toolbar" style="justify-content:flex-end;margin-bottom:16px">
+        <button class="btn btn-primary" onclick="openAddUserModal()">＋ Add User</button>
+      </div>
+      <table id="userTable" class="data-table">
+        <thead><tr><th>Email</th><th>Name</th><th>Role</th><th>Status</th><th>Actions</th></tr></thead>
+        <tbody></tbody>
+      </table>
     </div>
 
     <!-- SYNC -->
@@ -467,6 +494,49 @@
   </div>
 </div>
 
+<!-- ── Change Password Modal ───────────────────────────── -->
+<div class="modal-overlay" id="changePasswordModal">
+  <div class="modal">
+    <h2>Change Password</h2>
+    <button class="modal-close" onclick="closeModal('changePasswordModal')">✕</button>
+    <div class="form-grid">
+      <div class="form-group full"><label>Current Password</label><input type="password" id="cpCurrent"></div>
+      <div class="form-group full"><label>New Password</label><input type="password" id="cpNew"></div>
+      <div class="form-group full"><label>Confirm New Password</label><input type="password" id="cpConfirm"></div>
+    </div>
+    <div id="cpError" style="color:var(--red);font-size:13px;margin-top:4px"></div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('changePasswordModal')">Cancel</button>
+      <button class="btn btn-primary" onclick="submitChangePassword()">Change Password</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── User Modal (add / edit) ─────────────────────────── -->
+<div class="modal-overlay" id="userModal">
+  <div class="modal">
+    <h2 id="umModalTitle">Add User</h2>
+    <button class="modal-close" onclick="closeModal('userModal')">✕</button>
+    <div class="form-grid">
+      <div class="form-group full" id="umEmailRow"><label>Email *</label><input type="email" id="umEmail"></div>
+      <div class="form-group full"><label>Name *</label><input type="text" id="umName"></div>
+      <div class="form-group full"><label>Role</label>
+        <select id="umRole">
+          <option value="ReadOnly">ReadOnly</option>
+          <option value="ReadWrite">ReadWrite</option>
+          <option value="Admin">Admin</option>
+        </select>
+      </div>
+      <div class="form-group full" id="umPasswordRow"><label>Password *</label><input type="password" id="umPassword"></div>
+    </div>
+    <div id="umError" style="color:var(--red);font-size:13px;margin-top:4px"></div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('userModal')">Cancel</button>
+      <button class="btn btn-primary" id="umSaveBtn">Save</button>
+    </div>
+  </div>
+</div>
+
 <!-- ── Toast ──────────────────────────────────────────── -->
 <div id="toast"></div>
 
@@ -477,6 +547,6 @@
 <script src="js/modules.js"></script>
 <script src="js/status.js"></script>
 <script src="js/sync.js"></script>
-<script>init();</script>
+<script src="js/auth.js"></script>
 </body>
 </html>
