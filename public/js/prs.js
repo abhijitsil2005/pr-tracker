@@ -54,8 +54,8 @@ async function renderPRs(filters = {}) {
       <td style="white-space:nowrap">${p['PR Raised Date']||'—'}</td>
       <td style="white-space:nowrap">${p.Target_Release||'—'}</td>
       <td style="white-space:nowrap">
-        <button class="btn btn-ghost btn-sm" onclick="openEditPRModal(${p.PR})">✏️</button>
-        <button class="btn btn-danger btn-sm" onclick="deletePR(${p.PR})">🗑</button>
+        ${canWrite() ? `<button class="btn btn-ghost btn-sm" onclick="openEditPRModal(${p.PR})">✏️</button>
+        <button class="btn btn-danger btn-sm" onclick="deletePR(${p.PR})">🗑</button>` : ''}
       </td>
     </tr>`).join('') || `<tr><td colspan="9" style="text-align:center;color:var(--text2);padding:32px">No PRs found</td></tr>`;
   const statSel = document.getElementById('filterStatus');
@@ -185,7 +185,7 @@ async function savePR() {
     Dependent_PRs:document.getElementById('f_deps').value.split(',').map(s=>s.trim()).filter(Boolean).map(Number),
   };
   const isEdit = !!editingPR;
-  const res = await fetch(`${API}/prs${isEdit?'/'+editingPR:''}`, { method:isEdit?'PUT':'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body) });
+  const res = await authFetch(`${API}/prs${isEdit?'/'+editingPR:''}`, { method:isEdit?'PUT':'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body) });
   const json = await res.json();
   if (!res.ok) return showToast(json.error,'error');
 
@@ -206,7 +206,7 @@ async function savePR() {
 
 async function deletePR(prNumber) {
   if (!confirm(`Delete PR #${prNumber}?`)) return;
-  const res = await fetch(`${API}/prs/${prNumber}`,{method:'DELETE'});
+  const res = await authFetch(`${API}/prs/${prNumber}`,{method:'DELETE'});
   const json = await res.json();
   if (!res.ok) return showToast(json.error,'error');
   showToast(`PR #${prNumber} deleted`,'success');

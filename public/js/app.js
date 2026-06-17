@@ -15,7 +15,7 @@ function toggleNav() {
   localStorage.setItem('navCollapsed', collapsed);
 }
 
-// ── Init ───────────────────────────────────────────────
+// ── Init (called by auth.js after successful login) ────
 async function init() {
   if (localStorage.getItem('navCollapsed') === 'true') {
     document.getElementById('mainNav').classList.add('collapsed');
@@ -40,7 +40,8 @@ async function loadLookups() {
 }
 
 async function api(path, opts = {}) {
-  const res = await fetch(`${API}/${path}`, opts);
+  const res = await authFetch(`${API}/${path}`, opts);
+  if (!res || res.status === 401) return null;
   return res.json().catch(() => null);
 }
 
@@ -74,17 +75,19 @@ document.querySelectorAll('nav ul li a').forEach(a => {
 function showSection(name) {
   document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
   document.getElementById(`section-${name}`).classList.add('active');
-  const titles = { dashboard:'Dashboard', prs:'Pull Requests', releases:'Releases', modules:'Module Pages', status:'Status Tracker', sync:'Sync Excel' };
+  const titles = { dashboard:'Dashboard', prs:'Pull Requests', releases:'Releases', modules:'Module Pages', status:'Status Tracker', sync:'Sync Excel', users:'User Management' };
   document.getElementById('pageTitle').textContent = titles[name] || name;
   const ha = document.getElementById('headerActions');
   ha.innerHTML = '';
-  if (name === 'prs')    ha.innerHTML = `<button class="btn btn-primary" onclick="openAddPRModal()">＋ Add PR</button>`;
-  if (name === 'status') ha.innerHTML = `<button class="btn btn-primary" onclick="openAssignmentModal()">＋ Assign</button>`;
+  if (name === 'prs'     && canWrite()) ha.innerHTML = `<button class="btn btn-primary" onclick="openAddPRModal()">＋ Add PR</button>`;
+  if (name === 'status'  && canWrite()) ha.innerHTML = `<button class="btn btn-primary" onclick="openAssignmentModal()">＋ Assign</button>`;
+  if (name === 'modules' && canWrite()) ha.innerHTML = `<button class="btn btn-primary" onclick="openAddModuleModal()">＋ Add Module</button>`;
   if (name === 'dashboard') renderDashboard();
-  if (name === 'prs')    renderPRs();
-  if (name === 'releases') renderReleases();
-  if (name === 'modules')  renderModulePages();
-  if (name === 'status')   renderStatusTracker();
+  if (name === 'prs')       renderPRs();
+  if (name === 'releases')  renderReleases();
+  if (name === 'modules')   renderModulePages();
+  if (name === 'status')    renderStatusTracker();
+  if (name === 'users')     renderUsers();
 }
 
 // ── Status badges ───────────────────────────────────────

@@ -1,6 +1,6 @@
 // services/dynamoService.js
 require('dotenv').config();
-const { DynamoDBClient } = require('@aws-sdk/client-dynamodb');
+const { DynamoDBClient, CreateTableCommand, DescribeTableCommand } = require('@aws-sdk/client-dynamodb');
 const { DynamoDBDocumentClient, GetCommand, PutCommand,
         DeleteCommand, ScanCommand } = require('@aws-sdk/lib-dynamodb');
 
@@ -313,6 +313,28 @@ async function completeRelease(releaseNumber) {
   return { moduleCount: modules.length, prCount: prNumbers.size };
 }
 
+// ── Users ─────────────────────────────────────────────────
+const getUsers      = ()      => scanTable('Users');
+const getUserByEmail = (email) => getItem('Users', { email });
+const upsertUser    = (item)  => putItem('Users', item);
+const deleteUser    = (email) => deleteItem('Users', { email });
+
+async function ensureUsersTable() {
+  try {
+    await client.send(new DescribeTableCommand({ TableName: 'Users' }));
+  } catch (e) {
+    if (e.name !== 'ResourceNotFoundException') throw e;
+    await client.send(new CreateTableCommand({
+      TableName: 'Users',
+      KeySchema: [{ AttributeName: 'email', KeyType: 'HASH' }],
+      AttributeDefinitions: [{ AttributeName: 'email', AttributeType: 'S' }],
+      BillingMode: 'PAY_PER_REQUEST',
+    }));
+    // Wait briefly for table to become active
+    await new Promise(r => setTimeout(r, 3000));
+  }
+}
+
 module.exports = {
   getPRs, getPRByNumber, addPR, deletePR, updatePR,
   getProdReleases, getProdRelease, upsertProdRelease, deleteProdRelease,
@@ -325,4 +347,5 @@ module.exports = {
   getStatusAssignments, getStatusAssignment,
   addStatusAssignment, updateStatusAssignment, deleteStatusAssignment,
   addActivityToAssignment,
+  getUsers, getUserByEmail, upsertUser, deleteUser, ensureUsersTable,
 };

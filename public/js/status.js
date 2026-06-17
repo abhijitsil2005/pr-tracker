@@ -43,7 +43,7 @@ async function renderStatusTracker() {
     container.innerHTML = `<div class="empty">
       <div class="e-icon">📋</div>
       <p>No assignments for this week.</p>
-      <p style="margin-top:10px"><button class="btn btn-primary" onclick="openAssignmentModal()">＋ Assign a page</button></p>
+      ${canWrite() ? `<p style="margin-top:10px"><button class="btn btn-primary" onclick="openAssignmentModal()">＋ Assign a page</button></p>` : ''}
     </div>`;
     return;
   }
@@ -88,8 +88,8 @@ function buildDevCard(dev, items) {
       <td style="max-width:260px">${lastNote}</td>
       <td style="white-space:nowrap">
         <button class="btn btn-primary btn-xs" onclick="openActivityModal('${a.id}')" title="View activity &amp; updates">📝 ${logs.length}</button>
-        <button class="btn btn-ghost btn-xs" onclick="openEditAssignmentModal('${a.id}')" title="Edit assignment">✏️</button>
-        <button class="btn btn-danger btn-xs" onclick="deleteAssignment('${a.id}')" title="Remove">🗑</button>
+        ${canWrite() ? `<button class="btn btn-ghost btn-xs" onclick="openEditAssignmentModal('${a.id}')" title="Edit assignment">✏️</button>
+        <button class="btn btn-danger btn-xs" onclick="deleteAssignment('${a.id}')" title="Remove">🗑</button>` : ''}
       </td>
     </tr>`;
   }).join('');
@@ -102,7 +102,7 @@ function buildDevCard(dev, items) {
         ${done    ? `<span class="badge badge-green">${done} done</span>` : ''}
         ${blocked ? `<span class="badge badge-red">${blocked} blocked</span>` : ''}
       </div>
-      <button class="btn btn-ghost btn-sm" onclick="openAssignmentModalForDev('${escAttr(dev)}')">＋ Add Page</button>
+      ${canWrite() ? `<button class="btn btn-ghost btn-sm" onclick="openAssignmentModalForDev('${escAttr(dev)}')">＋ Add Page</button>` : ''}
     </div>
     <div class="table-wrap" style="border-radius:0;border-left:none;border-right:none;border-bottom:none">
       <table style="font-size:12px">
@@ -276,19 +276,19 @@ async function saveAssignment() {
     if (!chip) return showToast('Select a page', 'error');
     const page = chip.dataset.value;
     const oldStatus = stCtx.Status;
-    const res = await fetch(`${API}/status/${stCtx.id}`, {
+    const res = await authFetch(`${API}/status/${stCtx.id}`, {
       method: 'PUT', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ Developer: dev, Module: mod, Page: page, Status: status, PR: linkedPR }),
     });
     if (!res.ok) { const j = await res.json(); return showToast(j.error, 'error'); }
     if (oldStatus !== status) {
-      await fetch(`${API}/status/${stCtx.id}/activity`, {
+      await authFetch(`${API}/status/${stCtx.id}/activity`, {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ note: `Status changed from "${oldStatus}" to "${status}"`, type: 'status_change' }),
       });
     }
     if (note) {
-      await fetch(`${API}/status/${stCtx.id}/activity`, {
+      await authFetch(`${API}/status/${stCtx.id}/activity`, {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ note, type: 'update' }),
       });
@@ -301,7 +301,7 @@ async function saveAssignment() {
     for (const chip of selectedChips) {
       const body = { Developer: dev, Module: mod, Page: chip.dataset.value, Week: weekKey(currentWeek), Status: status, PR: linkedPR };
       if (note) body.note = note;
-      const res = await fetch(`${API}/status`, {
+      const res = await authFetch(`${API}/status`, {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body),
       });
@@ -315,7 +315,7 @@ async function saveAssignment() {
 
 async function deleteAssignment(id) {
   if (!confirm('Delete this assignment?')) return;
-  const res = await fetch(`${API}/status/${id}`, { method: 'DELETE' });
+  const res = await authFetch(`${API}/status/${id}`, { method: 'DELETE' });
   if (!res.ok) { const j = await res.json(); return showToast(j.error, 'error'); }
   showToast('Assignment removed', 'success');
   renderStatusTracker();
@@ -385,17 +385,17 @@ async function addActivityNote() {
   const newStatus = document.getElementById('actStatus').value;
   const oldStatus = stCtx.Status;
 
-  await fetch(`${API}/status/${stCtx.id}/activity`, {
+  await authFetch(`${API}/status/${stCtx.id}/activity`, {
     method: 'POST', headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ note, type: 'update' }),
   });
 
   if (newStatus !== oldStatus) {
-    await fetch(`${API}/status/${stCtx.id}`, {
+    await authFetch(`${API}/status/${stCtx.id}`, {
       method: 'PUT', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ Status: newStatus }),
     });
-    await fetch(`${API}/status/${stCtx.id}/activity`, {
+    await authFetch(`${API}/status/${stCtx.id}/activity`, {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ note: `Status changed from "${oldStatus}" to "${newStatus}"`, type: 'status_change' }),
     });
@@ -412,11 +412,11 @@ async function updateStatusFromModal() {
   const newStatus = document.getElementById('actStatus').value;
   const oldStatus = stCtx.Status;
   if (newStatus === oldStatus) return showToast('Status unchanged', '');
-  await fetch(`${API}/status/${stCtx.id}`, {
+  await authFetch(`${API}/status/${stCtx.id}`, {
     method: 'PUT', headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ Status: newStatus }),
   });
-  await fetch(`${API}/status/${stCtx.id}/activity`, {
+  await authFetch(`${API}/status/${stCtx.id}/activity`, {
     method: 'POST', headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ note: `Status changed from "${oldStatus}" to "${newStatus}"`, type: 'status_change' }),
   });
@@ -429,12 +429,12 @@ async function updateStatusFromModal() {
 async function linkPRFromActivity() {
   const prNum = Number(document.getElementById('actPRSelect').value);
   if (!prNum) return showToast('Select a PR first', 'error');
-  const res = await fetch(`${API}/status/${stCtx.id}`, {
+  const res = await authFetch(`${API}/status/${stCtx.id}`, {
     method: 'PUT', headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ PR: prNum }),
   });
   if (!res.ok) { const j = await res.json(); return showToast(j.error, 'error'); }
-  await fetch(`${API}/status/${stCtx.id}/activity`, {
+  await authFetch(`${API}/status/${stCtx.id}/activity`, {
     method: 'POST', headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ note: `PR #${prNum} linked`, type: 'pr_linked' }),
   });
@@ -448,11 +448,11 @@ async function unlinkPRFromAssignment() {
   const prNum = stCtx.PR;
   if (!prNum) return;
   if (!confirm(`Unlink PR #${prNum} from this assignment?`)) return;
-  await fetch(`${API}/status/${stCtx.id}`, {
+  await authFetch(`${API}/status/${stCtx.id}`, {
     method: 'PUT', headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ PR: null }),
   });
-  await fetch(`${API}/status/${stCtx.id}/activity`, {
+  await authFetch(`${API}/status/${stCtx.id}/activity`, {
     method: 'POST', headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ note: `PR #${prNum} unlinked`, type: 'pr_unlinked' }),
   });
@@ -511,7 +511,7 @@ async function saveAmQuickPR() {
   const mod    = document.getElementById('am_module').value || null;
   const pages  = [...document.querySelectorAll('#am_pages .page-chip.selected')].map(c => c.dataset.value);
 
-  const prRes = await fetch(`${API}/prs`, {
+  const prRes = await authFetch(`${API}/prs`, {
     method: 'POST', headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ PR: prNum, Type: 'Development', Developer: dev, Module: mod, Page: pages, Status: status }),
   });
@@ -559,7 +559,7 @@ async function saveQuickPR() {
     Page:      page  ? [page] : [],
     Status:    status,
   };
-  const prRes = await fetch(`${API}/prs`, {
+  const prRes = await authFetch(`${API}/prs`, {
     method: 'POST', headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(prBody),
   });
@@ -567,11 +567,11 @@ async function saveQuickPR() {
   if (!prRes.ok) return showToast(prJson.error || 'Failed to create PR', 'error');
 
   // Link the new PR to this assignment
-  await fetch(`${API}/status/${stCtx.id}`, {
+  await authFetch(`${API}/status/${stCtx.id}`, {
     method: 'PUT', headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ PR: prNum }),
   });
-  await fetch(`${API}/status/${stCtx.id}/activity`, {
+  await authFetch(`${API}/status/${stCtx.id}/activity`, {
     method: 'POST', headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ note: `PR #${prNum} created and linked`, type: 'pr_linked' }),
   });

@@ -76,8 +76,8 @@ function buildModuleAccordion(mod, prsByPage = {}) {
       <td style="font-size:11px;color:var(--text2)">${p.Release_Date||'—'}</td>
       <td class="mp-prs-cell">${prPills || '<span style="color:var(--text2);font-size:11px">—</span>'}</td>
       <td style="white-space:nowrap">
-        <button class="btn btn-ghost btn-xs" onclick="openEditPageModal('${mod.Module}','${escAttr(p.page_name)}')">✏️</button>
-        <button class="btn btn-danger btn-xs" onclick="deletePageFromMod('${mod.Module}','${escAttr(p.page_name)}')">🗑</button>
+        ${canWrite() ? `<button class="btn btn-ghost btn-xs" onclick="openEditPageModal('${mod.Module}','${escAttr(p.page_name)}')">✏️</button>
+        <button class="btn btn-danger btn-xs" onclick="deletePageFromMod('${mod.Module}','${escAttr(p.page_name)}')">🗑</button>` : ''}
         <button class="btn btn-primary btn-xs" onclick="openPagePRModal('${mod.Module}','${escAttr(p.page_name)}')">🔗</button>
       </td>
     </tr>`;
@@ -110,11 +110,11 @@ function buildModuleAccordion(mod, prsByPage = {}) {
             <div style="height:100%;width:${prodPct}%;background:${barColor};border-radius:2px"></div>
           </div>
         </div>
-        <div onclick="event.stopPropagation()" style="display:flex;gap:6px">
+        ${canWrite() ? `<div onclick="event.stopPropagation()" style="display:flex;gap:6px">
           <button class="btn btn-primary btn-sm" onclick="openAddPageModal('${mod.Module}')">＋ Page</button>
           <button class="btn btn-ghost btn-sm" onclick="promptAddOOS('${mod.Module}')">＋ Out-of-scope</button>
           <button class="btn btn-danger btn-sm" onclick="deleteModule('${mod.Module}')">🗑 Module</button>
-        </div>
+        </div>` : ''}
       </div>
       <div class="mp-acc-body" id="b-${accId}">
         <table class="mp-pages-table">
@@ -157,7 +157,7 @@ function openAddModuleModal() {
 async function saveNewModule() {
   const name = document.getElementById('nm_name').value.trim();
   if (!name) return showToast('Module name required','error');
-  const res = await fetch(`${API}/modules`, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ Module:name }) });
+  const res = await authFetch(`${API}/modules`, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ Module:name }) });
   const json = await res.json();
   if (!res.ok) return showToast(json.error,'error');
   showToast(`Module "${name}" created`,'success');
@@ -168,7 +168,7 @@ async function saveNewModule() {
 
 async function deleteModule(moduleName) {
   if (!confirm(`Delete module "${moduleName}" and all its pages?`)) return;
-  const res = await fetch(`${API}/modules/${encodeURIComponent(moduleName)}`,{method:'DELETE'});
+  const res = await authFetch(`${API}/modules/${encodeURIComponent(moduleName)}`,{method:'DELETE'});
   const json = await res.json();
   if (!res.ok) return showToast(json.error,'error');
   showToast(`Module "${moduleName}" deleted`,'success');
@@ -231,7 +231,7 @@ async function savePage() {
   const url = isEdit
     ? `${API}/modules/${encodeURIComponent(moduleName)}/pages/${encodeURIComponent(pageName)}`
     : `${API}/modules/${encodeURIComponent(moduleName)}/pages`;
-  const res  = await fetch(url, { method: isEdit ? 'PUT' : 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+  const res  = await authFetch(url, { method: isEdit ? 'PUT' : 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
   const json = await res.json();
   if (!res.ok) return showToast(json.error, 'error');
   showToast(isEdit ? 'Page updated' : 'Page added', 'success');
@@ -243,7 +243,7 @@ async function savePage() {
 
 async function deletePageFromMod(moduleName, pageName) {
   if (!confirm(`Delete page "${pageName}" from ${moduleName}?`)) return;
-  const res = await fetch(`${API}/modules/${encodeURIComponent(moduleName)}/pages/${encodeURIComponent(pageName)}`,{method:'DELETE'});
+  const res = await authFetch(`${API}/modules/${encodeURIComponent(moduleName)}/pages/${encodeURIComponent(pageName)}`,{method:'DELETE'});
   const json = await res.json();
   if (!res.ok) return showToast(json.error,'error');
   showToast('Page deleted','success');
@@ -254,7 +254,7 @@ async function deletePageFromMod(moduleName, pageName) {
 async function promptAddOOS(moduleName) {
   const pn = prompt(`Add out-of-scope page name for "${moduleName}":`);
   if (!pn || !pn.trim()) return;
-  const res = await fetch(`${API}/modules/${encodeURIComponent(moduleName)}/out-of-scope`, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({page_name:pn.trim()}) });
+  const res = await authFetch(`${API}/modules/${encodeURIComponent(moduleName)}/out-of-scope`, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({page_name:pn.trim()}) });
   const json = await res.json();
   if (!res.ok) return showToast(json.error,'error');
   showToast('Out-of-scope page added','success');
@@ -262,7 +262,7 @@ async function promptAddOOS(moduleName) {
 }
 
 async function removeOOS(moduleName, pageName) {
-  const res = await fetch(`${API}/modules/${encodeURIComponent(moduleName)}/out-of-scope/${encodeURIComponent(pageName)}`,{method:'DELETE'});
+  const res = await authFetch(`${API}/modules/${encodeURIComponent(moduleName)}/out-of-scope/${encodeURIComponent(pageName)}`,{method:'DELETE'});
   const json = await res.json();
   if (!res.ok) return showToast(json.error,'error');
   showToast('Removed from out-of-scope','success');
@@ -319,7 +319,7 @@ async function linkSelectedPR() {
 
   const pr = await api(`prs/${prNum}`);
   const pages = [...new Set([...(pr.Page||[]), pageName])];
-  const res = await fetch(`${API}/prs/${prNum}`, {
+  const res = await authFetch(`${API}/prs/${prNum}`, {
     method: 'PUT', headers: {'Content-Type':'application/json'},
     body: JSON.stringify({...pr, Page: pages})
   });
@@ -335,7 +335,7 @@ async function unlinkPRFromPage(prNumber) {
 
   const pr = await api(`prs/${prNumber}`);
   const pages = (pr.Page||[]).filter(pg => pg !== pageName);
-  const res = await fetch(`${API}/prs/${prNumber}`, {
+  const res = await authFetch(`${API}/prs/${prNumber}`, {
     method: 'PUT', headers: {'Content-Type':'application/json'},
     body: JSON.stringify({...pr, Page: pages})
   });
@@ -383,7 +383,7 @@ async function linkPRFromPageModal() {
 
   const pr = await api(`prs/${prNum}`);
   const pages = [...new Set([...(pr.Page||[]), pageName])];
-  const res = await fetch(`${API}/prs/${prNum}`, {
+  const res = await authFetch(`${API}/prs/${prNum}`, {
     method: 'PUT', headers: {'Content-Type':'application/json'},
     body: JSON.stringify({...pr, Page: pages})
   });
@@ -404,7 +404,7 @@ async function unlinkPRFromPageModal(prNumber) {
 
   const pr = await api(`prs/${prNumber}`);
   const pages = (pr.Page||[]).filter(pg => pg !== pageName);
-  const res = await fetch(`${API}/prs/${prNumber}`, {
+  const res = await authFetch(`${API}/prs/${prNumber}`, {
     method: 'PUT', headers: {'Content-Type':'application/json'},
     body: JSON.stringify({...pr, Page: pages})
   });
