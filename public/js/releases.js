@@ -271,29 +271,52 @@ function toggleRelease(id) {
 }
 
 // ── PR Detail popup ────────────────────────────────────
+const PR_STATUSES = [
+  'Development Inprogress',
+  'Dev PR in Review',
+  'TCR Testing In Progress',
+  'Ready for Prod Deploy',
+  'Prod Deployed FF OFF',
+  'Prod Deployed',
+];
+
 function showPRDetail(prNum) {
   const pr = allPRs.find(p => p.PR === Number(prNum));
   if (!pr) return showToast(`PR #${prNum} not found in loaded data`, 'error');
   document.getElementById('prDetailTitle').textContent = `PR #${pr.PR} — ${pr.Module||''}`;
   const rows = [
-    ['Developer',    pr.Developer||'—'],
-    ['Type',         pr.Type||'—'],
-    ['Status',       `<span>${statusBadge(pr.Status)}</span>`],
-    ['Dev Sprint',   pr.Dev_Sprint||'—'],
+    ['Developer',      pr.Developer||'—'],
+    ['Type',           pr.Type||'—'],
+    ['Status',         `<span>${statusBadge(pr.Status)}</span>`],
+    ['Dev Sprint',     pr.Dev_Sprint||'—'],
     ['Testing Sprint', pr.Testing_Sprint||'—'],
-    ['Merged',       pr['PR Merged Date']||'—'],
+    ['Merged',         pr['PR Merged Date']||'—'],
     ['Target Release', pr.Target_Release||'—'],
-    ['Dependent PRs', (pr.Dependent_PRs||[]).length ? pr.Dependent_PRs.map(n=>`<span class="pr-pill" style="cursor:default">#${n}</span>`).join(' ') : '—'],
-    ['Pages',        (pr.Page||[]).map(p=>`<code style="font-size:11px;background:var(--surface3);padding:2px 6px;border-radius:4px">${p}</code>`).join('<br>')],
+    ['Dependent PRs',  (pr.Dependent_PRs||[]).length ? pr.Dependent_PRs.map(n=>`<span class="pr-pill" style="cursor:default">#${n}</span>`).join(' ') : '—'],
+    ['Pages',          (pr.Page||[]).map(p=>`<code style="font-size:11px;background:var(--surface3);padding:2px 6px;border-radius:4px">${p}</code>`).join('<br>')],
   ];
+
+  const statusOptions = PR_STATUSES.map(s =>
+    `<option value="${s}" ${pr.Status === s ? 'selected' : ''}>${s}</option>`
+  ).join('');
+
   document.getElementById('prDetailBody').innerHTML = `
     <div style="display:grid;grid-template-columns:140px 1fr;gap:10px 16px;font-size:13px;margin-bottom:16px">
       ${rows.map(([k,v])=>`
         <div style="color:var(--text2);font-weight:500;padding-top:2px">${k}</div>
         <div>${v}</div>`).join('')}
     </div>
+    <div style="border-top:1px solid var(--border);padding-top:14px;margin-top:4px">
+      <div style="font-size:12px;font-weight:600;color:var(--text2);margin-bottom:10px">UPDATE STATUS</div>
+      <div style="display:flex;gap:8px;align-items:center">
+        <select id="prDetailStatusSel" style="flex:1;background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:8px 12px;border-radius:8px;font-size:13px;outline:none">
+          ${statusOptions}
+        </select>
+        <button class="btn btn-primary btn-sm" onclick="updatePRStatusFromDetail(${pr.PR})">Update</button>
+      </div>
+    </div>
     ${(pr.PR_Comments||[]).length ? `
-      <div style="border-top:1px solid var(--border);padding-top:14px;margin-top:4px">
+      <div style="border-top:1px solid var(--border);padding-top:14px;margin-top:14px">
         <div style="font-size:12px;font-weight:600;color:var(--text2);margin-bottom:10px">COMMENTS (${pr.PR_Comments.length})</div>
         ${pr.PR_Comments.map(c=>`
           <div style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:10px 12px;margin-bottom:8px;font-size:12px">
@@ -306,6 +329,23 @@ function showPRDetail(prNum) {
           </div>`).join('')}
       </div>` : ''}`;
   document.getElementById('prDetailModal').classList.add('open');
+}
+
+async function updatePRStatusFromDetail(prNum) {
+  const newStatus = document.getElementById('prDetailStatusSel').value;
+  if (!newStatus) return showToast('Select a status', 'error');
+  const res = await fetch(`${API}/prs/${prNum}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ Status: newStatus }),
+  });
+  const json = await res.json();
+  if (!res.ok) return showToast(json.error, 'error');
+  const idx = allPRs.findIndex(p => p.PR === Number(prNum));
+  if (idx !== -1) allPRs[idx] = { ...allPRs[idx], Status: newStatus };
+  showToast(`PR #${prNum} → ${newStatus}`, 'success');
+  closeModal('prDetailModal');
+  renderReleases();
 }
 
 // ── Release Modal (add / edit) ─────────────────────────
