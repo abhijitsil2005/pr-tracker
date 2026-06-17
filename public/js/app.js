@@ -42,7 +42,9 @@ function populateFilters() {
   const fRev = document.getElementById('f_reviewer');
   lookupReviewers.forEach(r => fRev.add(new Option(r, r)));
   const fTarget = document.getElementById('f_target');
-  lookupTimeline.forEach(t => fTarget.add(new Option(`${t.Release_Date} (R${t.Release_Number})`, t.Release_Date)));
+  [...lookupTimeline]
+    .sort((a, b) => Number(a.Release_Number) - Number(b.Release_Number))
+    .forEach(t => fTarget.add(new Option(`${t.Release_Date} (R${t.Release_Number})`, t.Release_Date)));
   const stDev = document.getElementById('stFilterDev');
   lookupDevelopers.forEach(d => stDev.add(new Option(d, d)));
   const filterDev = document.getElementById('filterDeveloper');

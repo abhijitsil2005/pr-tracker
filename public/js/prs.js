@@ -1,6 +1,21 @@
 // ═══════════════════════════════════════════════════════
 // PULL REQUESTS
 // ═══════════════════════════════════════════════════════
+
+// mm/dd/yyyy ↔ yyyy-mm-dd conversions for <input type="date">
+function toInputDate(s) {
+  if (!s) return '';
+  const [m, d, y] = s.split('/');
+  if (!y) return '';
+  return `${y}-${(m||'').padStart(2,'0')}-${(d||'').padStart(2,'0')}`;
+}
+function fromInputDate(s) {
+  if (!s) return null;
+  const [y, m, d] = s.split('-');
+  if (!y || !m || !d) return null;
+  return `${m}/${d}/${y}`;
+}
+
 async function renderPRs(filters = {}) {
   const params = new URLSearchParams();
   if (filters.module) params.set('module', filters.module);
@@ -104,10 +119,10 @@ async function openEditPRModal(prNumber) {
   });
   document.getElementById('f_status').value = pr.Status||'';
   document.getElementById('f_reviewer').value = pr.Reviewer||'';
-  document.getElementById('f_raised').value = pr['PR Raised Date']||'';
+  document.getElementById('f_raised').value = toInputDate(pr['PR Raised Date']);
   document.getElementById('f_firstResponse').value = pr['PR First Response Date']||'';
-  document.getElementById('f_approved').value = pr['PR Approved Date']||'';
-  document.getElementById('f_merged').value = pr['PR Merged Date']||'';
+  document.getElementById('f_approved').value = toInputDate(pr['PR Approved Date']);
+  document.getElementById('f_merged').value = toInputDate(pr['PR Merged Date']);
   document.getElementById('f_devSprint').value = pr.Dev_Sprint||'';
   document.getElementById('f_testSprint').value = pr.Testing_Sprint||'';
   document.getElementById('f_target').value = pr.Target_Release||'';
@@ -160,10 +175,10 @@ async function savePR() {
     Page:[...document.getElementById('f_pages').querySelectorAll('.page-chip.selected')].map(c=>c.dataset.value),
     Status:document.getElementById('f_status').value||null,
     Reviewer:document.getElementById('f_reviewer').value||null,
-    'PR Raised Date':document.getElementById('f_raised').value||null,
+    'PR Raised Date':fromInputDate(document.getElementById('f_raised').value),
     'PR First Response Date':document.getElementById('f_firstResponse').value||null,
-    'PR Approved Date':document.getElementById('f_approved').value||null,
-    'PR Merged Date':document.getElementById('f_merged').value||null,
+    'PR Approved Date':fromInputDate(document.getElementById('f_approved').value),
+    'PR Merged Date':fromInputDate(document.getElementById('f_merged').value),
     Dev_Sprint:document.getElementById('f_devSprint').value||null,
     Testing_Sprint:document.getElementById('f_testSprint').value||null,
     Target_Release:document.getElementById('f_target').value||null,

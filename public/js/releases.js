@@ -206,21 +206,23 @@ function buildModGroup(mod, rel) {
         const ffStatus = p.Feature_Flag_Status || 'N/A';
         const isFirst  = i === 0;
         const rowspan  = prPages.length;
+        // PR# cell is merged across pages that share a PR; Task#/Developer/Status are per-row
         const prCellHtml = isFirst
           ? `<td class="pr-cell" rowspan="${rowspan}">${prNum
               ? `<span class="pr-pill" onclick="showPRDetail(${prNum})">#${prNum}</span>`
               : '<span style="color:var(--text2)">—</span>'
-            }</td>
-             <td rowspan="${rowspan}" style="white-space:nowrap">${p.Task ? `<span style="color:var(--text2);font-size:11px">#${p.Task}</span>` : '—'}</td>
-             <td rowspan="${rowspan}" style="white-space:nowrap">${prDetail ? (prDetail.Developer||'—') : '—'}</td>
-             <td rowspan="${rowspan}">${prDetail ? statusBadge(prDetail.Status) : '<span class="badge badge-gray">—</span>'}</td>`
+            }</td>`
           : '';
 
         rows += `<tr>
+          <td></td>
           <td style="font-family:monospace;font-size:11px" title="${p.Page_Name||''}">${p.Page_Name||'—'}</td>
           <td style="color:var(--accent2)" title="${ffName}">${ffName||'N/A'}</td>
           <td>${ffBadge(ffStatus)}</td>
           ${prCellHtml}
+          <td style="white-space:nowrap">${p.Task ? `<span style="color:var(--text2);font-size:11px">#${p.Task}</span>` : '—'}</td>
+          <td style="white-space:nowrap">${prDetail ? (prDetail.Developer||'—') : '—'}</td>
+          <td>${prDetail ? statusBadge(prDetail.Status) : '<span class="badge badge-gray">—</span>'}</td>
         </tr>`;
       });
     });
@@ -243,16 +245,18 @@ function buildModGroup(mod, rel) {
     </div>
     <table class="pages-table">
       <colgroup>
+        <col class="col-margin">
         <col class="col-page"><col class="col-ff"><col class="col-ffs">
         <col class="col-pr"><col class="col-task"><col class="col-dev"><col class="col-status">
       </colgroup>
       <thead>
         <tr>
+          <th></th>
           <th>Page</th><th>Feature Flag</th><th>FF Status</th>
           <th>PR #</th><th>Task #</th><th>Developer</th><th>Status</th>
         </tr>
       </thead>
-      <tbody>${rows || '<tr><td colspan="7" style="text-align:center;color:var(--text2);padding:14px">No pages defined</td></tr>'}</tbody>
+      <tbody>${rows || '<tr><td colspan="8" style="text-align:center;color:var(--text2);padding:14px">No pages defined</td></tr>'}</tbody>
     </table>
   </div>`;
 }
@@ -267,29 +271,52 @@ function toggleRelease(id) {
 }
 
 // ── PR Detail popup ────────────────────────────────────
+const PR_STATUSES = [
+  'Development Inprogress',
+  'Dev PR in Review',
+  'TCR Testing In Progress',
+  'Ready for Prod Deploy',
+  'Prod Deployed FF OFF',
+  'Prod Deployed',
+];
+
 function showPRDetail(prNum) {
   const pr = allPRs.find(p => p.PR === Number(prNum));
   if (!pr) return showToast(`PR #${prNum} not found in loaded data`, 'error');
   document.getElementById('prDetailTitle').textContent = `PR #${pr.PR} — ${pr.Module||''}`;
   const rows = [
-    ['Developer',    pr.Developer||'—'],
-    ['Type',         pr.Type||'—'],
-    ['Status',       `<span>${statusBadge(pr.Status)}</span>`],
-    ['Dev Sprint',   pr.Dev_Sprint||'—'],
+    ['Developer',      pr.Developer||'—'],
+    ['Type',           pr.Type||'—'],
+    ['Status',         `<span>${statusBadge(pr.Status)}</span>`],
+    ['Dev Sprint',     pr.Dev_Sprint||'—'],
     ['Testing Sprint', pr.Testing_Sprint||'—'],
-    ['Merged',       pr['PR Merged Date']||'—'],
+    ['Merged',         pr['PR Merged Date']||'—'],
     ['Target Release', pr.Target_Release||'—'],
-    ['Dependent PRs', (pr.Dependent_PRs||[]).length ? pr.Dependent_PRs.map(n=>`<span class="pr-pill" style="cursor:default">#${n}</span>`).join(' ') : '—'],
-    ['Pages',        (pr.Page||[]).map(p=>`<code style="font-size:11px;background:var(--surface3);padding:2px 6px;border-radius:4px">${p}</code>`).join('<br>')],
+    ['Dependent PRs',  (pr.Dependent_PRs||[]).length ? pr.Dependent_PRs.map(n=>`<span class="pr-pill" style="cursor:default">#${n}</span>`).join(' ') : '—'],
+    ['Pages',          (pr.Page||[]).map(p=>`<code style="font-size:11px;background:var(--surface3);padding:2px 6px;border-radius:4px">${p}</code>`).join('<br>')],
   ];
+
+  const statusOptions = PR_STATUSES.map(s =>
+    `<option value="${s}" ${pr.Status === s ? 'selected' : ''}>${s}</option>`
+  ).join('');
+
   document.getElementById('prDetailBody').innerHTML = `
     <div style="display:grid;grid-template-columns:140px 1fr;gap:10px 16px;font-size:13px;margin-bottom:16px">
       ${rows.map(([k,v])=>`
         <div style="color:var(--text2);font-weight:500;padding-top:2px">${k}</div>
         <div>${v}</div>`).join('')}
     </div>
+    <div style="border-top:1px solid var(--border);padding-top:14px;margin-top:4px">
+      <div style="font-size:12px;font-weight:600;color:var(--text2);margin-bottom:10px">UPDATE STATUS</div>
+      <div style="display:flex;gap:8px;align-items:center">
+        <select id="prDetailStatusSel" style="flex:1;background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:8px 12px;border-radius:8px;font-size:13px;outline:none">
+          ${statusOptions}
+        </select>
+        <button class="btn btn-primary btn-sm" onclick="updatePRStatusFromDetail(${pr.PR})">Update</button>
+      </div>
+    </div>
     ${(pr.PR_Comments||[]).length ? `
-      <div style="border-top:1px solid var(--border);padding-top:14px;margin-top:4px">
+      <div style="border-top:1px solid var(--border);padding-top:14px;margin-top:14px">
         <div style="font-size:12px;font-weight:600;color:var(--text2);margin-bottom:10px">COMMENTS (${pr.PR_Comments.length})</div>
         ${pr.PR_Comments.map(c=>`
           <div style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:10px 12px;margin-bottom:8px;font-size:12px">
@@ -302,6 +329,23 @@ function showPRDetail(prNum) {
           </div>`).join('')}
       </div>` : ''}`;
   document.getElementById('prDetailModal').classList.add('open');
+}
+
+async function updatePRStatusFromDetail(prNum) {
+  const newStatus = document.getElementById('prDetailStatusSel').value;
+  if (!newStatus) return showToast('Select a status', 'error');
+  const res = await fetch(`${API}/prs/${prNum}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ Status: newStatus }),
+  });
+  const json = await res.json();
+  if (!res.ok) return showToast(json.error, 'error');
+  const idx = allPRs.findIndex(p => p.PR === Number(prNum));
+  if (idx !== -1) allPRs[idx] = { ...allPRs[idx], Status: newStatus };
+  showToast(`PR #${prNum} → ${newStatus}`, 'success');
+  closeModal('prDetailModal');
+  renderReleases();
 }
 
 // ── Release Modal (add / edit) ─────────────────────────
