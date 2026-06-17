@@ -9,13 +9,22 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(
 .app{display:flex;height:100vh;overflow:hidden}
 
 /* NAV */
-nav{width:220px;flex-shrink:0;background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;padding:20px 0}
-.nav-logo{padding:0 20px 20px;font-size:17px;font-weight:700;color:var(--text);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px}
-.nav-logo span{font-size:22px}
+nav{width:220px;flex-shrink:0;background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;padding:20px 0;transition:width .2s ease;overflow:hidden}
+nav.collapsed{width:52px}
+.nav-logo{padding:0 20px 20px;font-size:17px;font-weight:700;color:var(--text);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;white-space:nowrap;overflow:hidden}
+.nav-icon{font-size:22px;flex-shrink:0}
+.nav-label{overflow:hidden;transition:opacity .15s}
+.nav-toggle{margin-left:auto;flex-shrink:0;background:none;border:none;color:var(--text2);font-size:13px;cursor:pointer;padding:2px 0;line-height:1;transition:transform .2s,color .15s}
+.nav-toggle:hover{color:var(--text)}
+nav.collapsed .nav-toggle{transform:rotate(180deg)}
+nav.collapsed .nav-label{display:none}
+nav.collapsed .nav-logo{justify-content:center;padding-left:0;padding-right:0}
 nav ul{list-style:none;margin-top:12px}
-nav ul li a{display:flex;align-items:center;gap:10px;padding:10px 20px;color:var(--text2);text-decoration:none;font-size:14px;cursor:pointer;transition:background .15s,color .15s}
+nav ul li a{display:flex;align-items:center;gap:10px;padding:10px 20px;color:var(--text2);text-decoration:none;font-size:14px;cursor:pointer;transition:background .15s,color .15s;white-space:nowrap;overflow:hidden}
 nav ul li a:hover,nav ul li a.active{background:var(--surface2);color:var(--text)}
 nav ul li a.active{border-left:3px solid var(--accent)}
+nav.collapsed ul li a{justify-content:center;padding:10px 0}
+nav.collapsed ul li a.active{border-left:none;box-shadow:inset 3px 0 0 var(--accent)}
 
 /* LAYOUT */
 .main{flex:1;overflow-y:auto;display:flex;flex-direction:column}

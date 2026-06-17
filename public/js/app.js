@@ -8,8 +8,18 @@ let pageModalCtx = null; // { moduleName, pageName (for edit) }
 let pagePRCtx   = null; // { moduleName, pageName } for PR-page association modal
 let stCtx       = null; // { id, developer, module, page, ... } for activity modal
 
+// ── Nav collapse ───────────────────────────────────────
+function toggleNav() {
+  const nav = document.getElementById('mainNav');
+  const collapsed = nav.classList.toggle('collapsed');
+  localStorage.setItem('navCollapsed', collapsed);
+}
+
 // ── Init ───────────────────────────────────────────────
 async function init() {
+  if (localStorage.getItem('navCollapsed') === 'true') {
+    document.getElementById('mainNav').classList.add('collapsed');
+  }
   await loadLookups();
   populateFilters();
   showSection('dashboard');
