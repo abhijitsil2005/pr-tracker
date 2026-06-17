@@ -10,15 +10,18 @@
 <div class="app">
 
 <!-- ── Sidebar ─────────────────────────────────────────── -->
-<nav>
-  <div class="nav-logo"><span>🔀</span> PR Tracker</div>
+<nav id="mainNav">
+  <div class="nav-logo">
+    <span class="nav-icon">🔀</span>
+    <span class="nav-label">PR Tracker</span>
+    <button class="nav-toggle" id="navToggle" onclick="toggleNav()" title="Toggle sidebar">◀</button>
+  </div>
   <ul>
-    <li><a href="#" class="active" data-section="dashboard">📊 Dashboard</a></li>
-    <li><a href="#" data-section="prs">🔀 Pull Requests</a></li>
-    <li><a href="#" data-section="releases">🚀 Releases</a></li>
-    <li><a href="#" data-section="modules">📦 Module Pages</a></li>
-    <li><a href="#" data-section="status">📋 Status Tracker</a></li>
-    <!-- <li><a href="#" data-section="sync">🔄 Sync Excel</a></li> -->
+    <li><a href="#" class="active" data-section="dashboard" title="Dashboard"><span class="nav-icon">📊</span><span class="nav-label"> Dashboard</span></a></li>
+    <li><a href="#" data-section="prs" title="Pull Requests"><span class="nav-icon">🔀</span><span class="nav-label"> Pull Requests</span></a></li>
+    <li><a href="#" data-section="releases" title="Releases"><span class="nav-icon">🚀</span><span class="nav-label"> Releases</span></a></li>
+    <li><a href="#" data-section="modules" title="Module Pages"><span class="nav-icon">📦</span><span class="nav-label"> Module Pages</span></a></li>
+    <li><a href="#" data-section="status" title="Status Tracker"><span class="nav-icon">📋</span><span class="nav-label"> Status Tracker</span></a></li>
   </ul>
 </nav>
 
