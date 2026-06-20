@@ -76,7 +76,13 @@ function populatePRModuleSelect(selectedValue) {
   const sel = document.getElementById('f_module');
   sel.innerHTML = '<option value="">— select —</option>';
   lookupModules.sort((a, b) => a.localeCompare(b)).forEach(m => sel.add(new Option(m, m)));
-  if (selectedValue) sel.value = selectedValue;
+  if (selectedValue) {
+    // If the module isn't in lookupModules, add it so the PR's existing module is always visible
+    if (![...sel.options].some(o => o.value === selectedValue)) {
+      sel.add(new Option(selectedValue, selectedValue));
+    }
+    sel.value = selectedValue;
+  }
 }
 
 function openAddPRModal() {
@@ -113,9 +119,15 @@ async function openEditPRModal(prNumber) {
   populatePRModuleSelect(pr.Module||'');
   document.getElementById('f_developer').value = pr.Developer||'';
   await loadPageOptions();
-  const savedPages = new Set(pr.Page||[]);
+  const savedPages = (pr.Page||[]).map(p => (p||'').trim()).filter(Boolean);
+  const pageMatches = (chipVal, saved) =>
+    saved === chipVal ||
+    saved.endsWith('/' + chipVal) ||
+    chipVal.endsWith('/' + saved) ||
+    saved.split('/').pop() === chipVal.split('/').pop();
   document.getElementById('f_pages').querySelectorAll('.page-chip').forEach(chip => {
-    if (savedPages.has(chip.dataset.value)) chip.classList.add('selected');
+    const v = chip.dataset.value || '';
+    if (savedPages.some(s => pageMatches(v, s))) chip.classList.add('selected');
   });
   document.getElementById('f_status').value = pr.Status||'';
   document.getElementById('f_reviewer').value = pr.Reviewer||'';

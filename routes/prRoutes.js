@@ -82,7 +82,10 @@ router.put('/:prNumber', async (req, res) => {
 // DELETE /api/prs/:prNumber
 router.delete('/:prNumber', async (req, res) => {
   try {
-    await dataService.deletePR(req.params.prNumber);
+    const prNum = Number(req.params.prNumber);
+    // Remove this PR's pages from all releases before deleting the PR record
+    await dataService.removePRFromOtherReleases(prNum, null);
+    await dataService.deletePR(prNum);
     res.json({ message: `PR ${req.params.prNumber} deleted` });
   } catch (e) {
     const code = e.message.includes('not found') ? 404 : 500;
