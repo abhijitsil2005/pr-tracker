@@ -186,26 +186,62 @@ async function addActivityToAssignment(id, activity) {
 }
 
 // ── Sync PR → Release ─────────────────────────────────────────────
+// Remove a PR number from every release (all when exceptReleaseDate is null,
+// otherwise all except the one with that date). Uses caller-supplied list to avoid
+// a second scan and type-coerces PR numbers for robust comparison.
+async function removePRFromOtherReleases(prNum, exceptReleaseDate) {
+  const releases = await getProdReleases();
+  await _removePRFromReleasesInList(releases, prNum, exceptReleaseDate);
+}
+
+async function _removePRFromReleasesInList(releases, prNum, exceptReleaseDate) {
+  const num = Number(prNum);
+  for (const rel of releases) {
+    if (exceptReleaseDate && (rel.Release_Date || '').trim() === exceptReleaseDate.trim()) continue;
+    const hasThisPR = (rel.Modules || []).some(m =>
+      (m.Pages || []).some(p => p.PR != null && Number(p.PR) === num)
+    );
+    if (!hasThisPR) continue;
+    const modules = (rel.Modules || []).map(m => ({
+      ...m,
+      Pages: (m.Pages || []).filter(p => p.PR == null || Number(p.PR) !== num),
+    }));
+    await putItem('ProdReleases', { ...rel, Modules: modules });
+  }
+}
+
 // Returns { synced: bool, releaseNumber?, reason? }
 async function syncPRToRelease(pr) {
-  if (!pr.Target_Release) return { synced: false, reason: 'no_target_release' };
-  if (!pr.Module)         return { synced: false, reason: 'no_module' };
-
-  const targetDate = (pr.Target_Release || '').trim();
+  // Fetch all releases once — used for both cleanup and target lookup
   const releases = await getProdReleases();
-  const rel = releases.find(r => (r.Release_Date || '').trim() === targetDate);
+  const prNum    = Number(pr.PR);
+
+  const targetDate = pr.Target_Release ? pr.Target_Release.trim() : null;
+
+  // Always remove this PR's pages from every release that is NOT the target.
+  // This handles: target changed, target cleared, pages removed from PR.
+  await _removePRFromReleasesInList(releases, prNum, targetDate);
+
+  if (!targetDate) return { synced: false, reason: 'no_target_release' };
+  if (!pr.Module)  return { synced: false, reason: 'no_module' };
+
+  // Re-fetch the target release so we have its latest state after cleanup writes
+  const rel = (await getProdReleases()).find(r => (r.Release_Date || '').trim() === targetDate);
   if (!rel) return { synced: false, reason: `no_release_for_date:${targetDate}` };
 
-  const prPages = new Set((pr.Page || []).map(p => (p || '').trim()).filter(Boolean));
+  const prPages = (pr.Page || []).map(p => (p || '').trim()).filter(Boolean);
+
+  // Fuzzy match: handles 'PageName' == 'Module/PageName' path prefix differences
+  const pagesMatch = (a, b) =>
+    a === b ||
+    a.endsWith('/' + b) ||
+    b.endsWith('/' + a) ||
+    a.split('/').pop() === b.split('/').pop();
 
   // Resolve FF info from ModulePages
   const mpMod = await getModulePage(pr.Module).catch(() => null);
   const mpPageList = mpMod ? (mpMod.Pages || []) : [];
-  const findMpPage = (pageName) => mpPageList.find(p =>
-    p.page_name === pageName ||
-    (pageName || '').endsWith(p.page_name) ||
-    p.page_name === (pageName || '').split('/').pop()
-  );
+  const findMpPage = (pageName) => mpPageList.find(p => pagesMatch(p.page_name, pageName));
 
   const modules = (rel.Modules || []).map(m => ({ ...m }));
   const moduleIdx = modules.findIndex(m => m.Module === pr.Module);
@@ -213,25 +249,26 @@ async function syncPRToRelease(pr) {
 
   // Add or update pages now in pr.Page
   for (const pageName of prPages) {
-    const idx = relPages.findIndex(p => (p.Page_Name || '').trim() === pageName);
+    const idx = relPages.findIndex(p => pagesMatch((p.Page_Name || '').trim(), pageName));
     if (idx !== -1) {
-      relPages[idx] = { ...relPages[idx], PR: pr.PR };
+      relPages[idx] = { ...relPages[idx], PR: prNum };
     } else {
       const mp = findMpPage(pageName);
       relPages.push({
         Page_Name: pageName,
         Feature_Flag: mp ? (mp.Feature_Flag || '') : '',
         Feature_Flag_Status: mp ? (mp.Feature_Flag_Status || 'N/A') : 'N/A',
-        PR: pr.PR,
+        PR: prNum,
         Task: '',
       });
     }
   }
 
-  // Clear PR from pages that were previously linked to this PR but are no longer in pr.Page
-  relPages = relPages.map(p =>
-    (p.PR === pr.PR && !prPages.has((p.Page_Name || '').trim())) ? { ...p, PR: null } : p
-  );
+  // Remove pages that were previously linked to this PR but are no longer in pr.Page
+  relPages = relPages.filter(p => {
+    if (p.PR == null || Number(p.PR) !== prNum) return true;
+    return prPages.some(sp => pagesMatch((p.Page_Name || '').trim(), sp));
+  });
 
   if (moduleIdx !== -1) {
     modules[moduleIdx] = { ...modules[moduleIdx], Pages: relPages };
@@ -338,7 +375,7 @@ async function ensureUsersTable() {
 module.exports = {
   getPRs, getPRByNumber, addPR, deletePR, updatePR,
   getProdReleases, getProdRelease, upsertProdRelease, deleteProdRelease,
-  completeRelease, syncPRToRelease,
+  completeRelease, syncPRToRelease, removePRFromOtherReleases,
   getModulePages, getModulePage, getModuleNames, getPagesForModule,
   addModule, updateModule, deleteModule,
   addPageToModule, updatePageInModule, deletePageFromModule,
