@@ -1,6 +1,6 @@
 // services/dynamoService.js
 require('dotenv').config();
-const { DynamoDBClient, CreateTableCommand, DescribeTableCommand } = require('@aws-sdk/client-dynamodb');
+const { DynamoDBClient, CreateTableCommand, DescribeTableCommand, DeleteTableCommand } = require('@aws-sdk/client-dynamodb');
 const { DynamoDBDocumentClient, GetCommand, PutCommand,
         DeleteCommand, ScanCommand } = require('@aws-sdk/lib-dynamodb');
 
@@ -34,15 +34,116 @@ async function deleteItem(tableName, key) {
 }
 
 // ── PRDetails ─────────────────────────────────────────────────────
-const getPRs        = ()     => scanTable('PRDetails');
-const getPRByNumber = (pr)   => getItem('PRDetails', { PR: Number(pr) });
-const addPR         = (item) => putItem('PRDetails', item);
-const deletePR      = (pr)   => deleteItem('PRDetails', { PR: Number(pr) });
+// Primary key is now `id` (UUID string). `PR` is the GitHub PR number (non-unique).
+// The combination of PR + Module must be unique (enforced in addPR).
 
-async function updatePR(prNumber, updates) {
-  const existing = await getPRByNumber(prNumber);
-  if (!existing) throw new Error(`PR ${prNumber} not found`);
-  return putItem('PRDetails', { ...existing, ...updates, PR: existing.PR });
+const getPRs   = () => scanTable('PRDetails');
+const getPRById = (id) => getItem('PRDetails', { id });
+
+async function getPRByNumber(prNumber) {
+  const result = await docClient.send(new ScanCommand({
+    TableName: 'PRDetails',
+    FilterExpression: '#pr = :pr',
+    ExpressionAttributeNames: { '#pr': 'PR' },
+    ExpressionAttributeValues: { ':pr': Number(prNumber) },
+  }));
+  return result.Items || [];
+}
+
+async function addPR(item) {
+  const prNum = Number(item.PR);
+  if (item.Module) {
+    const existing = await getPRByNumber(prNum);
+    if (existing.some(p => p.Module === item.Module)) {
+      throw new Error(`PR ${prNum} with module "${item.Module}" already exists`);
+    }
+  }
+  const newItem = { ...item, id: randomUUID(), PR: prNum };
+  return putItem('PRDetails', newItem);
+}
+
+const deletePR = (id) => deleteItem('PRDetails', { id });
+
+async function updatePR(id, updates) {
+  const existing = await getPRById(id);
+  if (!existing) throw new Error(`PR record ${id} not found`);
+  return putItem('PRDetails', { ...existing, ...updates, id: existing.id, PR: existing.PR });
+}
+
+async function _waitForPRTableActive() {
+  for (let i = 0; i < 60; i++) {
+    await new Promise(r => setTimeout(r, 2000));
+    try {
+      const d = await client.send(new DescribeTableCommand({ TableName: 'PRDetails' }));
+      if (d.Table.TableStatus === 'ACTIVE') return;
+    } catch (e) {
+      if (e.name !== 'ResourceNotFoundException') throw e;
+      // Not visible yet — keep waiting
+    }
+  }
+  throw new Error('PRDetails table did not reach ACTIVE status in time');
+}
+
+async function _waitForPRTableDeleted() {
+  for (let i = 0; i < 90; i++) {
+    await new Promise(r => setTimeout(r, 2000));
+    try {
+      const d = await client.send(new DescribeTableCommand({ TableName: 'PRDetails' }));
+      if (d.Table.TableStatus !== 'DELETING') {
+        // Unexpected — still exists and not being deleted
+        throw new Error(`PRDetails table in unexpected status: ${d.Table.TableStatus}`);
+      }
+      // Still deleting — keep polling
+    } catch (e) {
+      if (e.name === 'ResourceNotFoundException') return; // fully deleted
+      throw e;
+    }
+  }
+  throw new Error('PRDetails table deletion timed out after 3 minutes. Delete it manually via the AWS console and restart.');
+}
+
+async function _createPRDetailsTable() {
+  await client.send(new CreateTableCommand({
+    TableName: 'PRDetails',
+    KeySchema: [{ AttributeName: 'id', KeyType: 'HASH' }],
+    AttributeDefinitions: [{ AttributeName: 'id', AttributeType: 'S' }],
+    BillingMode: 'PAY_PER_REQUEST',
+  }));
+  await _waitForPRTableActive();
+}
+
+async function ensurePRDetailsTable() {
+  let existing;
+  try {
+    existing = await client.send(new DescribeTableCommand({ TableName: 'PRDetails' }));
+  } catch (e) {
+    if (e.name !== 'ResourceNotFoundException') throw e;
+    // Table doesn't exist — create fresh
+    await _createPRDetailsTable();
+    return;
+  }
+
+  const pkName = existing.Table.KeySchema.find(k => k.KeyType === 'HASH')?.AttributeName;
+  if (pkName === 'id') return; // already on new schema
+  if (pkName !== 'PR') throw new Error(`PRDetails has unexpected partition key: "${pkName}"`);
+
+  // Old schema detected — migrate
+  console.log('PRDetails: migrating from PR-keyed to id-keyed schema...');
+  const items = await getPRs(); // scan all data BEFORE deleting
+  console.log(`  Scanned ${items.length} records`);
+
+  await client.send(new DeleteTableCommand({ TableName: 'PRDetails' }));
+  console.log('  Deletion initiated, waiting for completion...');
+  await _waitForPRTableDeleted();
+
+  console.log('  Creating new table...');
+  await _createPRDetailsTable();
+
+  console.log('  Restoring data...');
+  for (const item of items) {
+    await putItem('PRDetails', { ...item, id: item.id || randomUUID() });
+  }
+  console.log(`PRDetails migration complete: ${items.length} records restored`);
 }
 
 // ── ProdReleases ──────────────────────────────────────────────────
@@ -189,23 +290,29 @@ async function addActivityToAssignment(id, activity) {
 // Remove a PR number from every release (all when exceptReleaseDate is null,
 // otherwise all except the one with that date). Uses caller-supplied list to avoid
 // a second scan and type-coerces PR numbers for robust comparison.
-async function removePRFromOtherReleases(prNum, exceptReleaseDate) {
+// module: if provided, only removes the PR from that specific module in each release.
+// Pass null to remove from all modules (used when deleting a PR entirely).
+async function removePRFromOtherReleases(prNum, module, exceptReleaseDate) {
   const releases = await getProdReleases();
-  await _removePRFromReleasesInList(releases, prNum, exceptReleaseDate);
+  await _removePRFromReleasesInList(releases, prNum, module, exceptReleaseDate);
 }
 
-async function _removePRFromReleasesInList(releases, prNum, exceptReleaseDate) {
+async function _removePRFromReleasesInList(releases, prNum, module, exceptReleaseDate) {
   const num = Number(prNum);
   for (const rel of releases) {
     if (exceptReleaseDate && (rel.Release_Date || '').trim() === exceptReleaseDate.trim()) continue;
     const hasThisPR = (rel.Modules || []).some(m =>
+      (!module || m.Module === module) &&
       (m.Pages || []).some(p => p.PR != null && Number(p.PR) === num)
     );
     if (!hasThisPR) continue;
-    const modules = (rel.Modules || []).map(m => ({
-      ...m,
-      Pages: (m.Pages || []).filter(p => p.PR == null || Number(p.PR) !== num),
-    }));
+    const modules = (rel.Modules || []).map(m => {
+      if (module && m.Module !== module) return m; // leave other modules alone
+      return {
+        ...m,
+        Pages: (m.Pages || []).filter(p => p.PR == null || Number(p.PR) !== num),
+      };
+    });
     await putItem('ProdReleases', { ...rel, Modules: modules });
   }
 }
@@ -218,9 +325,9 @@ async function syncPRToRelease(pr) {
 
   const targetDate = pr.Target_Release ? pr.Target_Release.trim() : null;
 
-  // Always remove this PR's pages from every release that is NOT the target.
-  // This handles: target changed, target cleared, pages removed from PR.
-  await _removePRFromReleasesInList(releases, prNum, targetDate);
+  // Remove this PR's pages (scoped to its module) from every release that is NOT the target.
+  // Using pr.Module ensures PR 1234-Core doesn't accidentally wipe PR 1234-InfrastructurePages.
+  await _removePRFromReleasesInList(releases, prNum, pr.Module, targetDate);
 
   if (!targetDate) return { synced: false, reason: 'no_target_release' };
   if (!pr.Module)  return { synced: false, reason: 'no_module' };
@@ -373,7 +480,8 @@ async function ensureUsersTable() {
 }
 
 module.exports = {
-  getPRs, getPRByNumber, addPR, deletePR, updatePR,
+  getPRs, getPRById, getPRByNumber, addPR, deletePR, updatePR,
+  ensurePRDetailsTable,
   getProdReleases, getProdRelease, upsertProdRelease, deleteProdRelease,
   completeRelease, syncPRToRelease, removePRFromOtherReleases,
   getModulePages, getModulePage, getModuleNames, getPagesForModule,

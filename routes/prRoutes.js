@@ -17,12 +17,23 @@ router.get('/', async (req, res) => {
   }
 });
 
-// GET /api/prs/:prNumber
+// GET /api/prs/by-id/:id  — fetch one record by UUID (must be before /:prNumber)
+router.get('/by-id/:id', async (req, res) => {
+  try {
+    const pr = await dataService.getPRById(req.params.id);
+    if (!pr) return res.status(404).json({ error: `PR record ${req.params.id} not found` });
+    res.json(pr);
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// GET /api/prs/:prNumber — all records for a given GitHub PR number (returns array)
 router.get('/:prNumber', async (req, res) => {
   try {
-    const pr = await dataService.getPRByNumber(req.params.prNumber);
-    if (!pr) return res.status(404).json({ error: `PR ${req.params.prNumber} not found` });
-    res.json(pr);
+    const prs = await dataService.getPRByNumber(req.params.prNumber);
+    if (!prs.length) return res.status(404).json({ error: `PR ${req.params.prNumber} not found` });
+    res.json(prs.length === 1 ? prs[0] : prs);
   } catch (e) {
     res.status(500).json({ error: e.message });
   }
@@ -62,14 +73,32 @@ router.post('/', async (req, res) => {
   }
 });
 
-// PUT /api/prs/:prNumber  — full or partial update
-router.put('/:prNumber', async (req, res) => {
+// PUT /api/prs/by-pr/:prNumber — update all records for a PR number (e.g. status from release popup)
+router.put('/by-pr/:prNumber', async (req, res) => {
+  try {
+    const prs = await dataService.getPRByNumber(req.params.prNumber);
+    if (!prs.length) return res.status(404).json({ error: `PR ${req.params.prNumber} not found` });
+    const updates = { ...req.body };
+    if (updates.Dependent_PRs) updates.Dependent_PRs = updates.Dependent_PRs.map(Number);
+    const results = [];
+    for (const pr of prs) {
+      const updated = await dataService.updatePR(pr.id, updates);
+      results.push(updated);
+    }
+    res.json({ message: 'PR updated', data: results });
+  } catch (e) {
+    res.status(e.message.includes('not found') ? 404 : 400).json({ error: e.message });
+  }
+});
+
+// PUT /api/prs/:id — update one record by UUID
+router.put('/:id', async (req, res) => {
   try {
     const updates = { ...req.body };
     if (updates.PR) updates.PR = Number(updates.PR);
     if (updates.Dependent_PRs) updates.Dependent_PRs = updates.Dependent_PRs.map(Number);
     if (updates.Page && !Array.isArray(updates.Page)) updates.Page = [updates.Page];
-    const updated = await dataService.updatePR(req.params.prNumber, updates);
+    const updated = await dataService.updatePR(req.params.id, updates);
     let syncResult = { synced: false };
     try { syncResult = await dataService.syncPRToRelease(updated); } catch (e) { syncResult = { synced: false, reason: e.message }; }
     res.json({ message: 'PR updated', data: updated, sync: syncResult });
@@ -79,27 +108,27 @@ router.put('/:prNumber', async (req, res) => {
   }
 });
 
-// DELETE /api/prs/:prNumber
-router.delete('/:prNumber', async (req, res) => {
+// DELETE /api/prs/:id — delete one record by UUID
+router.delete('/:id', async (req, res) => {
   try {
-    const prNum = Number(req.params.prNumber);
-    // Remove this PR's pages from all releases before deleting the PR record
-    await dataService.removePRFromOtherReleases(prNum, null);
-    await dataService.deletePR(prNum);
-    res.json({ message: `PR ${req.params.prNumber} deleted` });
+    const pr = await dataService.getPRById(req.params.id);
+    if (!pr) return res.status(404).json({ error: `PR record ${req.params.id} not found` });
+    await dataService.removePRFromOtherReleases(pr.PR, pr.Module, null);
+    await dataService.deletePR(req.params.id);
+    res.json({ message: `PR #${pr.PR} (${pr.Module || 'no module'}) deleted` });
   } catch (e) {
     const code = e.message.includes('not found') ? 404 : 500;
     res.status(code).json({ error: e.message });
   }
 });
 
-// POST /api/prs/:prNumber/comments  — add a comment to a PR
-router.post('/:prNumber/comments', async (req, res) => {
+// POST /api/prs/:id/comments
+router.post('/:id/comments', async (req, res) => {
   try {
-    const pr = await dataService.getPRByNumber(req.params.prNumber);
-    if (!pr) return res.status(404).json({ error: `PR ${req.params.prNumber} not found` });
+    const pr = await dataService.getPRById(req.params.id);
+    if (!pr) return res.status(404).json({ error: `PR record ${req.params.id} not found` });
     const comments = [...(pr.PR_Comments || []), req.body];
-    const updated = await dataService.updatePR(req.params.prNumber, { PR_Comments: comments });
+    const updated = await dataService.updatePR(req.params.id, { PR_Comments: comments });
     res.status(201).json({ message: 'Comment added', data: updated });
   } catch (e) {
     res.status(500).json({ error: e.message });

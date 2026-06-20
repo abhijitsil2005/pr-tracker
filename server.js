@@ -60,6 +60,7 @@ async function seedAdmin() {
 
 app.listen(PORT, async () => {
   console.log(`PR Tracker running on http://localhost:${PORT}`);
+  await ds.ensurePRDetailsTable();
   await seedAdmin();
 });
 

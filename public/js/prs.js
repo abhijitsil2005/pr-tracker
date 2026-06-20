@@ -54,8 +54,8 @@ async function renderPRs(filters = {}) {
       <td style="white-space:nowrap">${p['PR Raised Date']||'—'}</td>
       <td style="white-space:nowrap">${p.Target_Release||'—'}</td>
       <td style="white-space:nowrap">
-        ${canWrite() ? `<button class="btn btn-ghost btn-sm" onclick="openEditPRModal(${p.PR})">✏️</button>
-        <button class="btn btn-danger btn-sm" onclick="deletePR(${p.PR})">🗑</button>` : ''}
+        ${canWrite() ? `<button class="btn btn-ghost btn-sm" onclick="openEditPRModal('${p.id}')">✏️</button>
+        <button class="btn btn-danger btn-sm" onclick="deletePR('${p.id}')">🗑</button>` : ''}
       </td>
     </tr>`).join('') || `<tr><td colspan="9" style="text-align:center;color:var(--text2);padding:32px">No PRs found</td></tr>`;
   const statSel = document.getElementById('filterStatus');
@@ -108,9 +108,9 @@ async function openAddPRModalForPage(moduleName, pageName) {
   document.getElementById('prModal').classList.add('open');
 }
 
-async function openEditPRModal(prNumber) {
-  const pr = await api(`prs/${prNumber}`);
-  editingPR = pr.PR;
+async function openEditPRModal(id) {
+  const pr = await api(`prs/by-id/${id}`);
+  editingPR = pr.id;
   document.getElementById('prModalTitle').textContent = `Edit PR #${pr.PR}`;
   document.getElementById('savePRBtn').textContent = 'Update PR';
   document.getElementById('f_pr').value = pr.PR;
@@ -216,11 +216,11 @@ async function savePR() {
   if (document.getElementById('section-releases').classList.contains('active')) renderReleases();
 }
 
-async function deletePR(prNumber) {
-  if (!confirm(`Delete PR #${prNumber}?`)) return;
-  const res = await authFetch(`${API}/prs/${prNumber}`,{method:'DELETE'});
+async function deletePR(id) {
+  if (!confirm(`Delete this PR entry?`)) return;
+  const res = await authFetch(`${API}/prs/${id}`,{method:'DELETE'});
   const json = await res.json();
   if (!res.ok) return showToast(json.error,'error');
-  showToast(`PR #${prNumber} deleted`,'success');
+  showToast(json.message || 'PR deleted','success');
   renderPRs();
 }

@@ -66,7 +66,7 @@ function buildModuleAccordion(mod, prsByPage = {}) {
     const prodStatus = p.Production_Deployment_Status || 'Pending';
     const demoStatus = p.Client_Demo_Status || 'Pending';
     const linkedPRs  = prsByPage[p.page_name] || [];
-    const prPills    = linkedPRs.map(pr => `<span class="pr-pill" onclick="openEditPRModal(${pr.PR})">#${pr.PR}</span>`).join('');
+    const prPills    = linkedPRs.map(pr => `<span class="pr-pill" onclick="openEditPRModal('${pr.id}')">#${pr.PR}</span>`).join('');
     return `<tr>
       <td style="font-family:monospace;font-size:11px" title="${p.page_name}">${p.page_name}</td>
       <td style="font-size:11px" title="${p.Feature_Flag||''}">${p.Feature_Flag||'—'}</td>
@@ -296,7 +296,7 @@ async function refreshPagePRModal() {
           <td>${statusBadge(p.Status)}</td>
           <td>${p.Target_Release||'—'}</td>
           <td style="white-space:nowrap">
-            <button class="btn btn-ghost btn-xs" onclick="closeModal('pagePRModal');openEditPRModal(${p.PR})">✏️ Edit</button>
+            <button class="btn btn-ghost btn-xs" onclick="closeModal('pagePRModal');openEditPRModal('${p.id}')">✏️ Edit</button>
             <button class="btn btn-danger btn-xs" onclick="unlinkPRFromPage(${p.PR})">Unlink</button>
           </td>
         </tr>`).join('')}</tbody>

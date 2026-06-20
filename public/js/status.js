@@ -72,9 +72,10 @@ function buildDevCard(dev, items) {
     const lastNote = lastLog
       ? `<span style="color:var(--text2);font-size:11px" title="${escHtml(lastLog.note)}">${timeAgo(lastLog.timestamp)} — ${escHtml(lastLog.note.slice(0, 55))}${lastLog.note.length > 55 ? '…' : ''}</span>`
       : '<span style="color:var(--text2);font-size:11px">No activity yet</span>';
-    const prBadge = a.PR
-      ? `<span class="pr-pill" onclick="openEditPRModal(${a.PR})">#${a.PR}</span>`
-      : '<span style="color:var(--text2);font-size:11px">—</span>';
+    const prRec   = a.PR ? (allPRs.find(p => p.PR === Number(a.PR) && p.Module === a.Module) || allPRs.find(p => p.PR === Number(a.PR))) : null;
+    const prBadge = prRec
+      ? `<span class="pr-pill" onclick="openEditPRModal('${prRec.id}')">#${a.PR}</span>`
+      : (a.PR ? `<span class="pr-pill" style="opacity:.5">#${a.PR}</span>` : '<span style="color:var(--text2);font-size:11px">—</span>');
     const pageName = (a.Page || '').split('/').pop() || a.Page || '—';
     const weekDisplay = a.Week
       ? `<div style="font-size:10px;color:var(--text2);margin-top:2px">wk ${a.Week}</div>`
@@ -372,10 +373,14 @@ function loadActivityPRSection(a) {
   unlinked.forEach(p => prSel.add(new Option(
     `#${p.PR} — ${p.Module || '?'} — ${p.Developer || '?'} (${p.Status || '?'})`, p.PR
   )));
-  document.getElementById('actLinkedPR').innerHTML = a.PR
-    ? `<span class="pr-pill" onclick="closeModal('activityModal');openEditPRModal(${a.PR})">#${a.PR}</span>
+  const actPrRec = a.PR ? (allPRs.find(p => p.PR === Number(a.PR) && p.Module === a.Module) || allPRs.find(p => p.PR === Number(a.PR))) : null;
+  document.getElementById('actLinkedPR').innerHTML = actPrRec
+    ? `<span class="pr-pill" onclick="closeModal('activityModal');openEditPRModal('${actPrRec.id}')">#${a.PR}</span>
        <button class="btn btn-danger btn-xs" onclick="unlinkPRFromAssignment()">Unlink</button>`
-    : '<span style="color:var(--text2);font-size:12px">No PR linked</span>';
+    : (a.PR
+        ? `<span class="pr-pill" style="opacity:.5">#${a.PR}</span>
+           <button class="btn btn-danger btn-xs" onclick="unlinkPRFromAssignment()">Unlink</button>`
+        : '<span style="color:var(--text2);font-size:12px">No PR linked</span>');
 }
 
 async function addActivityNote() {
