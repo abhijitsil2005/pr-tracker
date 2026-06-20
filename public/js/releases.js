@@ -189,7 +189,9 @@ function buildModGroup(mod, rel) {
     byPR.forEach(group => {
       const prNum   = group.key;
       const prPages = group.pages;
-      const prDetail = prNum ? allPRs.find(p => String(p.PR) === prNum) : null;
+      // Match by PR number AND module so the right record is found when the same PR spans multiple modules
+      const prDetail = prNum ? allPRs.find(p => String(p.PR) === prNum && p.Module === mod.Module)
+                             || allPRs.find(p => String(p.PR) === prNum) : null;
 
       prPages.forEach((p, i) => {
         const ffName = p.Feature_Flag || (mpMod
@@ -209,7 +211,7 @@ function buildModGroup(mod, rel) {
         // PR# cell is merged across pages that share a PR; Task#/Developer/Status are per-row
         const prCellHtml = isFirst
           ? `<td class="pr-cell" rowspan="${rowspan}">${prNum
-              ? `<span class="pr-pill" onclick="showPRDetail(${prNum})">#${prNum}</span>`
+              ? `<span class="pr-pill" onclick="showPRDetail(${prNum},'${mod.Module.replace(/'/g,"\\'")}')">#${prNum}</span>`
               : '<span style="color:var(--text2)">—</span>'
             }</td>`
           : '';
@@ -280,8 +282,10 @@ const PR_STATUSES = [
   'Prod Deployed',
 ];
 
-function showPRDetail(prNum) {
-  const pr = allPRs.find(p => p.PR === Number(prNum));
+function showPRDetail(prNum, module) {
+  // Prefer the record that matches both PR number and module; fall back to first match
+  const pr = (module ? allPRs.find(p => p.PR === Number(prNum) && p.Module === module) : null)
+           || allPRs.find(p => p.PR === Number(prNum));
   if (!pr) return showToast(`PR #${prNum} not found in loaded data`, 'error');
   document.getElementById('prDetailTitle').textContent = `PR #${pr.PR} — ${pr.Module||''}`;
   const rows = [
@@ -312,7 +316,7 @@ function showPRDetail(prNum) {
         <select id="prDetailStatusSel" style="flex:1;background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:8px 12px;border-radius:8px;font-size:13px;outline:none">
           ${statusOptions}
         </select>
-        <button class="btn btn-primary btn-sm" onclick="updatePRStatusFromDetail(${pr.PR})">Update</button>
+        <button class="btn btn-primary btn-sm" onclick="updatePRStatusFromDetail('${pr.id}',${pr.PR})">Update</button>
       </div>
     </div>
     ${(pr.PR_Comments||[]).length ? `
@@ -331,17 +335,18 @@ function showPRDetail(prNum) {
   document.getElementById('prDetailModal').classList.add('open');
 }
 
-async function updatePRStatusFromDetail(prNum) {
+async function updatePRStatusFromDetail(id, prNum) {
   const newStatus = document.getElementById('prDetailStatusSel').value;
   if (!newStatus) return showToast('Select a status', 'error');
-  const res = await authFetch(`${API}/prs/${prNum}`, {
+  const res = await authFetch(`${API}/prs/${id}`, {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ Status: newStatus }),
   });
   const json = await res.json();
   if (!res.ok) return showToast(json.error, 'error');
-  const idx = allPRs.findIndex(p => p.PR === Number(prNum));
+  // Update the specific record in allPRs by id
+  const idx = allPRs.findIndex(p => p.id === id);
   if (idx !== -1) allPRs[idx] = { ...allPRs[idx], Status: newStatus };
   showToast(`PR #${prNum} → ${newStatus}`, 'success');
   closeModal('prDetailModal');
