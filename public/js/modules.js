@@ -113,6 +113,7 @@ function buildModuleAccordion(mod, prsByPage = {}) {
             <span class="badge badge-teal" title="Demo Done">${demoDone} demo</span>
             <span class="badge ${ffEn===modulePages.length&&modulePages.length?'badge-green':'badge-yellow'}" title="FF Enabled">${ffEn}/${modulePages.length} FF</span>
             ${mod.OutOfScope?.length ? `<span class="badge badge-red">${mod.OutOfScope.length} OOS</span>` : ''}
+            ${mod.IsOutOfScope ? `<span class="badge badge-red">MODULE OUT OF SCOPE</span>` : ''}
           </div>
           <div style="width:80px;height:4px;border-radius:2px;background:var(--surface3);margin-left:4px" title="${prodPct}% deployed">
             <div style="height:100%;width:${prodPct}%;background:${barColor};border-radius:2px"></div>
@@ -121,6 +122,7 @@ function buildModuleAccordion(mod, prsByPage = {}) {
         ${canWrite() ? `<div onclick="event.stopPropagation()" style="display:flex;gap:6px">
           <button class="btn btn-primary btn-sm" onclick="openAddPageModal('${mod.Module}')">＋ Page</button>
           <button class="btn btn-ghost btn-sm" onclick="promptAddOOS('${mod.Module}')">＋ Out-of-scope</button>
+          <button class="btn ${mod.IsOutOfScope ? 'btn-ghost' : 'btn-warning'} btn-sm" onclick="toggleModuleOOS('${mod.Module}', ${!!mod.IsOutOfScope})">${mod.IsOutOfScope ? '✓ Mark In Scope' : '⊘ Mark Out of Scope'}</button>
           <button class="btn btn-danger btn-sm" onclick="deleteModule('${mod.Module}')">🗑 Module</button>
         </div>` : ''}
       </div>
@@ -180,6 +182,18 @@ async function deleteModule(moduleName) {
   const json = await res.json();
   if (!res.ok) return showToast(json.error,'error');
   showToast(`Module "${moduleName}" deleted`,'success');
+  renderModulePages();
+}
+
+async function toggleModuleOOS(moduleName, currentlyOOS) {
+  const res = await authFetch(`${API}/modules/${encodeURIComponent(moduleName)}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ IsOutOfScope: !currentlyOOS }),
+  });
+  const json = await res.json();
+  if (!res.ok) return showToast(json.error, 'error');
+  showToast(`Module "${moduleName}" marked as ${!currentlyOOS ? 'out of scope' : 'in scope'}`, 'success');
   renderModulePages();
 }
 
