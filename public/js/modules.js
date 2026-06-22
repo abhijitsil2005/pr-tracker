@@ -61,9 +61,10 @@ function buildModuleAccordion(mod, prsByPage = {}) {
   const accId   = `mp-${mod.Module.replace(/\s+/g,'_')}`;
   const pages   = mod.Pages || [];
 
-  const prodDep  = pages.filter(p => (p.Production_Deployment_Status||'').toLowerCase() === 'deployed').length;
-  const ffEn     = pages.filter(p => (p.Feature_Flag_Status||'').toLowerCase() === 'enabled').length;
-  const demoDone = pages.filter(p => (p.Client_Demo_Status||'').toLowerCase() === 'done').length;
+  const countablePages = pages.filter(p => !EXCLUDED_FROM_PAGES.has(p.page_name));
+  const prodDep  = countablePages.filter(p => (p.Production_Deployment_Status||'').toLowerCase() === 'deployed').length;
+  const ffEn     = countablePages.filter(p => (p.Feature_Flag_Status||'').toLowerCase() === 'enabled').length;
+  const demoDone = countablePages.filter(p => (p.Client_Demo_Status||'').toLowerCase() === 'done').length;
 
   const pagesHtml = [...pages].sort((a, b) => {
     const aInfra = a.page_name === 'Infrastructure Pages';
@@ -97,7 +98,7 @@ function buildModuleAccordion(mod, prsByPage = {}) {
       <button onclick="removeOOS('${mod.Module}','${escAttr(p)}')" title="Remove">✕</button>
     </span>`).join('');
 
-  const modulePages = pages.filter(p=>p.page_name != 'Infrastructure Pages'); //alert(modulePages.length);
+  const modulePages = countablePages;
   const prodPct   = modulePages.length ? Math.round(prodDep / modulePages.length * 100) : 0;
   const barColor  = prodPct === 100 ? 'var(--green)' : prodPct > 0 ? 'var(--yellow)' : 'var(--border)';
 
