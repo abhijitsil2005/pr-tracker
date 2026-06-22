@@ -29,18 +29,20 @@ async function renderDashboard() {
 
   const filteredPRs     = allPRs.filter(p => !EXCLUDED_FROM_MODULE.has(p.Module));
   const filteredModules = allModulePages.filter(m => !EXCLUDED_FROM_MODULE.has(m.Module));
+  const activeModules   = filteredModules.filter(m => !m.IsOutOfScope);
+  const oosModules      = filteredModules.filter(m => m.IsOutOfScope);
 
   const total    = filteredPRs.length;
   const deployed = filteredPRs.filter(p => p.Status?.toLowerCase().includes('prod deployed')).length;
   const inProg   = filteredPRs.filter(p => p.Status?.toLowerCase().includes('progress')).length;
   const review   = filteredPRs.filter(p => p.Status?.toLowerCase().includes('review')).length;
 
-  // Page-level counts from Module_Pages (excludes Infrastructure Pages + Shared Control)
-  const totalPages  = filteredModules.reduce((s, m) => s + (m.Pages.filter(p => !EXCLUDED_FROM_PAGES.has(p.page_name))||[]).length, 0);
-  const prodDeployed = filteredModules.reduce((s, m) =>
+  // Page-level counts from Module_Pages (excludes Infrastructure Pages + Shared Control + OOS modules)
+  const totalPages  = activeModules.reduce((s, m) => s + (m.Pages.filter(p => !EXCLUDED_FROM_PAGES.has(p.page_name))||[]).length, 0);
+  const prodDeployed = activeModules.reduce((s, m) =>
     s + (m.Pages.filter(p => !EXCLUDED_FROM_PAGES.has(p.page_name))||[]).filter(p => (p.Production_Deployment_Status||'').toLowerCase() === 'deployed').length, 0);
   const pctComplete = totalPages ? Math.round(prodDeployed / totalPages * 100) : 0;
-  const modulesCompleted = filteredModules.filter(m => {
+  const modulesCompleted = activeModules.filter(m => {
     const pages = m.Pages.filter(p => !EXCLUDED_FROM_PAGES.has(p.page_name));
     return pages.length > 0 && pages.every(p => (p.Production_Deployment_Status||'').toLowerCase() === 'deployed');
   }).length;
@@ -49,7 +51,7 @@ async function renderDashboard() {
     <div class="stat-card accent"><div class="label">Total Pages</div><div class="value">${totalPages}</div></div>
     <div class="stat-card green"><div class="label">Pages in Production</div><div class="value">${prodDeployed}</div></div>
     <div class="stat-card yellow"><div class="label">% Complete</div><div class="value">${pctComplete}%</div></div>
-    <div class="stat-card teal"><div class="label">Modules Completed</div><div class="value">${modulesCompleted} / ${filteredModules.length}</div></div>
+    <div class="stat-card teal"><div class="label">Modules Completed</div><div class="value">${modulesCompleted} / ${activeModules.length}</div></div>
     <div class="stat-card accent"><div class="label">Total PRs</div><div class="value">${total}</div></div>
     <div class="stat-card green"><div class="label">PRs Deployed</div><div class="value">${deployed}</div></div>
     <div class="stat-card yellow"><div class="label">PR In Progress / TCR</div><div class="value">${inProg}</div></div>
@@ -71,9 +73,7 @@ async function renderDashboard() {
     }
   });
 
-  document.querySelector('#moduleTable tbody').innerHTML = filteredModules
-    .sort((a,b) => a.Module.localeCompare(b.Module))
-    .map(m => {
+  const buildModuleRow = (m, isOOS = false) => {
       const pages    = m.Pages.filter(p => !EXCLUDED_FROM_PAGES.has(p.page_name)) || [];
       const prodDep  = pages.filter(p => (p.Production_Deployment_Status||'').toLowerCase() === 'deployed').length;
       const prodPend = pages.length - prodDep;
@@ -102,6 +102,21 @@ async function renderDashboard() {
         <td style="text-align:center;font-weight:600;color:${devColor}">${devPct}%</td>
         <td style="text-align:center;font-weight:600;color:${pctColor}">${prodPct}%</td>
       </tr>`;
-    }).join('');
+  };
+
+  const activeRows = activeModules
+    .sort((a, b) => a.Module.localeCompare(b.Module))
+    .map(m => buildModuleRow(m))
+    .join('');
+
+  const oosRows = oosModules
+    .sort((a, b) => a.Module.localeCompare(b.Module))
+    .map(m => `<tr style="opacity:0.5">
+      <td><strong>${m.Module}</strong> <span class="badge badge-red" style="font-size:10px">Out of Scope</span></td>
+      <td colspan="7" style="text-align:center;color:var(--text2);font-size:11px">excluded from calculations</td>
+    </tr>`)
+    .join('');
+
+  document.querySelector('#moduleTable tbody').innerHTML = activeRows + oosRows;
 
 }
