@@ -34,8 +34,8 @@ async function loadLookups() {
     api('lookup/timeline'),
   ]);
   lookupModules = mods || [];
-  lookupDevelopers = devs || [];
-  lookupReviewers = revs || [];
+  lookupDevelopers = (devs || []).sort((a, b) => a.localeCompare(b));
+  lookupReviewers  = (revs || []).sort((a, b) => a.localeCompare(b));
   lookupTimeline = tl || [];
 }
 

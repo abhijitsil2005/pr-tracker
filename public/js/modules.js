@@ -31,7 +31,10 @@ async function renderModulePages() {
   }
 
   const prsByPage = {};
-  allPRs.forEach(pr => (pr.Page||[]).forEach(pg => { (prsByPage[pg] = prsByPage[pg]||[]).push(pr); }));
+  allPRs.forEach(pr => (pr.Page||[]).forEach(pg => {
+    const key = `${pr.Module}::${pg}`;
+    (prsByPage[key] = prsByPage[key]||[]).push(pr);
+  }));
 
   const openIds = getOpenAccordions();
   container.innerHTML = modules.sort((a, b) => a.Module.localeCompare(b.Module)).map(m => buildModuleAccordion(m, prsByPage)).join('');
@@ -62,10 +65,15 @@ function buildModuleAccordion(mod, prsByPage = {}) {
   const ffEn     = pages.filter(p => (p.Feature_Flag_Status||'').toLowerCase() === 'enabled').length;
   const demoDone = pages.filter(p => (p.Client_Demo_Status||'').toLowerCase() === 'done').length;
 
-  const pagesHtml = pages.sort((a, b) => a.page_name.localeCompare(b.page_name)).map(p => {
+  const pagesHtml = [...pages].sort((a, b) => {
+    const aInfra = a.page_name === 'Infrastructure Pages';
+    const bInfra = b.page_name === 'Infrastructure Pages';
+    if (aInfra !== bInfra) return aInfra ? 1 : -1;
+    return a.page_name.localeCompare(b.page_name, undefined, { sensitivity: 'base' });
+  }).map(p => {
     const prodStatus = p.Production_Deployment_Status || 'Pending';
     const demoStatus = p.Client_Demo_Status || 'Pending';
-    const linkedPRs  = prsByPage[p.page_name] || [];
+    const linkedPRs  = prsByPage[`${mod.Module}::${p.page_name}`] || [];
     const prPills    = linkedPRs.map(pr => `<span class="pr-pill" onclick="openEditPRModal('${pr.id}')">#${pr.PR}</span>`).join('');
     return `<tr>
       <td style="font-family:monospace;font-size:11px" title="${p.page_name}">${p.page_name}</td>
@@ -278,12 +286,12 @@ async function openPagePRModal(moduleName, pageName) {
 }
 
 async function refreshPagePRModal() {
-  const { pageName } = pagePRCtx;
+  const { moduleName, pageName } = pagePRCtx;
   const prsData = await api('prs');
   allPRs = (prsData && prsData.data) || [];
 
-  const linked   = allPRs.filter(p => (p.Page||[]).includes(pageName));
-  const unlinked = allPRs.filter(p => !(p.Page||[]).includes(pageName));
+  const linked   = allPRs.filter(p => p.Module === moduleName && (p.Page||[]).includes(pageName));
+  const unlinked = allPRs.filter(p => p.Module === moduleName && !(p.Page||[]).includes(pageName));
 
   const linkedDiv = document.getElementById('pagePRLinked');
   linkedDiv.innerHTML = linked.length
@@ -297,7 +305,7 @@ async function refreshPagePRModal() {
           <td>${p.Target_Release||'—'}</td>
           <td style="white-space:nowrap">
             <button class="btn btn-ghost btn-xs" onclick="closeModal('pagePRModal');openEditPRModal('${p.id}')">✏️ Edit</button>
-            <button class="btn btn-danger btn-xs" onclick="unlinkPRFromPage(${p.PR})">Unlink</button>
+            <button class="btn btn-danger btn-xs" onclick="unlinkPRFromPage('${p.id}', ${p.PR})">Unlink</button>
           </td>
         </tr>`).join('')}</tbody>
       </table></div>`
@@ -306,36 +314,38 @@ async function refreshPagePRModal() {
   const sel = document.getElementById('prLinkSelect');
   sel.innerHTML = '<option value="">— select a PR to link —</option>';
   unlinked.sort((a,b) => b.PR - a.PR).forEach(p => sel.add(new Option(
-    `#${p.PR} — ${p.Module||'?'} — ${p.Developer||'?'} (${p.Status||'?'})`, p.PR
+    `#${p.PR} — ${p.Developer||'?'} (${p.Status||'?'})`, p.id
   )));
 
   renderModulePages();
 }
 
 async function linkSelectedPR() {
-  const prNum = Number(document.getElementById('prLinkSelect').value);
-  if (!prNum) return showToast('Select a PR first', 'error');
+  const prId = document.getElementById('prLinkSelect').value;
+  if (!prId) return showToast('Select a PR first', 'error');
   const { pageName } = pagePRCtx;
 
-  const pr = await api(`prs/${prNum}`);
+  const pr = await api(`prs/by-id/${prId}`);
+  if (!pr) return showToast('PR not found', 'error');
   const pages = [...new Set([...(pr.Page||[]), pageName])];
-  const res = await authFetch(`${API}/prs/${prNum}`, {
+  const res = await authFetch(`${API}/prs/${prId}`, {
     method: 'PUT', headers: {'Content-Type':'application/json'},
     body: JSON.stringify({...pr, Page: pages})
   });
   const json = await res.json();
   if (!res.ok) return showToast(json.error, 'error');
-  showToast(`PR #${prNum} linked to page`, 'success');
+  showToast(`PR #${pr.PR} linked to page`, 'success');
   await refreshPagePRModal();
 }
 
-async function unlinkPRFromPage(prNumber) {
+async function unlinkPRFromPage(prId, prNumber) {
   if (!confirm(`Unlink PR #${prNumber} from this page?`)) return;
   const { pageName } = pagePRCtx;
 
-  const pr = await api(`prs/${prNumber}`);
+  const pr = await api(`prs/by-id/${prId}`);
+  if (!pr) return showToast('PR not found', 'error');
   const pages = (pr.Page||[]).filter(pg => pg !== pageName);
-  const res = await authFetch(`${API}/prs/${prNumber}`, {
+  const res = await authFetch(`${API}/prs/${prId}`, {
     method: 'PUT', headers: {'Content-Type':'application/json'},
     body: JSON.stringify({...pr, Page: pages})
   });
@@ -353,8 +363,9 @@ function openNewPRForPage() {
 
 // ── PR management inside Edit Page modal ───────────────
 function loadPageModalPRs(pageName) {
-  const linked   = allPRs.filter(p => (p.Page||[]).includes(pageName));
-  const unlinked = allPRs.filter(p => !(p.Page||[]).includes(pageName));
+  const { moduleName } = pageModalCtx;
+  const linked   = allPRs.filter(p => p.Module === moduleName && (p.Page||[]).includes(pageName));
+  const unlinked = allPRs.filter(p => p.Module === moduleName && !(p.Page||[]).includes(pageName));
 
   const listDiv = document.getElementById('pageModalPRList');
   if (!linked.length) {
@@ -365,53 +376,55 @@ function loadPageModalPRs(pageName) {
         #${p.PR}
         <span style="color:var(--text2);font-weight:400;margin-left:2px">${p.Developer||''}</span>
         ${statusBadge(p.Status)}
-        <button onclick="unlinkPRFromPageModal(${p.PR})" style="background:none;border:none;color:var(--red);cursor:pointer;font-size:13px;line-height:1;padding:0 0 0 4px" title="Unlink">✕</button>
+        <button onclick="unlinkPRFromPageModal('${p.id}', ${p.PR})" style="background:none;border:none;color:var(--red);cursor:pointer;font-size:13px;line-height:1;padding:0 0 0 4px" title="Unlink">✕</button>
       </span>`).join('');
   }
 
   const sel = document.getElementById('pageModalPRSelect');
   sel.innerHTML = '<option value="">— link existing PR —</option>';
   unlinked.sort((a,b) => b.PR - a.PR).forEach(p => sel.add(new Option(
-    `#${p.PR} — ${p.Module||'?'} — ${p.Developer||'?'} (${p.Status||'?'})`, p.PR
+    `#${p.PR} — ${p.Developer||'?'} (${p.Status||'?'})`, p.id
   )));
 }
 
 async function linkPRFromPageModal() {
-  const prNum = Number(document.getElementById('pageModalPRSelect').value);
-  if (!prNum) return showToast('Select a PR first', 'error');
+  const prId = document.getElementById('pageModalPRSelect').value;
+  if (!prId) return showToast('Select a PR first', 'error');
   const { pageName } = pageModalCtx;
 
-  const pr = await api(`prs/${prNum}`);
+  const pr = await api(`prs/by-id/${prId}`);
+  if (!pr) return showToast('PR not found', 'error');
   const pages = [...new Set([...(pr.Page||[]), pageName])];
-  const res = await authFetch(`${API}/prs/${prNum}`, {
+  const res = await authFetch(`${API}/prs/${prId}`, {
     method: 'PUT', headers: {'Content-Type':'application/json'},
     body: JSON.stringify({...pr, Page: pages})
   });
   const json = await res.json();
   if (!res.ok) return showToast(json.error, 'error');
 
-  const idx = allPRs.findIndex(p => p.PR === prNum);
+  const idx = allPRs.findIndex(p => p.id === prId);
   if (idx >= 0) allPRs[idx] = {...allPRs[idx], Page: pages};
   else allPRs.push({...pr, Page: pages});
 
-  showToast(`PR #${prNum} linked`, 'success');
+  showToast(`PR #${pr.PR} linked`, 'success');
   loadPageModalPRs(pageName);
 }
 
-async function unlinkPRFromPageModal(prNumber) {
+async function unlinkPRFromPageModal(prId, prNumber) {
   if (!confirm(`Unlink PR #${prNumber} from this page?`)) return;
   const { pageName } = pageModalCtx;
 
-  const pr = await api(`prs/${prNumber}`);
+  const pr = await api(`prs/by-id/${prId}`);
+  if (!pr) return showToast('PR not found', 'error');
   const pages = (pr.Page||[]).filter(pg => pg !== pageName);
-  const res = await authFetch(`${API}/prs/${prNumber}`, {
+  const res = await authFetch(`${API}/prs/${prId}`, {
     method: 'PUT', headers: {'Content-Type':'application/json'},
     body: JSON.stringify({...pr, Page: pages})
   });
   const json = await res.json();
   if (!res.ok) return showToast(json.error, 'error');
 
-  const idx = allPRs.findIndex(p => p.PR === prNumber);
+  const idx = allPRs.findIndex(p => p.id === prId);
   if (idx >= 0) allPRs[idx] = {...allPRs[idx], Page: pages};
 
   showToast(`PR #${prNumber} unlinked`, 'success');
