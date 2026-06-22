@@ -59,6 +59,36 @@ async function renderStatusTracker() {
     .sort(([a], [b]) => a.localeCompare(b))
     .map(([dev, items]) => buildDevCard(dev, items))
     .join('');
+
+  renderDevPRSummary();
+}
+
+function renderDevPRSummary() {
+  const excluded = typeof EXCLUDED_FROM_MODULE !== 'undefined' ? EXCLUDED_FROM_MODULE : new Set();
+  const devMap = {};
+  allPRs.filter(p => !excluded.has(p.Module)).forEach(p => {
+    const d = p.Developer || 'Unknown';
+    if (!devMap[d]) devMap[d] = { prs: 0, modules: new Set() };
+    devMap[d].prs++;
+    if (p.Module) devMap[d].modules.add(p.Module);
+  });
+
+  const tbody = Object.entries(devMap)
+    .sort((a, b) => b[1].prs - a[1].prs)
+    .map(([d, v]) => `<tr>
+      <td>${escHtml(d)}</td>
+      <td><strong>${v.prs}</strong></td>
+      <td><div class="tag-list">${[...v.modules].map(m => `<span class="tag">${escHtml(m)}</span>`).join('')}</div></td>
+    </tr>`).join('');
+
+  document.getElementById('stDevSection').innerHTML = `
+    <h3 style="font-size:14px;margin-bottom:12px;color:var(--text2)">BY DEVELOPER</h3>
+    <div class="table-wrap">
+      <table style="font-size:12px">
+        <thead><tr><th>Developer</th><th>PRs</th><th>Modules</th></tr></thead>
+        <tbody>${tbody || '<tr><td colspan="3" style="text-align:center;color:var(--text2);padding:16px">No PR data</td></tr>'}</tbody>
+      </table>
+    </div>`;
 }
 
 function buildDevCard(dev, items) {
