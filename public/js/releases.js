@@ -103,8 +103,14 @@ function buildReleaseBlock(rel, search, cssClass) {
   }
 
   // Stats for header badges
-  const totalMods  = filteredMods.length;
-  const totalPages = filteredMods.reduce((s, m) => s + (m.Pages||[]).map(pnm => pnm.Feature_Flag_Status !== 'N/A' ? 1 : 0).filter(Boolean).length, 0);
+  const totalMods  = filteredMods.filter(m =>
+    (m.Pages||[]).some(p => p.Page_Name !== 'Infrastructure Pages')
+  ).length;
+  const totalPages = filteredMods.reduce((s, m) =>
+    s + (m.Pages||[]).filter(p =>
+      p.Page_Name !== 'Infrastructure Pages' &&
+      (p.Feature_Flag_Status||'').toLowerCase() === 'enabled'
+    ).length, 0);
   const allRelPRs  = [...new Set(
     filteredMods.flatMap(m => (m.Pages||[]).map(p => p.PR).filter(Boolean))
   )];
@@ -177,60 +183,67 @@ function buildModGroup(mod, rel) {
   });
 
   let rows = '';
-  const renderPageRows = (pageList) => {
-    const byPR = [];
-    let cur = null;
-    pageList.forEach(p => {
-      const key = p.PR ? String(p.PR) : null;
-      if (!cur || cur.key !== key) { cur = { key, pages: [] }; byPR.push(cur); }
-      cur.pages.push(p);
-    });
 
-    byPR.forEach(group => {
-      const prNum   = group.key;
-      const prPages = group.pages;
-      // Match by PR number AND module so the right record is found when the same PR spans multiple modules
-      const prDetail = prNum ? allPRs.find(p => String(p.PR) === prNum && p.Module === mod.Module)
-                             || allPRs.find(p => String(p.PR) === prNum) : null;
+  // Group page entries by Page_Name so multiple PRs for the same page
+  // render as one row with multiple PR chips instead of duplicate rows.
+  const pageMap = new Map();
+  pages.forEach(p => {
+    const key = p.Page_Name || '';
+    if (!pageMap.has(key)) {
+      pageMap.set(key, { page: { ...p }, prs: [] });
+    }
+    if (p.PR) pageMap.get(key).prs.push(p.PR);
+    // Prefer non-empty FF values from any entry for this page
+    if (p.Feature_Flag)        pageMap.get(key).page.Feature_Flag        = p.Feature_Flag;
+    if (p.Feature_Flag_Status) pageMap.get(key).page.Feature_Flag_Status = p.Feature_Flag_Status;
+  });
 
-      prPages.forEach((p, i) => {
-        const ffName = p.Feature_Flag || (mpMod
-          ? (() => {
-              const mpPage = mpMod.Pages.find(mp =>
-                mp.page_name === p.Page_Name ||
-                p.Page_Name?.endsWith(mp.page_name) ||
-                mp.page_name === (p.Page_Name||'').split('/').pop()
-              );
-              return mpPage ? mpPage.Feature_Flag : '';
-            })()
-          : '');
+  const sortedPageEntries = [...pageMap.entries()].sort(([aKey], [bKey]) => {
+    const aInfra = aKey === 'Infrastructure Pages';
+    const bInfra = bKey === 'Infrastructure Pages';
+    if (aInfra !== bInfra) return aInfra ? 1 : -1;
+    return aKey.localeCompare(bKey, undefined, { sensitivity: 'base' });
+  });
 
-        const ffStatus = p.Feature_Flag_Status || 'N/A';
-        const isFirst  = i === 0;
-        const rowspan  = prPages.length;
-        // PR# cell is merged across pages that share a PR; Task#/Developer/Status are per-row
-        const prCellHtml = isFirst
-          ? `<td class="pr-cell" rowspan="${rowspan}">${prNum
-              ? `<span class="pr-pill" onclick="showPRDetail(${prNum},'${mod.Module.replace(/'/g,"\\'")}')">#${prNum}</span>`
-              : '<span style="color:var(--text2)">—</span>'
-            }</td>`
-          : '';
+  sortedPageEntries.forEach(([, { page: p, prs }]) => {
+    const ffName = p.Feature_Flag || (mpMod
+      ? (() => {
+          const mpPage = mpMod.Pages.find(mp =>
+            mp.page_name === p.Page_Name ||
+            p.Page_Name?.endsWith(mp.page_name) ||
+            mp.page_name === (p.Page_Name||'').split('/').pop()
+          );
+          return mpPage ? mpPage.Feature_Flag : '';
+        })()
+      : '');
 
-        rows += `<tr>
-          <td></td>
-          <td style="font-family:monospace;font-size:11px" title="${p.Page_Name||''}">${p.Page_Name||'—'}</td>
-          <td style="color:var(--accent2)" title="${ffName}">${ffName||'N/A'}</td>
-          <td>${ffBadge(ffStatus)}</td>
-          ${prCellHtml}
-          <td style="white-space:nowrap">${p.Task ? `<span style="color:var(--text2);font-size:11px">#${p.Task}</span>` : '—'}</td>
-          <td style="white-space:nowrap">${prDetail ? (prDetail.Developer||'—') : '—'}</td>
-          <td>${prDetail ? statusBadge(prDetail.Status) : '<span class="badge badge-gray">—</span>'}</td>
-        </tr>`;
-      });
-    });
-  };
+    const ffStatus = p.Feature_Flag_Status || 'N/A';
 
-  renderPageRows(pages);
+    const prChips = prs.map(prNum =>
+      `<span class="pr-pill" onclick="showPRDetail(${prNum},'${mod.Module.replace(/'/g,"\\'")}')">#${prNum}</span>`
+    ).join(' ');
+
+    const prDetails = prs.map(prNum =>
+      allPRs.find(pr => String(pr.PR) === String(prNum) && pr.Module === mod.Module) ||
+      allPRs.find(pr => String(pr.PR) === String(prNum))
+    ).filter(Boolean);
+
+    const devText   = [...new Set(prDetails.map(d => d.Developer).filter(Boolean))].join(', ') || '—';
+    const statusHtml = prDetails.length
+      ? prDetails.map(d => statusBadge(d.Status)).join(' ')
+      : '<span class="badge badge-gray">—</span>';
+
+    rows += `<tr>
+      <td></td>
+      <td style="font-family:monospace;font-size:11px" title="${p.Page_Name||''}">${p.Page_Name||'—'}</td>
+      <td style="color:var(--accent2)" title="${ffName}">${ffName||'N/A'}</td>
+      <td>${ffBadge(ffStatus)}</td>
+      <td style="white-space:nowrap">${prChips || '<span style="color:var(--text2)">—</span>'}</td>
+      <td style="white-space:nowrap">${p.Task ? `<span style="color:var(--text2);font-size:11px">#${p.Task}</span>` : '—'}</td>
+      <td>${devText}</td>
+      <td>${statusHtml}</td>
+    </tr>`;
+  });
 
   const userStoryHtml = mod.User_Story
     ? `<span class="mod-story-label">US#</span><span class="mod-story">${mod.User_Story}</span>`

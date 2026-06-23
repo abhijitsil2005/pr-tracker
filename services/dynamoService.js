@@ -294,13 +294,17 @@ async function addActivityToAssignment(id, activity) {
 // Pass null to remove from all modules (used when deleting a PR entirely).
 async function removePRFromOtherReleases(prNum, module, exceptReleaseDate) {
   const releases = await getProdReleases();
-  await _removePRFromReleasesInList(releases, prNum, module, exceptReleaseDate);
+  await _removePRFromReleasesInList(releases, prNum, module, exceptReleaseDate, null);
 }
 
-async function _removePRFromReleasesInList(releases, prNum, module, exceptReleaseDate) {
+// exceptReleaseDate: date string from ReleaseTimeline (may differ from ProdReleases date)
+// exceptReleaseNumber: Release_Number resolved via ReleaseTimeline (authoritative)
+async function _removePRFromReleasesInList(releases, prNum, module, exceptReleaseDate, exceptReleaseNumber) {
   const num = Number(prNum);
   for (const rel of releases) {
-    if (exceptReleaseDate && (rel.Release_Date || '').trim() === exceptReleaseDate.trim()) continue;
+    // Skip the target release — match by release number (preferred) or date (fallback)
+    if (exceptReleaseNumber && String(rel.Release_Number) === String(exceptReleaseNumber)) continue;
+    if (!exceptReleaseNumber && exceptReleaseDate && (rel.Release_Date || '').trim() === exceptReleaseDate.trim()) continue;
     const hasThisPR = (rel.Modules || []).some(m =>
       (!module || m.Module === module) &&
       (m.Pages || []).some(p => p.PR != null && Number(p.PR) === num)
@@ -319,21 +323,29 @@ async function _removePRFromReleasesInList(releases, prNum, module, exceptReleas
 
 // Returns { synced: bool, releaseNumber?, reason? }
 async function syncPRToRelease(pr) {
-  // Fetch all releases once — used for both cleanup and target lookup
   const releases = await getProdReleases();
   const prNum    = Number(pr.PR);
 
   const targetDate = pr.Target_Release ? pr.Target_Release.trim() : null;
 
+  // Use ReleaseTimeline to resolve the authoritative Release_Number for the target date.
+  // This decouples the sync from exact date-string matching between two separate tables.
+  const timeline = await getReleaseTimeline();
+  const tlEntry  = targetDate ? timeline.find(t => (t.Release_Date || '').trim() === targetDate) : null;
+  const targetReleaseNumber = tlEntry ? String(tlEntry.Release_Number) : null;
+
   // Remove this PR's pages (scoped to its module) from every release that is NOT the target.
-  // Using pr.Module ensures PR 1234-Core doesn't accidentally wipe PR 1234-InfrastructurePages.
-  await _removePRFromReleasesInList(releases, prNum, pr.Module, targetDate);
+  await _removePRFromReleasesInList(releases, prNum, pr.Module, targetDate, targetReleaseNumber);
 
   if (!targetDate) return { synced: false, reason: 'no_target_release' };
   if (!pr.Module)  return { synced: false, reason: 'no_module' };
 
-  // Re-fetch the target release so we have its latest state after cleanup writes
-  const rel = (await getProdReleases()).find(r => (r.Release_Date || '').trim() === targetDate);
+  // Re-fetch after cleanup; find target release by Release_Number (preferred) or date (fallback).
+  const freshReleases = await getProdReleases();
+  let rel = targetReleaseNumber
+    ? freshReleases.find(r => String(r.Release_Number) === targetReleaseNumber)
+    : null;
+  if (!rel) rel = freshReleases.find(r => (r.Release_Date || '').trim() === targetDate);
   if (!rel) return { synced: false, reason: `no_release_for_date:${targetDate}` };
 
   const prPages = (pr.Page || []).map(p => (p || '').trim()).filter(Boolean);
