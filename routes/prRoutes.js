@@ -100,7 +100,12 @@ router.put('/:id', async (req, res) => {
     if (updates.Page && !Array.isArray(updates.Page)) updates.Page = [updates.Page];
     const updated = await dataService.updatePR(req.params.id, updates);
     let syncResult = { synced: false };
-    try { syncResult = await dataService.syncPRToRelease(updated); } catch (e) { syncResult = { synced: false, reason: e.message }; }
+    // Only run release sync when fields that affect release placement changed.
+    // Status-only updates (e.g. from the release detail popup) must not touch ProdReleases.
+    const SYNC_FIELDS = new Set(['Target_Release', 'Module', 'Page']);
+    if (Object.keys(updates).some(k => SYNC_FIELDS.has(k))) {
+      try { syncResult = await dataService.syncPRToRelease(updated); } catch (e) { syncResult = { synced: false, reason: e.message }; }
+    }
     res.json({ message: 'PR updated', data: updated, sync: syncResult });
   } catch (e) {
     const code = e.message.includes('not found') ? 404 : 400;
