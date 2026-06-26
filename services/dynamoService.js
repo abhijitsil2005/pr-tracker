@@ -316,17 +316,19 @@ async function _removePRFromReleasesInList(releases, prNum, module, exceptReleas
         ...m,
         Pages: (m.Pages || []).filter(p => p.PR == null || Number(p.PR) !== num),
       };
-    });
+    }).filter(m => (m.Pages || []).some(p => p.PR != null)); // drop modules with no PR-bearing pages
     await putItem('ProdReleases', { ...rel, Modules: modules });
   }
 }
 
 // Returns { synced: bool, releaseNumber?, reason? }
-async function syncPRToRelease(pr) {
+// oldTargetRelease: the PR's Target_Release value BEFORE this update (used to clean up the source release)
+async function syncPRToRelease(pr, oldTargetRelease = null) {
   const releases = await getProdReleases();
   const prNum    = Number(pr.PR);
 
   const targetDate = pr.Target_Release ? pr.Target_Release.trim() : null;
+  const oldDate    = oldTargetRelease   ? oldTargetRelease.trim()  : null;
 
   // Use ReleaseTimeline to resolve the authoritative Release_Number for the target date.
   // This decouples the sync from exact date-string matching between two separate tables.
@@ -342,6 +344,27 @@ async function syncPRToRelease(pr) {
 
   // Re-fetch after cleanup; find target release by Release_Number (preferred) or date (fallback).
   const freshReleases = await getProdReleases();
+
+  // Explicit source-release cleanup: covers the case where the old release's pages were
+  // not tagged with this PR's number (e.g. manually added via Edit Release with no PR field),
+  // which causes _removePRFromReleasesInList to skip that release entirely.
+  if (oldDate && oldDate !== targetDate && pr.Module) {
+    const oldRel = freshReleases.find(r => (r.Release_Date || '').trim() === oldDate);
+    if (oldRel) {
+      const oldModIdx = (oldRel.Modules || []).findIndex(m => m.Module === pr.Module);
+      if (oldModIdx !== -1) {
+        const oldMod = oldRel.Modules[oldModIdx];
+        // Keep module only if pages with OTHER PR numbers still reference it
+        const remainingPages = (oldMod.Pages || []).filter(p => p.PR == null || Number(p.PR) !== prNum);
+        const hasOtherPRs = remainingPages.some(p => p.PR != null);
+        if (!hasOtherPRs) {
+          const newModules = (oldRel.Modules || []).filter((_, i) => i !== oldModIdx);
+          await putItem('ProdReleases', { ...oldRel, Modules: newModules });
+        }
+      }
+    }
+  }
+
   let rel = targetReleaseNumber
     ? freshReleases.find(r => String(r.Release_Number) === targetReleaseNumber)
     : null;
@@ -405,10 +428,15 @@ async function syncPRToRelease(pr) {
     return prPages.some(sp => pagesMatch((p.Page_Name || '').trim(), sp));
   });
 
-  if (moduleIdx !== -1) {
-    modules[moduleIdx] = { ...modules[moduleIdx], Pages: relPages };
-  } else {
-    modules.push({ Module: pr.Module, User_Story: '', Pages: relPages });
+  const hasActivePRPages = relPages.some(p => p.PR != null);
+  if (hasActivePRPages) {
+    if (moduleIdx !== -1) {
+      modules[moduleIdx] = { ...modules[moduleIdx], Pages: relPages };
+    } else {
+      modules.push({ Module: pr.Module, User_Story: '', Pages: relPages });
+    }
+  } else if (moduleIdx !== -1) {
+    modules.splice(moduleIdx, 1); // no PR-bearing pages left — remove the module
   }
 
   await putItem('ProdReleases', { ...rel, Modules: modules });

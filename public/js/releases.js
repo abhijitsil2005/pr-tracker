@@ -317,6 +317,18 @@ function showPRDetail(prNum, module) {
     `<option value="${s}" ${pr.Status === s ? 'selected' : ''}>${s}</option>`
   ).join('');
 
+  const sortedTL = [...lookupTimeline].sort((a, b) => Number(a.Release_Number) - Number(b.Release_Number));
+  const currentTarget = pr.Target_Release || '';
+  const inTimeline = currentTarget && sortedTL.some(t => t.Release_Date === currentTarget);
+  const targetOptions = [
+    '<option value="">— no release —</option>',
+    (currentTarget && !inTimeline) ? `<option value="${currentTarget}" selected>${currentTarget} (current)</option>` : '',
+    ...sortedTL.map(t => {
+      const sel = t.Release_Date === currentTarget ? ' selected' : '';
+      return `<option value="${t.Release_Date}"${sel}>${t.Release_Date} (R${t.Release_Number})</option>`;
+    }),
+  ].join('');
+
   document.getElementById('prDetailBody').innerHTML = `
     <div style="display:grid;grid-template-columns:140px 1fr;gap:10px 16px;font-size:13px;margin-bottom:16px">
       ${rows.map(([k,v])=>`
@@ -324,13 +336,18 @@ function showPRDetail(prNum, module) {
         <div>${v}</div>`).join('')}
     </div>
     <div style="border-top:1px solid var(--border);padding-top:14px;margin-top:4px">
-      <div style="font-size:12px;font-weight:600;color:var(--text2);margin-bottom:10px">UPDATE STATUS</div>
-      <div style="display:flex;gap:8px;align-items:center">
-        <select id="prDetailStatusSel" style="flex:1;background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:8px 12px;border-radius:8px;font-size:13px;outline:none">
+      <div style="font-size:12px;font-weight:600;color:var(--text2);margin-bottom:12px">UPDATE PR</div>
+      <div style="display:grid;grid-template-columns:110px 1fr;gap:8px 10px;align-items:center;margin-bottom:12px">
+        <span style="font-size:12px;color:var(--text2)">Status</span>
+        <select id="prDetailStatusSel" style="background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:8px 12px;border-radius:8px;font-size:13px;outline:none">
           ${statusOptions}
         </select>
-        <button class="btn btn-primary btn-sm" onclick="updatePRStatusFromDetail('${pr.id}',${pr.PR})">Update</button>
+        <span style="font-size:12px;color:var(--text2)">Target Release</span>
+        <select id="prDetailTargetSel" data-original="${currentTarget}" style="background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:8px 12px;border-radius:8px;font-size:13px;outline:none">
+          ${targetOptions}
+        </select>
       </div>
+      <button class="btn btn-primary btn-sm" onclick="updatePRStatusFromDetail('${pr.id}',${pr.PR})">Update</button>
     </div>
     ${(pr.PR_Comments||[]).length ? `
       <div style="border-top:1px solid var(--border);padding-top:14px;margin-top:14px">
@@ -351,17 +368,38 @@ function showPRDetail(prNum, module) {
 async function updatePRStatusFromDetail(id, prNum) {
   const newStatus = document.getElementById('prDetailStatusSel').value;
   if (!newStatus) return showToast('Select a status', 'error');
+
+  const targetSel = document.getElementById('prDetailTargetSel');
+  const newTarget = targetSel ? targetSel.value : '';
+  const originalTarget = targetSel ? (targetSel.dataset.original || '') : '';
+  const targetChanged = newTarget !== originalTarget;
+
+  const body = { Status: newStatus };
+  if (targetChanged) body.Target_Release = newTarget || null;
+
   const res = await authFetch(`${API}/prs/${id}`, {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ Status: newStatus }),
+    body: JSON.stringify(body),
   });
   const json = await res.json();
   if (!res.ok) return showToast(json.error, 'error');
-  // Update the specific record in allPRs by id
+
   const idx = allPRs.findIndex(p => p.id === id);
-  if (idx !== -1) allPRs[idx] = { ...allPRs[idx], Status: newStatus };
-  showToast(`PR #${prNum} → ${newStatus}`, 'success');
+  if (idx !== -1) {
+    allPRs[idx] = { ...allPRs[idx], Status: newStatus };
+    if (targetChanged) allPRs[idx].Target_Release = newTarget || null;
+  }
+
+  const sync = json.sync || {};
+  if (targetChanged && sync.synced) {
+    showToast(`PR #${prNum} updated · Release ${sync.releaseNumber} synced`, 'success');
+  } else if (targetChanged && newTarget && sync.reason) {
+    showToast(`PR #${prNum} updated · Release sync: ${sync.reason}`, 'error');
+  } else {
+    showToast(`PR #${prNum} → ${newStatus}`, 'success');
+  }
+
   closeModal('prDetailModal');
   renderReleases();
 }
