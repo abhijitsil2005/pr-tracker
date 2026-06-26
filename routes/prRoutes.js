@@ -98,13 +98,19 @@ router.put('/:id', async (req, res) => {
     if (updates.PR) updates.PR = Number(updates.PR);
     if (updates.Dependent_PRs) updates.Dependent_PRs = updates.Dependent_PRs.map(Number);
     if (updates.Page && !Array.isArray(updates.Page)) updates.Page = [updates.Page];
+    // Capture old Target_Release before overwriting so syncPRToRelease can clean up the source release
+    let oldTargetRelease = null;
+    if ('Target_Release' in updates) {
+      const existing = await dataService.getPRById(req.params.id);
+      oldTargetRelease = existing ? existing.Target_Release : null;
+    }
     const updated = await dataService.updatePR(req.params.id, updates);
     let syncResult = { synced: false };
     // Only run release sync when fields that affect release placement changed.
     // Status-only updates (e.g. from the release detail popup) must not touch ProdReleases.
     const SYNC_FIELDS = new Set(['Target_Release', 'Module', 'Page']);
     if (Object.keys(updates).some(k => SYNC_FIELDS.has(k))) {
-      try { syncResult = await dataService.syncPRToRelease(updated); } catch (e) { syncResult = { synced: false, reason: e.message }; }
+      try { syncResult = await dataService.syncPRToRelease(updated, oldTargetRelease); } catch (e) { syncResult = { synced: false, reason: e.message }; }
     }
     res.json({ message: 'PR updated', data: updated, sync: syncResult });
   } catch (e) {
