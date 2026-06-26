@@ -346,16 +346,32 @@ async function syncPRToRelease(pr) {
     ? freshReleases.find(r => String(r.Release_Number) === targetReleaseNumber)
     : null;
   if (!rel) rel = freshReleases.find(r => (r.Release_Date || '').trim() === targetDate);
+
+  // If still not found but the date IS in ReleaseTimeline, auto-create the ProdRelease
+  // so the user doesn't need to manually add it in the Releases tab first.
+  if (!rel && tlEntry && tlEntry.Release_Number != null) {
+    rel = {
+      Release_Number:   String(tlEntry.Release_Number),
+      Release_Date:     tlEntry.Release_Date || targetDate,
+      Code_Freeze:      tlEntry['Code Freeze'] || null,
+      Regression_Start: tlEntry['Regression Start Date'] || null,
+      Modules:          [],
+    };
+    await putItem('ProdReleases', rel);
+  }
+
   if (!rel) return { synced: false, reason: `no_release_for_date:${targetDate}` };
 
   const prPages = (pr.Page || []).map(p => (p || '').trim()).filter(Boolean);
 
   // Fuzzy match: handles 'PageName' == 'Module/PageName' path prefix differences
-  const pagesMatch = (a, b) =>
-    a === b ||
-    a.endsWith('/' + b) ||
-    b.endsWith('/' + a) ||
-    a.split('/').pop() === b.split('/').pop();
+  const pagesMatch = (a, b) => {
+    if (!a || !b) return false;
+    return a === b ||
+      a.endsWith('/' + b) ||
+      b.endsWith('/' + a) ||
+      a.split('/').pop() === b.split('/').pop();
+  };
 
   // Resolve FF info from ModulePages
   const mpMod = await getModulePage(pr.Module).catch(() => null);

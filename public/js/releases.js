@@ -104,11 +104,11 @@ function buildReleaseBlock(rel, search, cssClass) {
 
   // Stats for header badges
   const totalMods  = filteredMods.filter(m =>
-    (m.Pages||[]).some(p => p.Page_Name !== 'Infrastructure Pages')
+    (m.Pages||[]).some(p => p.Page_Name !== 'Infrastructure Pages' || p.Page_Name !== 'Shared Controls')
   ).length;
   const totalPages = filteredMods.reduce((s, m) =>
     s + (m.Pages||[]).filter(p =>
-      p.Page_Name !== 'Infrastructure Pages' &&
+      (p.Page_Name !== 'Infrastructure Pages' || p.Page_Name !== 'Shared Controls') &&
       (p.Feature_Flag_Status||'').toLowerCase() === 'enabled'
     ).length, 0);
   const allRelPRs  = [...new Set(
