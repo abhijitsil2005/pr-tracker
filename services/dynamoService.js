@@ -469,14 +469,17 @@ async function completeRelease(releaseNumber) {
   }
 
   // Update PRDetails for each PR associated with this release
+  // getPRByNumber returns an array (one record per module), iterate all records
   for (const prNum of prNumbers) {
-    const pr = await getPRByNumber(prNum);
-    if (!pr) continue;
-    await putItem('PRDetails', {
-      ...pr,
-      Status: 'Prod Deployed',
-      Release_Date: releaseDate,
-    });
+    const prs = await getPRByNumber(prNum);
+    if (!prs || !prs.length) continue;
+    for (const pr of prs) {
+      await putItem('PRDetails', {
+        ...pr,
+        Status: 'Prod Deployed',
+        Release_Date: releaseDate,
+      });
+    }
   }
 
   // Stamp the release itself as completed
