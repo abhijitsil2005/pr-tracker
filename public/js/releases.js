@@ -143,6 +143,7 @@ function buildReleaseBlock(rel, search, cssClass) {
           <div class="release-title">
             📅 ${rel.Release_Date}
             <span style="color:var(--text2);font-weight:400;font-size:12px;margin-left:6px">Release ${rel.Release_Number||'—'}</span>
+            ${rel.Sprint ? `<span style="color:var(--accent2);font-weight:500;font-size:12px;margin-left:8px;background:var(--surface3);padding:2px 8px;border-radius:10px">Sprint ${rel.Sprint}</span>` : ''}
           </div>
           <div class="release-meta">
             ${rel.Code_Freeze     ? '<span>❄️ Code Freeze: ' + rel.Code_Freeze + '</span>'      : ''}
@@ -429,7 +430,7 @@ function openAddReleaseModal() {
   editingRelease = null;
   document.getElementById('relModalTitle').textContent = 'Add Release';
   document.getElementById('saveRelBtn').textContent = 'Add Release';
-  ['r_number','r_date','r_freeze','r_regression'].forEach(id=>document.getElementById(id).value='');
+  ['r_number','r_date','r_freeze','r_regression','r_sprint'].forEach(id=>document.getElementById(id).value='');
   relModuleRows = [];
   renderRelModuleRows();
   document.getElementById('releaseModal').classList.add('open');
@@ -445,6 +446,7 @@ function openEditReleaseModal(releaseNumber) {
   document.getElementById('r_date').value          = rel.Release_Date||'';
   document.getElementById('r_freeze').value        = rel.Code_Freeze||'';
   document.getElementById('r_regression').value    = rel.Regression_Start||'';
+  document.getElementById('r_sprint').value        = rel.Sprint||'';
   relModuleRows = JSON.parse(JSON.stringify(rel.Modules||[]));
   renderRelModuleRows();
   document.getElementById('releaseModal').classList.add('open');
@@ -592,6 +594,7 @@ async function saveRelease() {
     Release_Date:       document.getElementById('r_date').value.trim()||null,
     Code_Freeze:        document.getElementById('r_freeze').value.trim()||null,
     Regression_Start:   document.getElementById('r_regression').value.trim()||null,
+    Sprint:             document.getElementById('r_sprint').value.trim()||null,
     Modules: relModuleRows,
   };
   const isEdit = !!editingRelease;
