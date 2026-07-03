@@ -405,9 +405,14 @@ async function syncPRToRelease(pr, oldTargetRelease = null) {
   const moduleIdx = modules.findIndex(m => m.Module === pr.Module);
   let relPages = moduleIdx !== -1 ? [...(modules[moduleIdx].Pages || [])] : [];
 
-  // Add or update pages now in pr.Page
+  // Add or update pages now in pr.Page.
+  // Match by BOTH page name AND PR number so that multiple PRs targeting the same
+  // page (e.g. 3 PRs all covering "Infrastructure Pages") each keep their own entry
+  // instead of overwriting each other.
   for (const pageName of prPages) {
-    const idx = relPages.findIndex(p => pagesMatch((p.Page_Name || '').trim(), pageName));
+    const idx = relPages.findIndex(p =>
+      Number(p.PR) === prNum && pagesMatch((p.Page_Name || '').trim(), pageName)
+    );
     if (idx !== -1) {
       relPages[idx] = { ...relPages[idx], PR: prNum };
     } else {
