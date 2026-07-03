@@ -111,9 +111,25 @@ function buildReleaseBlock(rel, search, cssClass) {
       (p.Page_Name !== 'Infrastructure Pages' || p.Page_Name !== 'Shared Controls') &&
       (p.Feature_Flag_Status||'').toLowerCase() === 'enabled'
     ).length, 0);
-  const allRelPRs  = [...new Set(
-    filteredMods.flatMap(m => (m.Pages||[]).map(p => p.PR).filter(Boolean))
-  )];
+  // PR count: use the same scoped cross-reference as buildModGroup so the total matches
+  // the sum of per-module counts. Only adds a PR from allPRs if its page already exists
+  // in the stored module pages (prevents false positives from unsynced PRs).
+  const relDate = (rel.Release_Date || '').trim();
+  const pgBase  = s => (s || '').split('/').pop();
+  const distinctRelPRs = new Set();
+  filteredMods.forEach(mod => {
+    const modPages = mod.Pages || [];
+    const storedBases = new Set(modPages.map(p => pgBase(p.Page_Name || '')).filter(Boolean));
+    modPages.forEach(p => { if (p.PR) distinctRelPRs.add(Number(p.PR)); });
+    allPRs.forEach(pr => {
+      if (pr.Module !== mod.Module) return;
+      if (!pr.Target_Release || pr.Target_Release.trim() !== relDate) return;
+      if ((pr.Page || []).some(pg => storedBases.has(pgBase(pg)))) {
+        distinctRelPRs.add(Number(pr.PR));
+      }
+    });
+  });
+  const allRelPRs = [...distinctRelPRs];
 
   const modGroupsHtml = filteredMods.sort((a, b) => (a.Module||'').localeCompare(b.Module||'')).map(mod => buildModGroup(mod, rel)).join('');
 
@@ -187,16 +203,39 @@ function buildModGroup(mod, rel) {
 
   // Group page entries by Page_Name so multiple PRs for the same page
   // render as one row with multiple PR chips instead of duplicate rows.
+  // Use a Set for prs to avoid duplicates when cross-referencing below.
   const pageMap = new Map();
   pages.forEach(p => {
     const key = p.Page_Name || '';
     if (!pageMap.has(key)) {
-      pageMap.set(key, { page: { ...p }, prs: [] });
+      pageMap.set(key, { page: { ...p }, prSet: new Set() });
     }
-    if (p.PR) pageMap.get(key).prs.push(p.PR);
+    if (p.PR) pageMap.get(key).prSet.add(Number(p.PR));
     // Prefer non-empty FF values from any entry for this page
     if (p.Feature_Flag)        pageMap.get(key).page.Feature_Flag        = p.Feature_Flag;
     if (p.Feature_Flag_Status) pageMap.get(key).page.Feature_Flag_Status = p.Feature_Flag_Status;
+  });
+
+  // Cross-reference allPRs: if a PR targets this release and this module, add it to
+  // every page it covers — even if the stored release data only kept the last-synced PR
+  // per page (the old overwrite bug).
+  const relDate = (rel.Release_Date || '').trim();
+  const pgBase  = s => (s || '').split('/').pop();
+  allPRs.forEach(pr => {
+    if (pr.Module !== mod.Module) return;
+    if (!pr.Target_Release || pr.Target_Release.trim() !== relDate) return;
+    (pr.Page || []).forEach(pg => {
+      for (const [key, entry] of pageMap) {
+        if (pgBase(pg) === pgBase(key) || pg === key) {
+          entry.prSet.add(Number(pr.PR));
+        }
+      }
+    });
+  });
+
+  // Materialise sorted prs arrays
+  pageMap.forEach(entry => {
+    entry.prs = [...entry.prSet].sort((a, b) => a - b);
   });
 
   const sortedPageEntries = [...pageMap.entries()].sort(([aKey], [bKey]) => {
@@ -220,29 +259,20 @@ function buildModGroup(mod, rel) {
 
     const ffStatus = p.Feature_Flag_Status || 'N/A';
 
-    const prChips = prs.map(prNum =>
-      `<span class="pr-pill" onclick="showPRDetail(${prNum},'${mod.Module.replace(/'/g,"\\'")}')">#${prNum}</span>`
-    ).join(' ');
-
-    const prDetails = prs.map(prNum =>
-      allPRs.find(pr => String(pr.PR) === String(prNum) && pr.Module === mod.Module) ||
-      allPRs.find(pr => String(pr.PR) === String(prNum))
-    ).filter(Boolean);
-
-    const devText   = [...new Set(prDetails.map(d => d.Developer).filter(Boolean))].join(', ') || '—';
-    const statusHtml = prDetails.length
-      ? prDetails.map(d => statusBadge(d.Status)).join(' ')
-      : '<span class="badge badge-gray">—</span>';
+    const prStatusCombined = prs.length ? prs.map(prNum => {
+      const detail = allPRs.find(pr => String(pr.PR) === String(prNum) && pr.Module === mod.Module)
+                  || allPRs.find(pr => String(pr.PR) === String(prNum));
+      const statusText = detail && detail.Status ? ` - ${detail.Status}` : '';
+      return `<span class="pr-pill" onclick="showPRDetail(${prNum},'${mod.Module.replace(/'/g,"\\'")}')" style="margin:2px 4px 2px 0">#${prNum}${statusText}</span>`;
+    }).join('') : '<span style="color:var(--text2)">—</span>';
 
     rows += `<tr>
       <td></td>
       <td style="font-family:monospace;font-size:11px" title="${p.Page_Name||''}">${p.Page_Name||'—'}</td>
       <td style="color:var(--accent2)" title="${ffName}">${ffName||'N/A'}</td>
       <td>${ffBadge(ffStatus)}</td>
-      <td style="white-space:nowrap">${prChips || '<span style="color:var(--text2)">—</span>'}</td>
+      <td class="pr-cell">${prStatusCombined}</td>
       <td style="white-space:nowrap">${p.Task ? `<span style="color:var(--text2);font-size:11px">#${p.Task}</span>` : '—'}</td>
-      <td>${devText}</td>
-      <td>${statusHtml}</td>
     </tr>`;
   });
 
@@ -256,23 +286,23 @@ function buildModGroup(mod, rel) {
       <span style="font-size:15px">📦</span>
       <span class="mod-name">${mod.Module}</span>
       ${userStoryHtml}
-      <span class="badge badge-blue" style="margin-left:auto">${pages.length} page${pages.length!==1?'s':''}</span>
-      <span class="badge badge-gray">${Object.keys(prGroups).length} PR${Object.keys(prGroups).length!==1?'s':''}</span>
+      <span class="badge badge-blue" style="margin-left:auto">${pageMap.size} page${pageMap.size!==1?'s':''}</span>
+      <span class="badge badge-gray">${new Set([...pageMap.values()].flatMap(e => e.prs)).size} PR${new Set([...pageMap.values()].flatMap(e => e.prs)).size!==1?'s':''}</span>
     </div>
     <table class="pages-table">
       <colgroup>
         <col class="col-margin">
         <col class="col-page"><col class="col-ff"><col class="col-ffs">
-        <col class="col-pr"><col class="col-task"><col class="col-dev"><col class="col-status">
+        <col class="col-pr"><col class="col-task">
       </colgroup>
       <thead>
         <tr>
           <th></th>
           <th>Page</th><th>Feature Flag</th><th>FF Status</th>
-          <th>PR #</th><th>Task #</th><th>Developer</th><th>Status</th>
+          <th>PR # / Status</th><th>Task #</th>
         </tr>
       </thead>
-      <tbody>${rows || '<tr><td colspan="8" style="text-align:center;color:var(--text2);padding:14px">No pages defined</td></tr>'}</tbody>
+      <tbody>${rows || '<tr><td colspan="6" style="text-align:center;color:var(--text2);padding:14px">No pages defined</td></tr>'}</tbody>
     </table>
   </div>`;
 }
