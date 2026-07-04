@@ -307,6 +307,7 @@ function buildModGroup(mod, rel) {
   </div>`;
 }
 
+
 function toggleRelease(id) {
   const body = document.getElementById(`body-${id}`);
   const chev = document.getElementById(`chev-${id}`);
@@ -635,6 +636,23 @@ async function saveRelease() {
   });
   const json = await res.json();
   if (!res.ok) return showToast(json.error,'error');
+
+  // Sync Task # from release page entries to PRDetails
+  if (isEdit) {
+    const taskByPR = {};
+    relModuleRows.forEach(mod => {
+      (mod.Pages || []).forEach(pg => {
+        if (pg.PR && pg.Task) taskByPR[pg.PR] = pg.Task;
+      });
+    });
+    await Promise.all(Object.entries(taskByPR).map(([prNum, task]) =>
+      authFetch(`${API}/prs/by-pr/${prNum}`, {
+        method: 'PUT',
+        body: JSON.stringify({ Task: task }),
+      })
+    ));
+  }
+
   showToast(isEdit?`Release ${num} updated`:`Release ${num} created`,'success');
   closeReleaseModal();
   renderReleases();

@@ -116,6 +116,9 @@
     <div id="section-status" class="section">
       <div class="toolbar" style="justify-content:flex-end">
         <div style="display:flex;gap:8px;align-items:center">
+          <select id="stFilterSprint" style="width:140px" onchange="renderStatusTracker()">
+            <option value="">All Sprints</option>
+          </select>
           <select id="stFilterDev" style="width:180px" onchange="renderStatusTracker()">
             <option value="">All Developers</option>
           </select>
@@ -167,7 +170,7 @@
     <button class="modal-close" onclick="closePRModal()">✕</button>
     <div class="form-grid">
       <div class="form-group"><label>PR Number *</label><input type="text" id="f_pr"></div>
-      <div class="form-group"><label>Type</label><select id="f_type"><option>Development</option><option>Bug Fix</option><option>Hotfix</option></select></div>
+      <div class="form-group"><label>Type</label><select id="f_type"><option>Development</option><option>Bug Fix</option><option>Hotfix</option><option>Remove FF</option></select></div>
       <div class="form-group"><label>Module</label><select id="f_module" onchange="loadPageOptions()"><option value="">— select —</option></select></div>
       <div class="form-group"><label>Developer</label><select id="f_developer"><option value="">— select —</option></select></div>
       <div class="form-group full">
@@ -196,6 +199,7 @@
       <div class="form-group"><label>Dev Sprint</label><input type="text" id="f_devSprint" placeholder="2.5"></div>
       <div class="form-group"><label>Testing Sprint</label><input type="text" id="f_testSprint" placeholder="2.6"></div>
       <div class="form-group"><label>Target Release Date</label><select id="f_target"><option value="">— select —</option></select></div>
+      <div class="form-group"><label>Task #</label><input type="text" id="f_task" placeholder="e.g. 12345"></div>
       <div class="form-group"><label>Dependent PRs (comma-separated)</label><input type="text" id="f_deps" placeholder="8846, 8872"></div>
     </div>
     <div class="modal-footer">
@@ -392,6 +396,14 @@
             <button class="btn btn-success btn-sm" onclick="saveAmQuickPR()" type="button" style="white-space:nowrap">Create &amp; Select</button>
           </div>
         </div>
+      </div>
+      <div class="form-group">
+        <label>Task # <span style="color:var(--text2);font-weight:400">(optional)</span></label>
+        <input type="text" id="am_task" placeholder="e.g. 12345">
+      </div>
+      <div class="form-group">
+        <label>Sprint <span style="color:var(--text2);font-weight:400">(optional)</span></label>
+        <input type="text" id="am_sprint" placeholder="e.g. 3.1">
       </div>
       <div class="form-group full">
         <label>Initial Note <span style="color:var(--text2);font-weight:400">(optional)</span></label>

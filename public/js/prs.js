@@ -138,6 +138,7 @@ async function openEditPRModal(id) {
   document.getElementById('f_devSprint').value = pr.Dev_Sprint||'';
   document.getElementById('f_testSprint').value = pr.Testing_Sprint||'';
   document.getElementById('f_target').value = pr.Target_Release||'';
+  document.getElementById('f_task').value = pr.Task||'';
   document.getElementById('f_deps').value = (pr.Dependent_PRs||[]).join(', ');
   document.getElementById('prModal').classList.add('open');
 }
@@ -149,7 +150,7 @@ function closePRModal() {
 }
 
 function clearPRForm() {
-  ['f_pr','f_raised','f_firstResponse','f_approved','f_merged','f_devSprint','f_testSprint','f_deps'].forEach(id=>{ document.getElementById(id).value=''; });
+  ['f_pr','f_raised','f_firstResponse','f_approved','f_merged','f_devSprint','f_testSprint','f_task','f_deps'].forEach(id=>{ document.getElementById(id).value=''; });
   ['f_type','f_module','f_developer','f_status','f_reviewer','f_target'].forEach(id=>{ document.getElementById(id).selectedIndex=0; });
   document.getElementById('f_pages').innerHTML = '<span class="page-chip-hint">— select a module first —</span>';
 }
@@ -167,7 +168,20 @@ async function loadPageOptions() {
     container.innerHTML = '<span class="page-chip-hint">No pages defined for this module</span>';
     return;
   }
-  pages.forEach(p => {
+  const tail = new Set(['api', 'infrastructure pages']);
+  const sorted = [...pages].sort((a, b) => {
+    const aT = tail.has((a.page_name || '').toLowerCase());
+    const bT = tail.has((b.page_name || '').toLowerCase());
+    if (aT !== bT) return aT ? 1 : -1;
+    if (aT && bT) {
+      // Within tail: API before Infrastructure Pages
+      const aI = (a.page_name || '').toLowerCase() === 'infrastructure pages';
+      const bI = (b.page_name || '').toLowerCase() === 'infrastructure pages';
+      if (aI !== bI) return aI ? 1 : -1;
+    }
+    return (a.page_name || '').localeCompare(b.page_name || '');
+  });
+  sorted.forEach(p => {
     const chip = document.createElement('span');
     chip.className = 'page-chip';
     chip.textContent = p.page_name;
@@ -194,6 +208,7 @@ async function savePR() {
     Dev_Sprint:document.getElementById('f_devSprint').value||null,
     Testing_Sprint:document.getElementById('f_testSprint').value||null,
     Target_Release:document.getElementById('f_target').value||null,
+    Task:document.getElementById('f_task').value.trim()||null,
     Dependent_PRs:document.getElementById('f_deps').value.split(',').map(s=>s.trim()).filter(Boolean).map(Number),
   };
   const isEdit = !!editingPR;

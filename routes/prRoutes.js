@@ -61,6 +61,7 @@ router.post('/', async (req, res) => {
       Testing_Sprint: body.Testing_Sprint || null,
       Dependent_PRs: Array.isArray(body.Dependent_PRs) ? body.Dependent_PRs.map(Number) : [],
       Target_Release: body.Target_Release || null,
+      Task: body.Task || null,
       PR_Comments: body.PR_Comments || [],
     };
 
