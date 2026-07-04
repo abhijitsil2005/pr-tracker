@@ -117,6 +117,7 @@
       <div class="toolbar" style="justify-content:space-between">
         <div style="display:flex;gap:8px;align-items:center">
           <button class="btn btn-ghost btn-sm" onclick="importFromTracker()" id="btnImportTracker" title="Sync from tracker.json" style="display:none">⬆ Import from Tracker JSON</button>
+          <button class="btn btn-ghost btn-sm" onclick="syncSprintDates()" id="btnSyncSprints" title="Assign Dev Sprint to PRs based on PR Raised Date" style="display:none">&#128197; Sync Sprint Dates</button>
         </div>
         <div style="display:flex;gap:8px;align-items:center">
           <select id="stFilterSprint" style="width:140px" onchange="renderStatusTracker()">
@@ -259,6 +260,26 @@
     <div class="modal-footer">
       <button class="btn btn-ghost" onclick="closeModal('addModuleModal')">Cancel</button>
       <button class="btn btn-primary" onclick="saveNewModule()">Add Module</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── Edit Module Modal ──────────────────────────────── -->
+<div class="modal-overlay" id="editModuleModal">
+  <div class="modal">
+    <h2 id="editModuleTitle">Edit Module</h2>
+    <button class="modal-close" onclick="closeModal('editModuleModal')">✕</button>
+    <div class="form-grid">
+      <div class="form-group full"><label>Planned Release Date</label>
+        <select id="mod_plannedRelease"><option value="">— select —</option></select>
+      </div>
+      <div class="form-group full"><label>Actual Release Date</label>
+        <select id="mod_actualRelease"><option value="">— select —</option></select>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('editModuleModal')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveModuleDetails()">Save</button>
     </div>
   </div>
 </div>

@@ -183,4 +183,127 @@ router.post('/tracker', async (req, res) => {
   }
 });
 
+// ── Sprint date helpers ────────────────────────────────────────────
+
+// Parse "M/D/YY" (e.g. "1/5/26") → "YYYY-MM-DD"
+function sprintDateToISO(str) {
+  const [m, d, y] = str.trim().split('/').map(Number);
+  const year = y < 100 ? 2000 + y : y;
+  return `${year}-${String(m).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+}
+
+// Normalise any date string to "YYYY-MM-DD" for comparison
+function normaliseDateStr(str) {
+  if (!str) return null;
+  // Already ISO — "2026-01-05" or "2026-01-05T..."
+  if (/^\d{4}-\d{2}-\d{2}/.test(str)) return str.slice(0, 10);
+  // M/D/YYYY or M/D/YY
+  const parts = str.split('/');
+  if (parts.length === 3) {
+    const [m, d, y] = parts.map(Number);
+    const year = y < 100 ? 2000 + y : y;
+    return `${year}-${String(m).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+  }
+  return null;
+}
+
+function findSprintForDate(isoDate, sprintList) {
+  if (!isoDate) return null;
+  for (const s of sprintList) {
+    if (isoDate >= s.StartDate && isoDate <= s.EndDate) return s.Sprint;
+  }
+  return null;
+}
+
+// GET /api/import/sprints — return sprint list from DynamoDB for client-side date lookup
+router.get('/sprints', async (req, res) => {
+  try {
+    const sprints = await ds.getSprints();
+    sprints.sort((a, b) => a.StartDate.localeCompare(b.StartDate));
+    res.json(sprints);
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// POST /api/import/sprints
+// 1. Seeds/updates the Sprints DynamoDB table from uploads/sprint.json
+// 2. Assigns Dev_Sprint to every PR based on PR Raised Date
+// 3. Propagates Sprint to matching StatusTracker assignments
+router.post('/sprints', async (req, res) => {
+  try {
+    const jsonPath = path.join(__dirname, '../uploads/sprint.json');
+    if (!fs.existsSync(jsonPath)) {
+      return res.status(404).json({ error: 'sprint.json not found in uploads/' });
+    }
+
+    const raw      = fs.readFileSync(jsonPath, 'utf8');
+    const rawSprints = JSON.parse(raw);
+
+    // Normalise and upsert all sprint records
+    const sprintList = rawSprints.map(s => ({
+      Sprint:    String(s.Sprint),
+      StartDate: sprintDateToISO(s['Start Date']),
+      EndDate:   sprintDateToISO(s['End Date']),
+    }));
+
+    for (const s of sprintList) {
+      await ds.upsertSprint(s);
+    }
+
+    // Fetch all PRs and StatusTracker assignments in parallel
+    const [allPRs, allAssignments] = await Promise.all([
+      ds.getPRs(),
+      ds.getStatusAssignments(),
+    ]);
+
+    // Index StatusTracker assignments by PR number for quick lookup
+    const assignmentsByPR = new Map();
+    for (const a of allAssignments) {
+      const prNum = a.PR != null ? Number(a.PR) : null;
+      if (prNum == null) continue;
+      if (!assignmentsByPR.has(prNum)) assignmentsByPR.set(prNum, []);
+      assignmentsByPR.get(prNum).push(a);
+    }
+
+    let prsUpdated = 0, assignmentsUpdated = 0, skipped = 0;
+
+    for (const pr of allPRs) {
+      const raisedDateRaw = pr['PR Raised Date'];
+      const raisedDate    = normaliseDateStr(raisedDateRaw);
+      if (!raisedDate) { skipped++; continue; }
+
+      const sprint = findSprintForDate(raisedDate, sprintList);
+      if (!sprint) { skipped++; continue; }
+
+      // Update PRDetails Dev_Sprint
+      if (pr.Dev_Sprint !== sprint) {
+        await ds.updatePR(pr.id, { Dev_Sprint: sprint });
+        prsUpdated++;
+      }
+
+      // Propagate to matching StatusTracker assignments
+      const linked = assignmentsByPR.get(Number(pr.PR)) || [];
+      for (const a of linked) {
+        if (a.Sprint !== sprint) {
+          const updatedA = { ...a, Sprint: sprint, UpdatedAt: new Date().toISOString() };
+          await ds.putStatusAssignment(updatedA);
+          assignmentsUpdated++;
+        }
+      }
+    }
+
+    res.json({
+      message: 'Sprint sync complete',
+      sprintsSeeded: sprintList.length,
+      prsUpdated,
+      assignmentsUpdated,
+      skipped,
+    });
+  } catch (e) {
+    console.error('Sprint sync error:', e);
+    res.status(500).json({ error: e.message });
+  }
+});
+
 module.exports = router;

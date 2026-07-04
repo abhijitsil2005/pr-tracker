@@ -16,6 +16,32 @@ function fromInputDate(s) {
   return `${m}/${d}/${y}`;
 }
 
+// ── Sprint auto-fill ───────────────────────────────────
+let _sprintsCache = null;
+
+async function loadSprints() {
+  if (_sprintsCache !== null) return _sprintsCache;
+  try {
+    const res = await authFetch(`${API}/import/sprints`);
+    const data = await res.json();
+    _sprintsCache = Array.isArray(data) ? data : [];
+  } catch (e) {
+    _sprintsCache = [];
+  }
+  return _sprintsCache;
+}
+
+function sprintForDate(isoDate) {
+  if (!isoDate || !Array.isArray(_sprintsCache)) return null;
+  return (_sprintsCache.find(s => isoDate >= s.StartDate && isoDate <= s.EndDate) || {}).Sprint || null;
+}
+
+// Wire up auto-fill: when PR Raised Date changes, populate Dev Sprint
+document.getElementById('f_raised').addEventListener('change', function () {
+  const sprint = sprintForDate(this.value);
+  if (sprint) document.getElementById('f_devSprint').value = sprint;
+});
+
 async function renderPRs(filters = {}) {
   const params = new URLSearchParams();
   if (filters.module) params.set('module', filters.module);
@@ -91,10 +117,12 @@ function openAddPRModal() {
   document.getElementById('savePRBtn').textContent = 'Add PR';
   clearPRForm();
   populatePRModuleSelect();
+  loadSprints();
   document.getElementById('prModal').classList.add('open');
 }
 
 async function openAddPRModalForPage(moduleName, pageName) {
+  await loadSprints();
   editingPR = null;
   document.getElementById('prModalTitle').textContent = 'Add PR';
   document.getElementById('savePRBtn').textContent = 'Add PR';
@@ -109,6 +137,7 @@ async function openAddPRModalForPage(moduleName, pageName) {
 }
 
 async function openEditPRModal(id) {
+  await loadSprints();
   const pr = await api(`prs/by-id/${id}`);
   editingPR = pr.id;
   document.getElementById('prModalTitle').textContent = `Edit PR #${pr.PR}`;
