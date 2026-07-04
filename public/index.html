@@ -114,7 +114,10 @@
 
     <!-- STATUS TRACKER -->
     <div id="section-status" class="section">
-      <div class="toolbar" style="justify-content:flex-end">
+      <div class="toolbar" style="justify-content:space-between">
+        <div style="display:flex;gap:8px;align-items:center">
+          <button class="btn btn-ghost btn-sm" onclick="importFromTracker()" id="btnImportTracker" title="Sync from tracker.json" style="display:none">⬆ Import from Tracker JSON</button>
+        </div>
         <div style="display:flex;gap:8px;align-items:center">
           <select id="stFilterSprint" style="width:140px" onchange="renderStatusTracker()">
             <option value="">All Sprints</option>
@@ -188,6 +191,7 @@
           <option>Ready for Prod Deploy</option>
           <option>Prod Deployed FF OFF</option>
           <option>Prod Deployed</option>
+          <option>Reverted</option>
           <option>Closed</option>
         </select>
       </div>
@@ -390,7 +394,9 @@
                 <option>TCR Testing In Progress</option>
                 <option>Ready for Prod Deploy</option>
                 <option>Prod Deployed FF OFF</option>
+                <option>Reverted</option>
                 <option>Prod Deployed</option>
+                <option>Closed</option>
               </select>
             </div>
             <button class="btn btn-success btn-sm" onclick="saveAmQuickPR()" type="button" style="white-space:nowrap">Create &amp; Select</button>
@@ -470,7 +476,9 @@
               <option>TCR Testing In Progress</option>
               <option>Ready for Prod Deploy</option>
               <option>Prod Deployed FF OFF</option>
+              <option>Reverted</option>
               <option>Prod Deployed</option>
+              <option>Closed</option>
             </select>
           </div>
           <button class="btn btn-success btn-sm" onclick="saveQuickPR()" style="white-space:nowrap">Create &amp; Link</button>
