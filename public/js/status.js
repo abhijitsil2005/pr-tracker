@@ -33,8 +33,10 @@ async function renderStatusTracker() {
   stAssignments = assignments || [];
   allPRs = (prsData && prsData.data) || [];
 
-  const importBtn = document.getElementById('btnImportTracker');
+  const importBtn  = document.getElementById('btnImportTracker');
+  const sprintBtn  = document.getElementById('btnSyncSprints');
   if (importBtn) importBtn.style.display = isAdmin() ? '' : 'none';
+  if (sprintBtn) sprintBtn.style.display = isAdmin() ? '' : 'none';
 
   // Populate sprint filter from current assignments
   const sprintSel = document.getElementById('stFilterSprint');
@@ -420,6 +422,28 @@ async function importFromTracker() {
     showToast('Import error: ' + e.message, 'error');
   } finally {
     if (btn) { btn.disabled = false; btn.textContent = '⬆ Import from Tracker JSON'; }
+  }
+}
+
+async function syncSprintDates() {
+  const btn = document.getElementById('btnSyncSprints');
+  if (btn) { btn.disabled = true; btn.textContent = '⏳ Syncing…'; }
+  try {
+    const res = await authFetch(`${API}/import/sprints`, { method: 'POST' });
+    const j   = await res.json();
+    if (!res.ok) {
+      showToast(j.error || 'Sprint sync failed', 'error');
+    } else {
+      showToast(
+        `Sprint sync done — sprints seeded: ${j.sprintsSeeded}, PRs updated: ${j.prsUpdated}, status assignments updated: ${j.assignmentsUpdated}, skipped: ${j.skipped}`,
+        'success'
+      );
+      renderStatusTracker();
+    }
+  } catch (e) {
+    showToast('Sprint sync error: ' + e.message, 'error');
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = '📅 Sync Sprint Dates'; }
   }
 }
 

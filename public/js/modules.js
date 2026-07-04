@@ -92,15 +92,16 @@ function buildModuleAccordion(mod, prsByPage = {}) {
     </tr>`;
   }).join('');
 
-  const oosHtml = (mod.OutOfScope||[]).map(p => `
-    <span class="oos-chip">
-      ${p}
-      <button onclick="removeOOS('${mod.Module}','${escAttr(p)}')" title="Remove">✕</button>
-    </span>`).join('');
-
   const modulePages = countablePages;
   const prodPct   = modulePages.length ? Math.round(prodDep / modulePages.length * 100) : 0;
   const barColor  = prodPct === 100 ? 'var(--green)' : prodPct > 0 ? 'var(--yellow)' : 'var(--border)';
+
+  const allFullyReleased = modulePages.length > 0 && prodDep === modulePages.length;
+  const releaseBadge = allFullyReleased && mod.Actual_Release_Date
+    ? `<span class="badge badge-green" title="Actual Release Date">✅ ${mod.Actual_Release_Date}</span>`
+    : mod.Planned_Release_Date
+    ? `<span class="badge badge-blue" title="Planned Release Date">📅 ${mod.Planned_Release_Date}</span>`
+    : '';
 
   return `
     <div class="mp-accordion" id="${accId}">
@@ -113,7 +114,7 @@ function buildModuleAccordion(mod, prsByPage = {}) {
             <span class="badge badge-green" title="Prod Deployed">${prodDep} prod</span>
             <span class="badge badge-teal" title="Demo Done">${demoDone} demo</span>
             <span class="badge ${ffEn===modulePages.length&&modulePages.length?'badge-green':'badge-yellow'}" title="FF Enabled">${ffEn}/${modulePages.length} FF</span>
-            ${mod.OutOfScope?.length ? `<span class="badge badge-red">${mod.OutOfScope.length} OOS</span>` : ''}
+            ${releaseBadge}
             ${mod.IsOutOfScope ? `<span class="badge badge-red">MODULE OUT OF SCOPE</span>` : ''}
           </div>
           <div style="width:80px;height:4px;border-radius:2px;background:var(--surface3);margin-left:4px" title="${prodPct}% deployed">
@@ -123,6 +124,7 @@ function buildModuleAccordion(mod, prsByPage = {}) {
         ${canWrite() ? `<div onclick="event.stopPropagation()" style="display:flex;gap:6px">
           <button class="btn btn-primary btn-sm" onclick="openAddPageModal('${mod.Module}')">＋ Page</button>
           <button class="btn btn-ghost btn-sm" onclick="promptAddOOS('${mod.Module}')">＋ Out-of-scope</button>
+          <button class="btn btn-ghost btn-sm" onclick="openEditModuleModal('${mod.Module}')">✏️ Edit</button>
           <button class="btn ${mod.IsOutOfScope ? 'btn-ghost' : 'btn-warning'} btn-sm" onclick="toggleModuleOOS('${mod.Module}', ${!!mod.IsOutOfScope})">${mod.IsOutOfScope ? '✓ Mark In Scope' : '⊘ Mark Out of Scope'}</button>
           <button class="btn btn-danger btn-sm" onclick="deleteModule('${mod.Module}')">🗑 Module</button>
         </div>` : ''}
@@ -143,11 +145,6 @@ function buildModuleAccordion(mod, prsByPage = {}) {
           </thead>
           <tbody>${pagesHtml || '<tr><td colspan="8" style="color:var(--text2);text-align:center;padding:16px">No pages defined</td></tr>'}</tbody>
         </table>
-        ${mod.OutOfScope?.length ? `
-          <div class="oos-section">
-            <div class="oos-title">⚠ Out of Scope</div>
-            <div class="oos-list">${oosHtml}</div>
-          </div>` : ''}
       </div>
     </div>`;
 }
@@ -198,7 +195,43 @@ async function toggleModuleOOS(moduleName, currentlyOOS) {
   renderModulePages();
 }
 
+// ── Edit Module Modal ──────────────────────────────────
+let _editModuleName = null;
+
+function openEditModuleModal(moduleName) {
+  const mod = allModulePages.find(m => m.Module === moduleName);
+  if (!mod) return;
+  _editModuleName = moduleName;
+  document.getElementById('editModuleTitle').textContent = `Edit Module — ${moduleName}`;
+  const sorted = [...lookupTimeline].sort((a, b) => Number(a.Release_Number) - Number(b.Release_Number));
+  ['mod_plannedRelease', 'mod_actualRelease'].forEach(id => {
+    const sel = document.getElementById(id);
+    sel.innerHTML = '<option value="">— select —</option>';
+    sorted.forEach(t => sel.add(new Option(`${t.Release_Date} (R${t.Release_Number})`, t.Release_Date)));
+  });
+  document.getElementById('mod_plannedRelease').value = mod.Planned_Release_Date || '';
+  document.getElementById('mod_actualRelease').value  = mod.Actual_Release_Date  || '';
+  document.getElementById('editModuleModal').classList.add('open');
+}
+
+async function saveModuleDetails() {
+  if (!_editModuleName) return;
+  const body = {
+    Planned_Release_Date: document.getElementById('mod_plannedRelease').value || null,
+    Actual_Release_Date:  document.getElementById('mod_actualRelease').value  || null,
+  };
+  const res  = await authFetch(`${API}/modules/${encodeURIComponent(_editModuleName)}`, {
+    method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body),
+  });
+  const json = await res.json();
+  if (!res.ok) return showToast(json.error, 'error');
+  showToast('Module updated', 'success');
+  closeModal('editModuleModal');
+  renderModulePages();
+}
+
 // ── Page modal ─────────────────────────────────────────
+
 function openEditPageModal(moduleName, pageName) {
   const mod  = allModulePages.find(m => m.Module === moduleName);
   const page = mod ? mod.Pages.find(p => p.page_name === pageName) : null;

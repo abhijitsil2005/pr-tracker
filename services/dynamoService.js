@@ -466,6 +466,8 @@ async function completeRelease(releaseNumber) {
     });
   });
 
+  const EXCLUDED_PAGES = new Set(['Infrastructure Pages', 'API', 'Shared Controls']);
+
   // Update ModulePages for each module/page in the release
   for (const mod of modules) {
     if (!mod.Module) continue;
@@ -498,7 +500,16 @@ async function completeRelease(releaseNumber) {
     }
 
     if (changed) {
-      await putItem('ModulePages', { ...mpMod, Pages: mpPages });
+      const updatedMod = { ...mpMod, Pages: mpPages };
+
+      // If every countable page is deployed with FF enabled, stamp Actual Release Date
+      const countablePages = mpPages.filter(p => !EXCLUDED_PAGES.has(p.page_name));
+      const allReady = countablePages.length > 0 && countablePages.every(p =>
+        (p.Production_Deployment_Status || '').toLowerCase() === 'deployed'
+      );
+      if (allReady) updatedMod.Actual_Release_Date = releaseDate;
+
+      await putItem('ModulePages', updatedMod);
     }
   }
 
@@ -520,6 +531,26 @@ async function completeRelease(releaseNumber) {
   await putItem('ProdReleases', { ...rel, Completed: true, Completed_At: new Date().toISOString() });
 
   return { moduleCount: modules.length, prCount: prNumbers.size };
+}
+
+// ── Sprints ───────────────────────────────────────────────
+const getSprints   = ()       => scanTable('Sprints');
+const getSprint    = (sprint) => getItem('Sprints', { Sprint: sprint });
+const upsertSprint = (item)   => putItem('Sprints', item);
+
+async function ensureSprintsTable() {
+  try {
+    await client.send(new DescribeTableCommand({ TableName: 'Sprints' }));
+  } catch (e) {
+    if (e.name !== 'ResourceNotFoundException') throw e;
+    await client.send(new CreateTableCommand({
+      TableName: 'Sprints',
+      KeySchema: [{ AttributeName: 'Sprint', KeyType: 'HASH' }],
+      AttributeDefinitions: [{ AttributeName: 'Sprint', AttributeType: 'S' }],
+      BillingMode: 'PAY_PER_REQUEST',
+    }));
+    await new Promise(r => setTimeout(r, 3000));
+  }
 }
 
 // ── Users ─────────────────────────────────────────────────
@@ -557,5 +588,6 @@ module.exports = {
   getStatusAssignments, getStatusAssignment,
   addStatusAssignment, updateStatusAssignment, deleteStatusAssignment,
   putStatusAssignment, addActivityToAssignment,
+  getSprints, getSprint, upsertSprint, ensureSprintsTable,
   getUsers, getUserByEmail, upsertUser, deleteUser, ensureUsersTable,
 };

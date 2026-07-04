@@ -53,7 +53,8 @@ router.delete('/:name', async (req, res) => {
 router.post('/:name/pages', async (req, res) => {
   try {
     const { page_name, Feature_Flag, Feature_Flag_Status,
-            Client_Demo_Status, Client_Demo_Date, Production_Deployment_Status } = req.body;
+            Client_Demo_Status, Client_Demo_Date, Production_Deployment_Status,
+            Release_Date } = req.body;
     if (!page_name) return res.status(400).json({ error: 'page_name required' });
     const result = await ds.addPageToModule(req.params.name, {
       page_name,
@@ -62,6 +63,7 @@ router.post('/:name/pages', async (req, res) => {
       Client_Demo_Status:           Client_Demo_Status || 'Pending',
       Client_Demo_Date:             Client_Demo_Date || '',
       Production_Deployment_Status: Production_Deployment_Status || 'Pending',
+      Release_Date:                 Release_Date || null,
     });
     res.status(201).json({ message: 'Page added', data: result });
   } catch (e) { res.status(400).json({ error: e.message }); }
