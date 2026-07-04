@@ -33,6 +33,9 @@ async function renderStatusTracker() {
   stAssignments = assignments || [];
   allPRs = (prsData && prsData.data) || [];
 
+  const importBtn = document.getElementById('btnImportTracker');
+  if (importBtn) importBtn.style.display = isAdmin() ? '' : 'none';
+
   // Populate sprint filter from current assignments
   const sprintSel = document.getElementById('stFilterSprint');
   const curSprint = sprintSel.value;
@@ -396,6 +399,28 @@ async function deleteAssignment(id) {
   if (!res.ok) { const j = await res.json(); return showToast(j.error, 'error'); }
   showToast('Assignment removed', 'success');
   renderStatusTracker();
+}
+
+async function importFromTracker() {
+  const btn = document.getElementById('btnImportTracker');
+  if (btn) { btn.disabled = true; btn.textContent = '⏳ Importing…'; }
+  try {
+    const res = await authFetch(`${API}/import/tracker`, { method: 'POST' });
+    const j   = await res.json();
+    if (!res.ok) {
+      showToast(j.error || 'Import failed', 'error');
+    } else {
+      showToast(
+        `Import done — created: ${j.created}, updated: ${j.updated}, PRs updated: ${j.prUpdated}, skipped: ${j.skipped}`,
+        'success'
+      );
+      renderStatusTracker();
+    }
+  } catch (e) {
+    showToast('Import error: ' + e.message, 'error');
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = '⬆ Import from Tracker JSON'; }
+  }
 }
 
 // ── Activity modal ──────────────────────────────────────

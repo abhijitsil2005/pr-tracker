@@ -272,7 +272,8 @@ async function updateStatusAssignment(id, updates) {
   return putItem('StatusTracker', merged);
 }
 
-const deleteStatusAssignment = (id) => deleteItem('StatusTracker', { id });
+const deleteStatusAssignment  = (id)   => deleteItem('StatusTracker', { id });
+const putStatusAssignment     = (item) => putItem('StatusTracker', item);
 
 async function addActivityToAssignment(id, activity) {
   const existing = await getStatusAssignment(id);
@@ -555,6 +556,6 @@ module.exports = {
   getReleaseTimeline, getTeam, getDevelopers, getReviewers,
   getStatusAssignments, getStatusAssignment,
   addStatusAssignment, updateStatusAssignment, deleteStatusAssignment,
-  addActivityToAssignment,
+  putStatusAssignment, addActivityToAssignment,
   getUsers, getUserByEmail, upsertUser, deleteUser, ensureUsersTable,
 };

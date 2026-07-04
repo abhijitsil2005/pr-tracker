@@ -13,6 +13,7 @@ const moduleRoutes  = require('./routes/moduleRoutes');
 const statusRoutes  = require('./routes/statusRoutes');
 const authRoutes    = require('./routes/authRoutes');
 const userRoutes    = require('./routes/userRoutes');
+const importRoutes  = require('./routes/importRoutes');
 
 const app  = express();
 const PORT = process.env.PORT || 3000;
@@ -31,7 +32,8 @@ app.use('/api/sync',     authenticate, syncRoutes);
 app.use('/api/lookup',   authenticate, lookupRoutes);
 app.use('/api/modules',  authenticate, moduleRoutes);
 app.use('/api/status',   authenticate, statusRoutes);
-app.use('/api/users',    userRoutes);  // auth + admin enforced inside
+app.use('/api/users',    userRoutes);   // auth + admin enforced inside
+app.use('/api/import',   authenticate, importRoutes);
 
 app.get('/api/health', (req, res) => res.json({ status: 'ok', timestamp: new Date().toISOString() }));
 app.get('/', (req, res) => res.sendFile(path.join(__dirname, 'public', 'index.html')));
