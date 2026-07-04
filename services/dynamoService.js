@@ -414,7 +414,7 @@ async function syncPRToRelease(pr, oldTargetRelease = null) {
       Number(p.PR) === prNum && pagesMatch((p.Page_Name || '').trim(), pageName)
     );
     if (idx !== -1) {
-      relPages[idx] = { ...relPages[idx], PR: prNum };
+      relPages[idx] = { ...relPages[idx], PR: prNum, Task: pr.Task || relPages[idx].Task || '' };
     } else {
       const mp = findMpPage(pageName);
       relPages.push({
@@ -422,7 +422,7 @@ async function syncPRToRelease(pr, oldTargetRelease = null) {
         Feature_Flag: mp ? (mp.Feature_Flag || '') : '',
         Feature_Flag_Status: mp ? (mp.Feature_Flag_Status || 'N/A') : 'N/A',
         PR: prNum,
-        Task: '',
+        Task: pr.Task || '',
       });
     }
   }

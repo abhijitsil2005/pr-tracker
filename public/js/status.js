@@ -33,9 +33,20 @@ async function renderStatusTracker() {
   stAssignments = assignments || [];
   allPRs = (prsData && prsData.data) || [];
 
-  const filterDev = document.getElementById('stFilterDev').value;
+  // Populate sprint filter from current assignments
+  const sprintSel = document.getElementById('stFilterSprint');
+  const curSprint = sprintSel.value;
+  sprintSel.innerHTML = '<option value="">All Sprints</option>';
+  [...new Set(stAssignments.map(a => a.Sprint).filter(Boolean))]
+    .sort((a, b) => String(a).localeCompare(String(b), undefined, { numeric: true }))
+    .forEach(s => sprintSel.add(new Option(`Sprint ${s}`, s)));
+  sprintSel.value = curSprint;
+
+  const filterSprint = sprintSel.value;
+  const filterDev    = document.getElementById('stFilterDev').value;
   let list = stAssignments;
-  if (filterDev) list = list.filter(a => a.Developer === filterDev);
+  if (filterSprint) list = list.filter(a => a.Sprint === filterSprint);
+  if (filterDev)    list = list.filter(a => a.Developer === filterDev);
 
   const container = document.getElementById('stContainer');
 
@@ -106,17 +117,27 @@ function buildDevCard(dev, items) {
     const prBadge = prRec
       ? `<span class="pr-pill" onclick="openEditPRModal('${prRec.id}')">#${a.PR}</span>`
       : (a.PR ? `<span class="pr-pill" style="opacity:.5">#${a.PR}</span>` : '<span style="color:var(--text2);font-size:11px">—</span>');
+    const taskVal = (prRec && prRec.Task) || a.Task || null;
+    const taskDisplay = taskVal
+      ? `<span style="color:var(--text2);font-size:11px">#${escHtml(String(taskVal))}</span>`
+      : '<span style="color:var(--text2);font-size:11px">—</span>';
     const pageName = (a.Page || '').split('/').pop() || a.Page || '—';
-    const weekDisplay = a.Week
-      ? `<div style="font-size:10px;color:var(--text2);margin-top:2px">wk ${a.Week}</div>`
+    const sprintVal  = a.Sprint || (prRec && prRec.Dev_Sprint) || null;
+    const subLabels  = [
+      a.Week   ? `wk ${a.Week}`           : null,
+      sprintVal ? `S${sprintVal}` : null,
+    ].filter(Boolean).join(' · ');
+    const subLine = subLabels
+      ? `<div style="font-size:10px;color:var(--text2);margin-top:2px">${subLabels}</div>`
       : '';
     return `<tr>
       <td style="font-family:monospace;font-size:11px;overflow:hidden;text-overflow:ellipsis" title="${escHtml(a.Module||'')} / ${escHtml(a.Page||'')}">
-        ${escHtml(a.Module||'—')} / ${escHtml(pageName)}${weekDisplay}
+        ${escHtml(a.Module||'—')} / ${escHtml(pageName)}${subLine}
       </td>
       <td>${stStatusBadge(a.Status)}</td>
       <td>${prBadge}</td>
-      <td style="max-width:260px">${lastNote}</td>
+      <td style="white-space:nowrap">${taskDisplay}</td>
+      <td style="max-width:240px">${lastNote}</td>
       <td style="white-space:nowrap">
         <button class="btn btn-primary btn-xs" onclick="openActivityModal('${a.id}')" title="View activity &amp; updates">📝 ${logs.length}</button>
         ${canWrite() ? `<button class="btn btn-ghost btn-xs" onclick="openEditAssignmentModal('${a.id}')" title="Edit assignment">✏️</button>
@@ -138,12 +159,12 @@ function buildDevCard(dev, items) {
     <div class="table-wrap" style="border-radius:0;border-left:none;border-right:none;border-bottom:none">
       <table style="font-size:12px">
         <colgroup>
-          <col style="width:22%"><col style="width:12%"><col style="width:9%">
-          <col style="width:43%"><col style="width:14%">
+          <col style="width:20%"><col style="width:11%"><col style="width:8%">
+          <col style="width:8%"><col style="width:39%"><col style="width:14%">
         </colgroup>
         <thead><tr>
           <th>Module / Page</th><th>Status</th><th>PR</th>
-          <th>Last Activity</th><th>Actions</th>
+          <th>Task #</th><th>Last Activity</th><th>Actions</th>
         </tr></thead>
         <tbody>${rows}</tbody>
       </table>
@@ -202,6 +223,8 @@ function openAssignmentModal(prefilledDev) {
   document.getElementById('amSaveBtn').textContent   = 'Assign';
   document.getElementById('am_week').textContent     = weekLabel(currentWeek);
   document.getElementById('am_status').value         = 'In Progress';
+  document.getElementById('am_task').value           = '';
+  document.getElementById('am_sprint').value         = '';
   document.getElementById('am_note').value           = '';
   document.getElementById('am_pages').innerHTML      = '<span class="page-chip-hint">— select a module first —</span>';
   // Populate developer select
@@ -235,6 +258,11 @@ async function openEditAssignmentModal(id) {
   document.getElementById('am_week').textContent     = weekLabel(currentWeek);
   document.getElementById('am_status').value         = assignments.Status || 'In Progress';
   document.getElementById('am_note').value           = '';
+  const existingPRRec = assignments.PR
+    ? (allPRs.find(p => p.PR === Number(assignments.PR) && p.Module === assignments.Module) || allPRs.find(p => p.PR === Number(assignments.PR)))
+    : null;
+  document.getElementById('am_task').value   = assignments.Task   || (existingPRRec && existingPRRec.Task)      || '';
+  document.getElementById('am_sprint').value = assignments.Sprint || (existingPRRec && existingPRRec.Dev_Sprint) || '';
   // Populate selects
   const devSel = document.getElementById('am_dev');
   devSel.innerHTML = '<option value="">— select —</option>';
@@ -300,6 +328,8 @@ async function saveAssignment() {
 
   const prEl = document.getElementById('am_pr');
   const linkedPR = prEl ? (Number(prEl.value) || null) : null;
+  const task   = document.getElementById('am_task').value.trim()   || null;
+  const sprint = document.getElementById('am_sprint').value.trim() || null;
 
   if (stCtx) {
     // Edit mode: single-select
@@ -309,7 +339,7 @@ async function saveAssignment() {
     const oldStatus = stCtx.Status;
     const res = await authFetch(`${API}/status/${stCtx.id}`, {
       method: 'PUT', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ Developer: dev, Module: mod, Page: page, Status: status, PR: linkedPR }),
+      body: JSON.stringify({ Developer: dev, Module: mod, Page: page, Status: status, PR: linkedPR, Task: task, Sprint: sprint }),
     });
     if (!res.ok) { const j = await res.json(); return showToast(j.error, 'error'); }
     if (oldStatus !== status) {
@@ -324,19 +354,35 @@ async function saveAssignment() {
         body: JSON.stringify({ note, type: 'update' }),
       });
     }
+    if (linkedPR && (task || sprint)) {
+      const prUpdates = {};
+      if (task)   prUpdates.Task       = task;
+      if (sprint) prUpdates.Dev_Sprint = sprint;
+      await authFetch(`${API}/prs/by-pr/${linkedPR}`, {
+        method: 'PUT', body: JSON.stringify(prUpdates),
+      });
+    }
     showToast('Assignment updated', 'success');
   } else {
     // Create mode: multi-select — one assignment per page
     const selectedChips = [...document.querySelectorAll('#am_pages .page-chip.selected')];
     if (!selectedChips.length) return showToast('Select at least one page', 'error');
     for (const chip of selectedChips) {
-      const body = { Developer: dev, Module: mod, Page: chip.dataset.value, Week: weekKey(currentWeek), Status: status, PR: linkedPR };
+      const body = { Developer: dev, Module: mod, Page: chip.dataset.value, Week: weekKey(currentWeek), Status: status, PR: linkedPR, Task: task, Sprint: sprint };
       if (note) body.note = note;
       const res = await authFetch(`${API}/status`, {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body),
       });
       if (!res.ok) { const j = await res.json(); return showToast(j.error, 'error'); }
+    }
+    if (linkedPR && (task || sprint)) {
+      const prUpdates = {};
+      if (task)   prUpdates.Task       = task;
+      if (sprint) prUpdates.Dev_Sprint = sprint;
+      await authFetch(`${API}/prs/by-pr/${linkedPR}`, {
+        method: 'PUT', body: JSON.stringify(prUpdates),
+      });
     }
     showToast(selectedChips.length === 1 ? 'Page assigned' : `${selectedChips.length} pages assigned`, 'success');
   }
