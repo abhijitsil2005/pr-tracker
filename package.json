@@ -1,7 +1,7 @@
 {
   "name": "pr-tracker",
   "version": "1.0.0",
-  "description": "PR Tracker - Excel sync + CRUD for PR_Details and Prod_Releases",
+  "description": "ProjectPulse - Know the Pulse of Every PR, Sprint and Release.",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",

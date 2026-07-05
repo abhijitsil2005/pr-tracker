@@ -1,4 +1,4 @@
-# PR Tracker — Node.js / Express
+# ProjectPulse — Node.js / Express
 
 Reads PR data from `Final_Estimation.xlsx → All Handson WorkShop-May-Sep` and exposes
 a full CRUD REST API for `PR_Details.json` and `Prod_Releases.json`.  
