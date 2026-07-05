@@ -4,8 +4,12 @@ const path           = require('path');
 const fs             = require('fs');
 const { randomUUID } = require('crypto');
 const ds             = require('../services/dynamoService');
+const { requireProject, requireWrite } = require('../middleware/auth');
 
-// Status values from tracker.json → internal StatusTracker status
+router.use(requireProject, requireWrite);
+
+const pid = (req) => req.user.project_id;
+
 const STATUS_MAP = {
   'deployed to prod':      'Done',
   'ready for deployment':  'In Progress',
@@ -13,7 +17,7 @@ const STATUS_MAP = {
   'merged + testing':      'In Review',
   'development':           'In Progress',
   'not started':           'Pending',
-  'out of scope':          null,  // skip row
+  'out of scope':          null,
 };
 
 function mapStatus(raw) {
@@ -30,8 +34,6 @@ function parsePRNumbers(field) {
     .filter(n => n > 0 && !isNaN(n));
 }
 
-// Parse "6/8 - some note" lines from Additional Comments
-// Returns [{timestamp, note, type}]
 function parseComments(text) {
   if (!text) return [];
   const year = new Date().getFullYear();
@@ -54,7 +56,6 @@ function currentWeekStart() {
 }
 
 // POST /api/import/tracker
-// Reads uploads/tracker.json and syncs to StatusTracker + PRDetails
 router.post('/tracker', async (req, res) => {
   try {
     const jsonPath = path.join(__dirname, '../uploads/tracker.json');
@@ -62,28 +63,23 @@ router.post('/tracker', async (req, res) => {
       return res.status(404).json({ error: 'tracker.json not found in uploads/' });
     }
 
-    // tracker.json has one case where \t was stored as a literal tab byte
-    // (content\timeline.aspx.cs — Windows path where \t became a tab character).
-    // Escape it to \\t so JSON.parse accepts it.
-    const raw = fs.readFileSync(jsonPath, 'utf8');
+    const raw  = fs.readFileSync(jsonPath, 'utf8');
     const data = JSON.parse(raw.replace(/\\\t/g, '\\\\t'));
     const week = currentWeekStart();
+    const projectId = pid(req);
 
     const [existingAssignments, allPRDetails] = await Promise.all([
-      ds.getStatusAssignments(),
-      ds.getPRs(),
+      ds.getStatusAssignments(projectId),
+      ds.getPRs(projectId),
     ]);
 
-    // Index existing assignments by Module+Page (lowercased) for O(1) lookup
     const assignmentIndex = new Map();
     existingAssignments.forEach(a => {
       const key = `${(a.Module || '').toLowerCase()}|||${(a.Page || '').toLowerCase()}`;
       assignmentIndex.set(key, a);
     });
 
-    // Collect PR field updates to batch at the end: prNum → { Task?, Dev_Sprint? }
     const prUpdateMap = new Map();
-
     let created = 0, updated = 0, prUpdated = 0, skipped = 0;
 
     for (const row of data) {
@@ -97,17 +93,14 @@ router.post('/tracker', async (req, res) => {
       const comments  = row['Additional Comments']  || '';
 
       const mappedStatus = mapStatus(rawStatus);
-
-      // Skip out-of-scope and completely empty rows
       if (mappedStatus === null) { skipped++; continue; }
       if (!module && !page && !poc) { skipped++; continue; }
 
-      const prNumbers = parsePRNumbers(rawPR);
-      const primaryPR = prNumbers[0] || null;
+      const prNumbers    = parsePRNumbers(rawPR);
+      const primaryPR    = prNumbers[0] || null;
       const activityLogs = parseComments(comments);
-      const now = new Date().toISOString();
+      const now          = new Date().toISOString();
 
-      // Accumulate PR updates
       prNumbers.forEach(num => {
         const acc = prUpdateMap.get(num) || {};
         if (task)   acc.Task       = task;
@@ -115,20 +108,17 @@ router.post('/tracker', async (req, res) => {
         prUpdateMap.set(num, acc);
       });
 
-      const key = `${module.toLowerCase()}|||${page.toLowerCase()}`;
+      const key      = `${module.toLowerCase()}|||${page.toLowerCase()}`;
       const existing = assignmentIndex.get(key);
 
       if (existing) {
-        // Merge activity logs — dedupe by normalised note text
         const existingLogs  = existing.ActivityLog || [];
         const existingNotes = new Set(existingLogs.map(l => (l.note || '').toLowerCase().trim()));
         const newLogs = activityLogs.filter(l => !existingNotes.has((l.note || '').toLowerCase().trim()));
-        const mergedLogs = [...existingLogs, ...newLogs]
-          .sort((a, b) => a.timestamp.localeCompare(b.timestamp));
-
-        // Build the full updated item (single DynamoDB put, skipping extra getItem)
+        const mergedLogs = [...existingLogs, ...newLogs].sort((a, b) => a.timestamp.localeCompare(b.timestamp));
         const updatedItem = {
           ...existing,
+          project_id:  projectId,
           Developer:   poc      || existing.Developer,
           Status:      mappedStatus,
           PR:          primaryPR != null ? primaryPR : existing.PR,
@@ -141,13 +131,12 @@ router.post('/tracker', async (req, res) => {
         assignmentIndex.set(key, updatedItem);
         updated++;
       } else {
-        // Create new assignment
         const actLog = activityLogs.length
           ? activityLogs
           : [{ timestamp: now, note: 'Imported from tracker.json', type: 'created' }];
-
         const item = {
           id:          randomUUID(),
+          project_id:  projectId,
           Developer:   poc    || 'Unknown',
           Module:      module || null,
           Page:        page   || null,
@@ -166,7 +155,6 @@ router.post('/tracker', async (req, res) => {
       }
     }
 
-    // Apply PR field updates to PRDetails
     for (const [prNum, updates] of prUpdateMap.entries()) {
       if (!Object.keys(updates).length) continue;
       const records = allPRDetails.filter(p => Number(p.PR) === prNum);
@@ -185,19 +173,15 @@ router.post('/tracker', async (req, res) => {
 
 // ── Sprint date helpers ────────────────────────────────────────────
 
-// Parse "M/D/YY" (e.g. "1/5/26") → "YYYY-MM-DD"
 function sprintDateToISO(str) {
   const [m, d, y] = str.trim().split('/').map(Number);
   const year = y < 100 ? 2000 + y : y;
   return `${year}-${String(m).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
 }
 
-// Normalise any date string to "YYYY-MM-DD" for comparison
 function normaliseDateStr(str) {
   if (!str) return null;
-  // Already ISO — "2026-01-05" or "2026-01-05T..."
   if (/^\d{4}-\d{2}-\d{2}/.test(str)) return str.slice(0, 10);
-  // M/D/YYYY or M/D/YY
   const parts = str.split('/');
   if (parts.length === 3) {
     const [m, d, y] = parts.map(Number);
@@ -215,10 +199,10 @@ function findSprintForDate(isoDate, sprintList) {
   return null;
 }
 
-// GET /api/import/sprints — return sprint list from DynamoDB for client-side date lookup
+// GET /api/import/sprints
 router.get('/sprints', async (req, res) => {
   try {
-    const sprints = await ds.getSprints();
+    const sprints = await ds.getSprints(pid(req));
     sprints.sort((a, b) => a.StartDate.localeCompare(b.StartDate));
     res.json(sprints);
   } catch (e) {
@@ -227,9 +211,6 @@ router.get('/sprints', async (req, res) => {
 });
 
 // POST /api/import/sprints
-// 1. Seeds/updates the Sprints DynamoDB table from uploads/sprint.json
-// 2. Assigns Dev_Sprint to every PR based on PR Raised Date
-// 3. Propagates Sprint to matching StatusTracker assignments
 router.post('/sprints', async (req, res) => {
   try {
     const jsonPath = path.join(__dirname, '../uploads/sprint.json');
@@ -237,10 +218,10 @@ router.post('/sprints', async (req, res) => {
       return res.status(404).json({ error: 'sprint.json not found in uploads/' });
     }
 
-    const raw      = fs.readFileSync(jsonPath, 'utf8');
+    const raw       = fs.readFileSync(jsonPath, 'utf8');
     const rawSprints = JSON.parse(raw);
+    const projectId = pid(req);
 
-    // Normalise and upsert all sprint records
     const sprintList = rawSprints.map(s => ({
       Sprint:    String(s.Sprint),
       StartDate: sprintDateToISO(s['Start Date']),
@@ -248,16 +229,14 @@ router.post('/sprints', async (req, res) => {
     }));
 
     for (const s of sprintList) {
-      await ds.upsertSprint(s);
+      await ds.upsertSprint(projectId, s);
     }
 
-    // Fetch all PRs and StatusTracker assignments in parallel
     const [allPRs, allAssignments] = await Promise.all([
-      ds.getPRs(),
-      ds.getStatusAssignments(),
+      ds.getPRs(projectId),
+      ds.getStatusAssignments(projectId),
     ]);
 
-    // Index StatusTracker assignments by PR number for quick lookup
     const assignmentsByPR = new Map();
     for (const a of allAssignments) {
       const prNum = a.PR != null ? Number(a.PR) : null;
@@ -269,20 +248,14 @@ router.post('/sprints', async (req, res) => {
     let prsUpdated = 0, assignmentsUpdated = 0, skipped = 0;
 
     for (const pr of allPRs) {
-      const raisedDateRaw = pr['PR Raised Date'];
-      const raisedDate    = normaliseDateStr(raisedDateRaw);
+      const raisedDate = normaliseDateStr(pr['PR Raised Date']);
       if (!raisedDate) { skipped++; continue; }
-
       const sprint = findSprintForDate(raisedDate, sprintList);
       if (!sprint) { skipped++; continue; }
-
-      // Update PRDetails Dev_Sprint
       if (pr.Dev_Sprint !== sprint) {
         await ds.updatePR(pr.id, { Dev_Sprint: sprint });
         prsUpdated++;
       }
-
-      // Propagate to matching StatusTracker assignments
       const linked = assignmentsByPR.get(Number(pr.PR)) || [];
       for (const a of linked) {
         if (a.Sprint !== sprint) {

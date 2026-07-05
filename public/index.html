@@ -19,6 +19,15 @@
   </div>
 </div>
 
+<!-- ── Project Selector Overlay ──────────────────────── -->
+<div class="login-overlay" id="projectSelectorOverlay">
+  <div class="login-card" style="max-width:480px">
+    <div class="login-logo">📁 Select Project</div>
+    <p style="text-align:center;color:var(--text2);font-size:13px;margin-bottom:16px">Choose a project to work in</p>
+    <div id="projectList" style="display:flex;flex-direction:column;gap:10px"></div>
+  </div>
+</div>
+
 <div class="app" id="appShell" style="display:none">
 
 <!-- ── Sidebar ─────────────────────────────────────────── -->
@@ -34,7 +43,7 @@
     <li><a href="#" data-section="releases" title="Releases"><span class="nav-icon">🚀</span><span class="nav-label"> Releases</span></a></li>
     <li><a href="#" data-section="modules" title="Module Pages"><span class="nav-icon">📦</span><span class="nav-label"> Module Pages</span></a></li>
     <li><a href="#" data-section="status" title="Status Tracker"><span class="nav-icon">📋</span><span class="nav-label"> Status Tracker</span></a></li>
-    <li id="navUsersLi" style="display:none"><a href="#" data-section="users" title="User Management"><span class="nav-icon">👥</span><span class="nav-label"> Users</span></a></li>
+    <li id="navAdminLi" style="display:none"><a href="#" data-section="admin" title="Admin"><span class="nav-icon">⚙️</span><span class="nav-label"> Admin</span></a></li>
   </ul>
 </nav>
 
@@ -92,6 +101,7 @@
           <tbody id="prTableBody"></tbody>
         </table>
       </div>
+      <div id="prPagination" class="pagination-bar"></div>
     </div>
 
     <!-- RELEASES -->
@@ -132,15 +142,48 @@
       <div id="stDevSection" style="margin-top:24px"></div>
     </div>
 
-    <!-- USERS -->
-    <div id="section-users" class="section">
-      <div class="toolbar" style="justify-content:flex-end;margin-bottom:16px">
-        <button class="btn btn-primary" onclick="openAddUserModal()">＋ Add User</button>
+    <!-- ADMIN -->
+    <div id="section-admin" class="section">
+
+      <!-- Company bar -->
+      <div class="admin-company-bar" id="adminCompanyBar"></div>
+
+      <!-- Tab switcher -->
+      <div class="admin-tabs">
+        <button class="admin-tab active" data-tab="projects" onclick="switchAdminTab('projects')">Projects</button>
+        <button class="admin-tab"        data-tab="users"    onclick="switchAdminTab('users')">Users</button>
       </div>
-      <table id="userTable" class="data-table">
-        <thead><tr><th>Email</th><th>Name</th><th>Role</th><th>Status</th><th>Actions</th></tr></thead>
-        <tbody></tbody>
-      </table>
+
+      <!-- ── Projects panel ───────────────────────────── -->
+      <div class="admin-panel" data-panel="projects">
+        <div class="toolbar" style="justify-content:flex-end;margin-bottom:20px">
+          <button class="btn btn-primary" onclick="openAddProjectModal()">＋ Add Project</button>
+        </div>
+        <div id="projectsGrid" class="projects-grid"></div>
+      </div>
+
+      <!-- ── Users panel ──────────────────────────────── -->
+      <div class="admin-panel" data-panel="users" style="display:none">
+        <div class="toolbar" style="justify-content:flex-end;margin-bottom:20px">
+          <button class="btn btn-primary" onclick="openAddUserModal()">＋ Add User</button>
+        </div>
+        <div class="table-wrap">
+          <table id="userTable" class="data-table">
+            <thead>
+              <tr>
+                <th>Email</th>
+                <th>Name</th>
+                <th>Company Role</th>
+                <th>Project Access</th>
+                <th>Status</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+
     </div>
 
     <!-- SYNC -->
@@ -525,6 +568,52 @@
   </div>
 </div>
 
+<!-- ── Add / Edit Project Modal ────────────────────────── -->
+<div class="modal-overlay" id="projectModal">
+  <div class="modal">
+    <h2 id="projectModalTitle">Add Project</h2>
+    <button class="modal-close" onclick="closeModal('projectModal')">✕</button>
+    <div class="form-grid">
+      <div class="form-group full"><label>Project Name *</label><input type="text" id="pmName" placeholder="e.g. Mobile App v2"></div>
+      <div class="form-group full"><label>Description</label><input type="text" id="pmDescription" placeholder="Optional short description"></div>
+    </div>
+    <div id="pmError" style="color:var(--red);font-size:13px;margin-top:4px"></div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('projectModal')">Cancel</button>
+      <button class="btn btn-primary" id="pmSaveBtn">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── Project Members Modal ───────────────────────────── -->
+<div class="modal-overlay" id="projectMembersModal">
+  <div class="modal" style="max-width:560px">
+    <h2 id="projMembTitle">Members</h2>
+    <button class="modal-close" onclick="closeModal('projectMembersModal')">✕</button>
+
+    <!-- Add member row -->
+    <div class="proj-add-member-bar">
+      <select id="pmAddEmail" style="flex:1;min-width:0">
+        <option value="">— select user to add —</option>
+      </select>
+      <select id="pmAddRole" style="width:130px">
+        <option value="ReadOnly">ReadOnly</option>
+        <option value="ReadWrite" selected>ReadWrite</option>
+        <option value="Admin">Admin</option>
+      </select>
+      <button class="btn btn-primary btn-sm" onclick="addProjectMember()">Add</button>
+    </div>
+
+    <!-- Current members list -->
+    <div style="font-size:12px;color:var(--text2);margin-bottom:8px;text-transform:uppercase;letter-spacing:.5px">Current Members</div>
+    <div id="projMembList" style="max-height:320px;overflow-y:auto"></div>
+    <div id="projMembError" style="color:var(--red);font-size:13px;margin-top:4px"></div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('projectMembersModal')">Close</button>
+    </div>
+  </div>
+</div>
+
 <!-- ── Change Password Modal ───────────────────────────── -->
 <div class="modal-overlay" id="changePasswordModal">
   <div class="modal">
@@ -551,11 +640,11 @@
     <div class="form-grid">
       <div class="form-group full" id="umEmailRow"><label>Email *</label><input type="email" id="umEmail"></div>
       <div class="form-group full"><label>Name *</label><input type="text" id="umName"></div>
-      <div class="form-group full"><label>Role</label>
-        <select id="umRole">
-          <option value="ReadOnly">ReadOnly</option>
-          <option value="ReadWrite">ReadWrite</option>
-          <option value="Admin">Admin</option>
+      <div class="form-group full"><label>Company Role</label>
+        <select id="umCompanyRole">
+          <option value="">— No company-level role —</option>
+          <option value="CompanyReadOnly">Company Read-Only (sees all projects, no edit)</option>
+          <option value="CompanyAdmin">Company Admin (full access to all projects)</option>
         </select>
       </div>
       <div class="form-group full" id="umPasswordRow"><label>Password *</label><input type="password" id="umPassword"></div>
@@ -564,6 +653,21 @@
     <div class="modal-footer">
       <button class="btn btn-ghost" onclick="closeModal('userModal')">Cancel</button>
       <button class="btn btn-primary" id="umSaveBtn">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── Manage Project Access Modal ─────────────────────── -->
+<div class="modal-overlay" id="manageProjectsModal">
+  <div class="modal">
+    <h2>Project Access — <span id="manageProjectsEmail" style="font-weight:400;font-size:15px"></span></h2>
+    <button class="modal-close" onclick="closeModal('manageProjectsModal')">✕</button>
+    <p style="color:var(--text2);font-size:13px;margin-bottom:12px">Set this user's role for each project. "No Access" removes them from that project.</p>
+    <div id="projectMembershipList" style="max-height:300px;overflow-y:auto"></div>
+    <div id="mpError" style="color:var(--red);font-size:13px;margin-top:4px"></div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('manageProjectsModal')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveProjectMemberships()">Save Access</button>
     </div>
   </div>
 </div>
@@ -578,6 +682,7 @@
 <script src="js/modules.js"></script>
 <script src="js/status.js"></script>
 <script src="js/sync.js"></script>
+<script src="js/admin.js"></script>
 <script src="js/auth.js"></script>
 </body>
 </html>
