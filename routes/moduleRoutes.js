@@ -1,36 +1,41 @@
 const express = require('express');
 const router = express.Router();
 const ds = require('../services/dynamoService');
+const { requireProject, requireWrite } = require('../middleware/auth');
 
-// GET  /api/modules
+router.use(requireProject);
+
+const pid = (req) => req.user.project_id;
+
+// GET /api/modules
 router.get('/', async (req, res) => {
-  try { res.json(await ds.getModulePages()); }
+  try { res.json(await ds.getModulePages(pid(req))); }
   catch (e) { res.status(500).json({ error: e.message }); }
 });
 
-// GET  /api/modules/:name
+// GET /api/modules/:name
 router.get('/:name', async (req, res) => {
   try {
-    const mod = await ds.getModulePage(req.params.name);
+    const mod = await ds.getModulePage(pid(req), req.params.name);
     if (!mod) return res.status(404).json({ error: `Module "${req.params.name}" not found` });
     res.json(mod);
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
 // POST /api/modules
-router.post('/', async (req, res) => {
+router.post('/', requireWrite, async (req, res) => {
   try {
     const { Module, Pages, OutOfScope } = req.body;
     if (!Module) return res.status(400).json({ error: 'Module name required' });
-    const result = await ds.addModule({ Module, Pages: Pages || [], OutOfScope: OutOfScope || [] });
+    const result = await ds.addModule(pid(req), { Module, Pages: Pages || [], OutOfScope: OutOfScope || [] });
     res.status(201).json({ message: 'Module created', data: result });
   } catch (e) { res.status(400).json({ error: e.message }); }
 });
 
-// PUT  /api/modules/:name
-router.put('/:name', async (req, res) => {
+// PUT /api/modules/:name
+router.put('/:name', requireWrite, async (req, res) => {
   try {
-    const result = await ds.updateModule(req.params.name, req.body);
+    const result = await ds.updateModule(pid(req), req.params.name, req.body);
     res.json({ message: 'Module updated', data: result });
   } catch (e) {
     res.status(e.message.includes('not found') ? 404 : 400).json({ error: e.message });
@@ -38,9 +43,9 @@ router.put('/:name', async (req, res) => {
 });
 
 // DELETE /api/modules/:name
-router.delete('/:name', async (req, res) => {
+router.delete('/:name', requireWrite, async (req, res) => {
   try {
-    await ds.deleteModule(req.params.name);
+    await ds.deleteModule(pid(req), req.params.name);
     res.json({ message: `Module "${req.params.name}" deleted` });
   } catch (e) {
     res.status(e.message.includes('not found') ? 404 : 500).json({ error: e.message });
@@ -50,13 +55,13 @@ router.delete('/:name', async (req, res) => {
 // ── Pages within a module ─────────────────────────────────────────
 
 // POST /api/modules/:name/pages
-router.post('/:name/pages', async (req, res) => {
+router.post('/:name/pages', requireWrite, async (req, res) => {
   try {
     const { page_name, Feature_Flag, Feature_Flag_Status,
             Client_Demo_Status, Client_Demo_Date, Production_Deployment_Status,
             Release_Date } = req.body;
     if (!page_name) return res.status(400).json({ error: 'page_name required' });
-    const result = await ds.addPageToModule(req.params.name, {
+    const result = await ds.addPageToModule(pid(req), req.params.name, {
       page_name,
       Feature_Flag:                 Feature_Flag || '',
       Feature_Flag_Status:          Feature_Flag_Status || 'Enabled',
@@ -69,11 +74,11 @@ router.post('/:name/pages', async (req, res) => {
   } catch (e) { res.status(400).json({ error: e.message }); }
 });
 
-// PUT  /api/modules/:name/pages/:pageName
-router.put('/:name/pages/:pageName', async (req, res) => {
+// PUT /api/modules/:name/pages/:pageName
+router.put('/:name/pages/:pageName', requireWrite, async (req, res) => {
   try {
     const pageName = decodeURIComponent(req.params.pageName);
-    const result = await ds.updatePageInModule(req.params.name, pageName, req.body);
+    const result = await ds.updatePageInModule(pid(req), req.params.name, pageName, req.body);
     res.json({ message: 'Page updated', data: result });
   } catch (e) {
     res.status(e.message.includes('not found') ? 404 : 400).json({ error: e.message });
@@ -81,10 +86,10 @@ router.put('/:name/pages/:pageName', async (req, res) => {
 });
 
 // DELETE /api/modules/:name/pages/:pageName
-router.delete('/:name/pages/:pageName', async (req, res) => {
+router.delete('/:name/pages/:pageName', requireWrite, async (req, res) => {
   try {
     const pageName = decodeURIComponent(req.params.pageName);
-    const result = await ds.deletePageFromModule(req.params.name, pageName);
+    const result = await ds.deletePageFromModule(pid(req), req.params.name, pageName);
     res.json({ message: 'Page deleted', data: result });
   } catch (e) {
     res.status(e.message.includes('not found') ? 404 : 500).json({ error: e.message });
@@ -94,20 +99,20 @@ router.delete('/:name/pages/:pageName', async (req, res) => {
 // ── Out-of-scope pages ────────────────────────────────────────────
 
 // POST /api/modules/:name/out-of-scope
-router.post('/:name/out-of-scope', async (req, res) => {
+router.post('/:name/out-of-scope', requireWrite, async (req, res) => {
   try {
     const { page_name } = req.body;
     if (!page_name) return res.status(400).json({ error: 'page_name required' });
-    const result = await ds.addOutOfScopePage(req.params.name, page_name);
+    const result = await ds.addOutOfScopePage(pid(req), req.params.name, page_name);
     res.status(201).json({ message: 'Out-of-scope page added', data: result });
   } catch (e) { res.status(400).json({ error: e.message }); }
 });
 
 // DELETE /api/modules/:name/out-of-scope/:pageName
-router.delete('/:name/out-of-scope/:pageName', async (req, res) => {
+router.delete('/:name/out-of-scope/:pageName', requireWrite, async (req, res) => {
   try {
     const pageName = decodeURIComponent(req.params.pageName);
-    const result = await ds.removeOutOfScopePage(req.params.name, pageName);
+    const result = await ds.removeOutOfScopePage(pid(req), req.params.name, pageName);
     res.json({ message: 'Out-of-scope page removed', data: result });
   } catch (e) {
     res.status(e.message.includes('not found') ? 404 : 500).json({ error: e.message });

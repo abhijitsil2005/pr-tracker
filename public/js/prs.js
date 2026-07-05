@@ -42,13 +42,22 @@ document.getElementById('f_raised').addEventListener('change', function () {
   if (sprint) document.getElementById('f_devSprint').value = sprint;
 });
 
-async function renderPRs(filters = {}) {
-  const params = new URLSearchParams();
-  if (filters.module) params.set('module', filters.module);
-  if (filters.developer) params.set('developer', filters.developer);
-  if (filters.status) params.set('status', filters.status);
-  const data = await api(`prs?${params}`);
-  allPRs = (data && data.data) || [];
+// ── Pagination state ───────────────────────────────────
+let _prPage     = 1;
+let _prPageSize = 25;
+let _prTotal    = 0;
+
+const _PR_STATUS_ORDER = {
+  'development inprogress': 1,
+  'dev pr in review':       2,
+  'tcr testing in progress':3,
+  'ready for prod deploy':  4,
+  'prod deployed ff off':   5,
+  'prod deployed':          6,
+};
+const _prStatusRank = s => _PR_STATUS_ORDER[(s||'').toLowerCase()] ?? 99;
+
+function _filteredSortedPRs() {
   const search = (document.getElementById('searchInput').value || '').toLowerCase();
   let rows = allPRs;
   if (search) rows = rows.filter(p =>
@@ -56,20 +65,37 @@ async function renderPRs(filters = {}) {
     (p.Developer||'').toLowerCase().includes(search) ||
     (p.Module||'').toLowerCase().includes(search) ||
     (p.Status||'').toLowerCase().includes(search));
-  const STATUS_ORDER = {
-    'development inprogress': 1,
-    'dev pr in review':       2,
-    'tcr testing in progress':3,
-    'ready for prod deploy':  4,
-    'prod deployed ff off':   5,
-    'prod deployed':          6,
-  };
-  const statusRank = s => STATUS_ORDER[(s||'').toLowerCase()] ?? 99;
-  document.getElementById('prTableBody').innerHTML = rows.sort((a,b) => {
-    const sd = statusRank(a.Status) - statusRank(b.Status);
-    if (sd !== 0) return sd;
-    return b.PR - a.PR;
-  }).map(p => `
+  return rows.slice().sort((a, b) => {
+    const sd = _prStatusRank(a.Status) - _prStatusRank(b.Status);
+    return sd !== 0 ? sd : b.PR - a.PR;
+  });
+}
+
+async function renderPRs(filters = {}) {
+  const params = new URLSearchParams();
+  if (filters.module)    params.set('module',    filters.module);
+  if (filters.developer) params.set('developer', filters.developer);
+  if (filters.status)    params.set('status',    filters.status);
+  const data = await api(`prs?${params}`);
+  allPRs = (data && data.data) || [];
+
+  const statSel = document.getElementById('filterStatus');
+  const cur = statSel.value;
+  statSel.innerHTML = '<option value="">All Statuses</option>';
+  [...new Set(allPRs.map(p => p.Status).filter(Boolean))].sort().forEach(s => statSel.add(new Option(s, s)));
+  statSel.value = cur;
+
+  _prPage = 1;
+  _renderPRPage();
+}
+
+function _renderPRPage() {
+  const sorted = _filteredSortedPRs();
+  _prTotal = sorted.length;
+  const start = (_prPage - 1) * _prPageSize;
+  const page  = sorted.slice(start, start + _prPageSize);
+
+  document.getElementById('prTableBody').innerHTML = page.map(p => `
     <tr>
       <td><strong style="color:var(--accent)">#${p.PR}</strong></td>
       <td>${p.Module||'—'}</td>
@@ -84,17 +110,83 @@ async function renderPRs(filters = {}) {
         <button class="btn btn-danger btn-sm" onclick="deletePR('${p.id}')">🗑</button>` : ''}
       </td>
     </tr>`).join('') || `<tr><td colspan="9" style="text-align:center;color:var(--text2);padding:32px">No PRs found</td></tr>`;
-  const statSel = document.getElementById('filterStatus');
-  const cur = statSel.value;
-  statSel.innerHTML = '<option value="">All Statuses</option>';
-  [...new Set(allPRs.map(p=>p.Status).filter(Boolean))].sort().forEach(s=>statSel.add(new Option(s,s)));
-  statSel.value = cur;
+
+  _renderPRPagination();
 }
 
-['filterModule','filterDeveloper','filterStatus'].forEach(id => document.getElementById(id).addEventListener('change', applyFilters));
-document.getElementById('searchInput').addEventListener('input', applyFilters);
+function _renderPRPagination() {
+  const bar = document.getElementById('prPagination');
+  if (!bar) return;
+  const totalPages = Math.max(1, Math.ceil(_prTotal / _prPageSize));
+  const from = _prTotal === 0 ? 0 : (_prPage - 1) * _prPageSize + 1;
+  const to   = Math.min(_prPage * _prPageSize, _prTotal);
+
+  // Build page number window (max 7 slots)
+  let pageNums = [];
+  if (totalPages <= 7) {
+    pageNums = Array.from({ length: totalPages }, (_, i) => i + 1);
+  } else {
+    pageNums = [1];
+    const lo = Math.max(2, _prPage - 2);
+    const hi = Math.min(totalPages - 1, _prPage + 2);
+    if (lo > 2) pageNums.push('…');
+    for (let i = lo; i <= hi; i++) pageNums.push(i);
+    if (hi < totalPages - 1) pageNums.push('…');
+    pageNums.push(totalPages);
+  }
+
+  const pageButtons = pageNums.map(p =>
+    p === '…'
+      ? `<span class="pg-ellipsis">…</span>`
+      : `<button class="pg-btn${p === _prPage ? ' active' : ''}" onclick="goPRPage(${p})">${p}</button>`
+  ).join('');
+
+  const sizeOpts = [10, 25, 50, 100].map(n =>
+    `<option value="${n}"${n === _prPageSize ? ' selected' : ''}>${n}</option>`
+  ).join('');
+
+  bar.innerHTML = `
+    <span class="pg-info">Showing <strong>${from}–${to}</strong> of <strong>${_prTotal}</strong> PRs</span>
+    <div class="pg-controls">
+      <button class="pg-btn" onclick="goPRPage(${_prPage - 1})"${_prPage === 1 ? ' disabled' : ''}>‹</button>
+      ${pageButtons}
+      <button class="pg-btn" onclick="goPRPage(${_prPage + 1})"${_prPage === totalPages ? ' disabled' : ''}>›</button>
+    </div>
+    <label class="pg-size-label">Rows <select class="pg-size-sel" onchange="setPRPageSize(this.value)">${sizeOpts}</select></label>`;
+}
+
+function goPRPage(page) {
+  const totalPages = Math.max(1, Math.ceil(_prTotal / _prPageSize));
+  _prPage = Math.max(1, Math.min(page, totalPages));
+  _renderPRPage();
+}
+
+function setPRPageSize(size) {
+  _prPageSize = Number(size);
+  _prPage = 1;
+  _renderPRPage();
+}
+
+// Server filters re-fetch; search is client-side only
+['filterModule','filterDeveloper','filterStatus'].forEach(id =>
+  document.getElementById(id).addEventListener('change', () => {
+    renderPRs({
+      module:    document.getElementById('filterModule').value,
+      developer: document.getElementById('filterDeveloper').value,
+      status:    document.getElementById('filterStatus').value,
+    });
+  })
+);
+document.getElementById('searchInput').addEventListener('input', () => {
+  _prPage = 1;
+  _renderPRPage();
+});
 function applyFilters() {
-  renderPRs({ module:document.getElementById('filterModule').value, developer:document.getElementById('filterDeveloper').value, status:document.getElementById('filterStatus').value });
+  renderPRs({
+    module:    document.getElementById('filterModule').value,
+    developer: document.getElementById('filterDeveloper').value,
+    status:    document.getElementById('filterStatus').value,
+  });
 }
 
 // ── PR Modal ───────────────────────────────────────────

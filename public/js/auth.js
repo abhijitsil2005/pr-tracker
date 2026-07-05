@@ -1,20 +1,25 @@
 // ═══════════════════════════════════════════════════════
-// AUTH
+// AUTH  — login · logout · project selection · roles
 // ═══════════════════════════════════════════════════════
-let currentUser = null;
+let currentUser   = null;   // decoded JWT payload (set after select-project)
+let loginProjects = [];     // projects returned by login (before selection)
 
 function getToken()  { return localStorage.getItem('authToken'); }
 function setToken(t) { localStorage.setItem('authToken', t); }
 function clearToken(){ localStorage.removeItem('authToken'); }
 
+// ── Role helpers ────────────────────────────────────────
 function canWrite() {
   return currentUser && (currentUser.role === 'Admin' || currentUser.role === 'ReadWrite');
 }
 function isAdmin() {
-  return currentUser && currentUser.role === 'Admin';
+  return currentUser?.role === 'Admin';
+}
+function isCompanyAdmin() {
+  return currentUser?.company_role === 'CompanyAdmin';
 }
 
-// Fetch wrapper that injects the Bearer token and handles 401
+// ── Authenticated fetch ─────────────────────────────────
 async function authFetch(url, opts = {}) {
   const token = getToken();
   opts.headers = { 'Content-Type': 'application/json', ...opts.headers };
@@ -32,15 +37,15 @@ async function authFetch(url, opts = {}) {
 // ── Login screen ────────────────────────────────────────
 function showLoginScreen() {
   document.getElementById('loginOverlay').classList.add('open');
+  document.getElementById('projectSelectorOverlay').classList.remove('open');
   document.getElementById('appShell').style.display = 'none';
-  document.getElementById('loginEmail').value    = '';
-  document.getElementById('loginPassword').value = '';
+  document.getElementById('loginEmail').value     = '';
+  document.getElementById('loginPassword').value  = '';
   document.getElementById('loginError').textContent = '';
 }
 
 function hideLoginScreen() {
   document.getElementById('loginOverlay').classList.remove('open');
-  document.getElementById('appShell').style.display = 'flex';
 }
 
 async function doLogin() {
@@ -63,10 +68,18 @@ async function doLogin() {
     if (!res.ok) { errEl.textContent = json.error || 'Login failed'; return; }
 
     setToken(json.token);
-    currentUser = json.user;
+    loginProjects = json.projects || [];
     hideLoginScreen();
-    applyRoleUI();
-    init();
+
+    if (loginProjects.length === 0) {
+      errEl.textContent = 'You have no projects assigned. Contact your company admin.';
+      clearToken();
+      showLoginScreen();
+    } else if (loginProjects.length === 1) {
+      await selectProject(loginProjects[0].id);
+    } else {
+      showProjectSelector(loginProjects);
+    }
   } catch (e) {
     errEl.textContent = 'Network error — is the server running?';
   } finally {
@@ -80,31 +93,171 @@ document.getElementById('loginPassword')?.addEventListener('keydown', e => {
 
 function doLogout() {
   clearToken();
-  currentUser = null;
+  currentUser   = null;
+  loginProjects = [];
   showLoginScreen();
+}
+
+// ── Project Selector ────────────────────────────────────
+function showProjectSelector(projects) {
+  const list = document.getElementById('projectList');
+  list.innerHTML = '';
+  projects.forEach(p => {
+    const btn = document.createElement('button');
+    btn.className = 'project-card';
+    btn.innerHTML = `
+      <div class="project-card-name">${p.name}</div>
+      ${p.description ? `<div class="project-card-desc">${p.description}</div>` : ''}
+      <span class="badge ${roleBadgeClass(p.role)}" style="margin-top:6px">${p.role}</span>`;
+    btn.onclick = () => selectProject(p.id);
+    list.appendChild(btn);
+  });
+  document.getElementById('projectSelectorOverlay').classList.add('open');
+}
+
+function hideProjectSelector() {
+  document.getElementById('projectSelectorOverlay').classList.remove('open');
+}
+
+async function selectProject(projectId) {
+  try {
+    const res  = await authFetch('/api/auth/select-project', {
+      method: 'POST',
+      body:   JSON.stringify({ project_id: projectId }),
+    });
+    const json = await res.json();
+    if (!res.ok) { showToast(json.error || 'Failed to select project', 'error'); return; }
+
+    setToken(json.token);
+    currentUser = decodeToken(json.token);
+    hideProjectSelector();
+    document.getElementById('appShell').style.display = 'flex';
+    applyRoleUI();
+    init();
+  } catch (e) {
+    showToast('Network error selecting project', 'error');
+  }
+}
+
+async function switchProject() {
+  try {
+    const res      = await authFetch('/api/projects');
+    if (!res.ok) { doLogout(); return; }
+    const projects = await res.json();
+    if (!projects.length) { showToast('No projects available', 'error'); return; }
+
+    const roleFor = (p) =>
+      currentUser?.company_role === 'CompanyAdmin'    ? 'Admin'    :
+      currentUser?.company_role === 'CompanyReadOnly' ? 'ReadOnly' : 'ReadWrite';
+
+    document.getElementById('appShell').style.display = 'none';
+    showProjectSelector(projects.map(p => ({
+      id: p.id, name: p.name, description: p.description || '', role: roleFor(p),
+    })));
+  } catch (e) {
+    showToast('Failed to load projects', 'error');
+  }
+}
+
+// ── Token helpers ───────────────────────────────────────
+function decodeToken(token) {
+  try { return JSON.parse(atob(token.split('.')[1])); }
+  catch { return null; }
+}
+
+function roleBadgeClass(role) {
+  if (role === 'Admin')     return 'badge-purple';
+  if (role === 'ReadWrite') return 'badge-blue';
+  return 'badge-gray';
 }
 
 // ── Role-based UI ───────────────────────────────────────
 function applyRoleUI() {
   const body = document.body;
-  body.classList.remove('role-admin', 'role-readwrite', 'role-readonly');
+  body.classList.remove('role-admin','role-readwrite','role-readonly','role-companyadmin','role-companyreadonly');
   if (!currentUser) return;
-  body.classList.add(`role-${currentUser.role.toLowerCase().replace(/\s/g, '')}`);
 
-  // Update user info in header
+  body.classList.add(`role-${(currentUser.role || '').toLowerCase().replace(/\s/g,'')}`);
+  if (currentUser.company_role) {
+    body.classList.add(`role-${currentUser.company_role.toLowerCase()}`);
+  }
+
   const el = document.getElementById('headerUser');
-  if (el) el.innerHTML = `
-    <span style="color:var(--text2);font-size:13px">${currentUser.name}</span>
-    <span class="badge badge-blue" style="font-size:10px">${currentUser.role}</span>
-    <button class="btn btn-ghost btn-sm" onclick="openChangePassword()">🔑</button>
-    <button class="btn btn-ghost btn-sm" onclick="doLogout()">Sign Out</button>`;
+  if (el) {
+    const initials = (currentUser.name || 'U')
+      .split(' ').filter(Boolean)
+      .map(w => w[0].toUpperCase())
+      .slice(0, 2).join('');
+    const firstName = (currentUser.name || '').split(' ')[0];
+    const roleCls   = roleBadgeClass(currentUser.role);
 
-  // Show Users nav item only for Admin
-  const usersNavLi = document.getElementById('navUsersLi');
-  if (usersNavLi) usersNavLi.style.display = isAdmin() ? '' : 'none';
+    el.innerHTML = `
+      ${currentUser.project_name ? `
+      <button class="project-pill" onclick="switchProject()" title="Switch project">
+        <span class="pp-dot"></span>
+        <span class="pp-name">${currentUser.project_name}</span>
+        <span class="pp-switch">⇄</span>
+      </button>` : ''}
+      <div class="user-menu" id="userMenu">
+        <button class="user-avatar" onclick="toggleUserMenu()" aria-haspopup="true" aria-expanded="false">
+          <span class="ua-initials">${initials}</span>
+          <span class="ua-name">${firstName}</span>
+          <span class="ua-chevron">▾</span>
+        </button>
+        <div class="user-dropdown" id="userDropdown">
+          <div class="ud-profile">
+            <div class="ud-avatar-lg">${initials}</div>
+            <div class="ud-info">
+              <div class="ud-name">${currentUser.name}</div>
+              <div class="ud-email">${currentUser.email || ''}</div>
+              <div class="ud-badges">
+                ${currentUser.role        ? `<span class="badge ${roleCls} ud-badge">${currentUser.role}</span>` : ''}
+                ${currentUser.company_role? `<span class="badge badge-orange ud-badge">${currentUser.company_role}</span>` : ''}
+              </div>
+            </div>
+          </div>
+          <div class="ud-divider"></div>
+          <button class="ud-item" onclick="switchProject();closeUserMenu()">
+            <span class="ud-item-icon">⇄</span>Switch Project
+          </button>
+          <div class="ud-divider"></div>
+          <button class="ud-item" onclick="openChangePassword();closeUserMenu()">
+            <span class="ud-item-icon">🔑</span>Change Password
+          </button>
+          <button class="ud-item ud-item-danger" onclick="doLogout()">
+            <span class="ud-item-icon">↩</span>Sign Out
+          </button>
+        </div>
+      </div>`;
+  }
+
+  // Show Admin nav only for admins
+  const navAdminLi = document.getElementById('navAdminLi');
+  if (navAdminLi) navAdminLi.style.display = (isAdmin() || isCompanyAdmin()) ? '' : 'none';
 }
 
-// ── Change password modal ───────────────────────────────
+// ── User menu dropdown ──────────────────────────────────
+function toggleUserMenu() {
+  const dd  = document.getElementById('userDropdown');
+  const btn = document.querySelector('#userMenu .user-avatar');
+  if (!dd) return;
+  const open = dd.classList.toggle('open');
+  if (btn) btn.setAttribute('aria-expanded', String(open));
+}
+
+function closeUserMenu() {
+  const dd  = document.getElementById('userDropdown');
+  const btn = document.querySelector('#userMenu .user-avatar');
+  if (dd)  dd.classList.remove('open');
+  if (btn) btn.setAttribute('aria-expanded', 'false');
+}
+
+document.addEventListener('click', e => {
+  const menu = document.getElementById('userMenu');
+  if (menu && !menu.contains(e.target)) closeUserMenu();
+});
+
+// ── Change password ─────────────────────────────────────
 function openChangePassword() {
   ['cpCurrent','cpNew','cpConfirm'].forEach(id => document.getElementById(id).value = '');
   document.getElementById('cpError').textContent = '';
@@ -118,8 +271,8 @@ async function submitChangePassword() {
   const errEl   = document.getElementById('cpError');
   errEl.textContent = '';
   if (!current || !nw || !confirm) { errEl.textContent = 'All fields required'; return; }
-  if (nw !== confirm) { errEl.textContent = 'New passwords do not match'; return; }
-  if (nw.length < 6)  { errEl.textContent = 'Password must be at least 6 characters'; return; }
+  if (nw !== confirm)  { errEl.textContent = 'New passwords do not match'; return; }
+  if (nw.length < 6)   { errEl.textContent = 'Password must be at least 6 characters'; return; }
 
   const res  = await authFetch('/api/auth/change-password', {
     method: 'POST',
@@ -131,117 +284,41 @@ async function submitChangePassword() {
   showToast('Password changed successfully', 'success');
 }
 
-// ── User management ─────────────────────────────────────
-async function renderUsers() {
-  const res   = await authFetch('/api/users');
-  const users = await res.json();
-  const tbody = document.querySelector('#userTable tbody');
-  if (!tbody) return;
-  if (!Array.isArray(users) || !users.length) {
-    tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--text2);padding:32px">No users found</td></tr>';
-    return;
-  }
-  tbody.innerHTML = users.sort((a, b) => a.email.localeCompare(b.email)).map(u => `
-    <tr>
-      <td>${u.email}</td>
-      <td>${u.name}</td>
-      <td><span class="badge ${u.role==='Admin'?'badge-purple':u.role==='ReadWrite'?'badge-blue':'badge-gray'}">${u.role}</span></td>
-      <td><span class="badge ${u.active?'badge-green':'badge-red'}">${u.active?'Active':'Inactive'}</span></td>
-      <td style="white-space:nowrap">
-        <button class="btn btn-ghost btn-sm" onclick="openEditUserModal('${u.email}','${u.name}','${u.role}',${u.active})">✏️ Edit</button>
-        <button class="btn btn-ghost btn-sm" onclick="toggleUserActive('${u.email}',${u.active})">${u.active?'Deactivate':'Activate'}</button>
-        ${u.email !== currentUser?.email ? `<button class="btn btn-danger btn-sm" onclick="deleteUser('${u.email}')">🗑</button>` : ''}
-      </td>
-    </tr>`).join('');
-}
-
-function openAddUserModal() {
-  ['umEmail','umName','umPassword'].forEach(id => document.getElementById(id).value = '');
-  document.getElementById('umRole').value = 'ReadWrite';
-  document.getElementById('umError').textContent = '';
-  document.getElementById('umModalTitle').textContent = 'Add User';
-  document.getElementById('umEmailRow').style.display = '';
-  document.getElementById('umPasswordRow').style.display = '';
-  document.getElementById('umSaveBtn').onclick = saveNewUser;
-  document.getElementById('userModal').classList.add('open');
-}
-
-function openEditUserModal(email, name, role, active) {
-  document.getElementById('umEmail').value = email;
-  document.getElementById('umName').value  = name;
-  document.getElementById('umRole').value  = role;
-  document.getElementById('umPassword').value = '';
-  document.getElementById('umError').textContent = '';
-  document.getElementById('umModalTitle').textContent = 'Edit User';
-  document.getElementById('umEmailRow').style.display = 'none';
-  document.getElementById('umPasswordRow').querySelector('label').textContent = 'New Password (leave blank to keep)';
-  document.getElementById('umSaveBtn').onclick = () => saveEditUser(email);
-  document.getElementById('userModal').classList.add('open');
-}
-
-async function saveNewUser() {
-  const email    = document.getElementById('umEmail').value.trim();
-  const name     = document.getElementById('umName').value.trim();
-  const role     = document.getElementById('umRole').value;
-  const password = document.getElementById('umPassword').value;
-  const errEl    = document.getElementById('umError');
-  errEl.textContent = '';
-  if (!email || !name || !password) { errEl.textContent = 'All fields required'; return; }
-
-  const res  = await authFetch('/api/users', { method: 'POST', body: JSON.stringify({ email, name, role, password }) });
-  const json = await res.json();
-  if (!res.ok) { errEl.textContent = json.error; return; }
-  closeModal('userModal');
-  showToast(`User ${email} created`, 'success');
-  renderUsers();
-}
-
-async function saveEditUser(email) {
-  const name     = document.getElementById('umName').value.trim();
-  const role     = document.getElementById('umRole').value;
-  const password = document.getElementById('umPassword').value;
-  const errEl    = document.getElementById('umError');
-  errEl.textContent = '';
-
-  const body = { name, role };
-  if (password) body.password = password;
-
-  const res  = await authFetch(`/api/users/${encodeURIComponent(email)}`, { method: 'PUT', body: JSON.stringify(body) });
-  const json = await res.json();
-  if (!res.ok) { errEl.textContent = json.error; return; }
-  closeModal('userModal');
-  showToast(`User ${email} updated`, 'success');
-  renderUsers();
-}
-
-async function toggleUserActive(email, currentlyActive) {
-  const res  = await authFetch(`/api/users/${encodeURIComponent(email)}`, { method: 'PUT', body: JSON.stringify({ active: !currentlyActive }) });
-  const json = await res.json();
-  if (!res.ok) return showToast(json.error, 'error');
-  showToast(`${email} ${!currentlyActive ? 'activated' : 'deactivated'}`, 'success');
-  renderUsers();
-}
-
-async function deleteUser(email) {
-  if (!confirm(`Delete user ${email}? This cannot be undone.`)) return;
-  const res  = await authFetch(`/api/users/${encodeURIComponent(email)}`, { method: 'DELETE' });
-  const json = await res.json();
-  if (!res.ok) return showToast(json.error, 'error');
-  showToast(`User ${email} deleted`, 'success');
-  renderUsers();
-}
-
 // ── Bootstrap ───────────────────────────────────────────
 (async function bootstrap() {
   const token = getToken();
   if (!token) { showLoginScreen(); return; }
 
   try {
-    const res  = await fetch('/api/auth/me', { headers: { Authorization: `Bearer ${token}` } });
+    const payload = decodeToken(token);
+    if (!payload) { clearToken(); showLoginScreen(); return; }
+
+    if (!payload.project_id) {
+      const res = await fetch('/api/auth/me', { headers: { Authorization: `Bearer ${token}` } });
+      if (!res.ok) { clearToken(); showLoginScreen(); return; }
+
+      const projRes  = await fetch('/api/projects', { headers: { Authorization: `Bearer ${token}` } });
+      if (!projRes.ok) { clearToken(); showLoginScreen(); return; }
+      const projects = await projRes.json();
+
+      if (projects.length === 0) {
+        clearToken(); showLoginScreen();
+      } else if (projects.length === 1) {
+        await selectProject(projects[0].id);
+      } else {
+        showProjectSelector(projects.map(p => ({
+          id: p.id, name: p.name, description: p.description || '',
+          role: payload.company_role === 'CompanyAdmin' ? 'Admin' : 'ReadWrite',
+        })));
+      }
+      return;
+    }
+
+    const res = await fetch('/api/auth/me', { headers: { Authorization: `Bearer ${token}` } });
     if (!res.ok) { clearToken(); showLoginScreen(); return; }
-    const json = await res.json();
-    currentUser = json.user;
-    hideLoginScreen();
+
+    currentUser = payload;
+    document.getElementById('appShell').style.display = 'flex';
     applyRoleUI();
     init();
   } catch {

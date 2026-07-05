@@ -75,7 +75,15 @@ document.querySelectorAll('nav ul li a').forEach(a => {
 function showSection(name) {
   document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
   document.getElementById(`section-${name}`).classList.add('active');
-  const titles = { dashboard:'Dashboard', prs:'Pull Requests', releases:'Releases', modules:'Module Pages', status:'Status Tracker', sync:'Sync Excel', users:'User Management' };
+  const titles = {
+    dashboard: 'Dashboard',
+    prs:       'Pull Requests',
+    releases:  'Releases',
+    modules:   'Module Pages',
+    status:    'Status Tracker',
+    sync:      'Sync Excel',
+    admin:     'Admin',
+  };
   document.getElementById('pageTitle').textContent = titles[name] || name;
   const ha = document.getElementById('headerActions');
   ha.innerHTML = '';
@@ -87,7 +95,7 @@ function showSection(name) {
   if (name === 'releases')  renderReleases();
   if (name === 'modules')   renderModulePages();
   if (name === 'status')    renderStatusTracker();
-  if (name === 'users')     renderUsers();
+  if (name === 'admin')     renderAdminPage();
 }
 
 // ── Status badges ───────────────────────────────────────
