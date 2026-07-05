@@ -1,5 +1,11 @@
 const API = '/api';
 
+// ── Calculation exclusions (loaded from project settings) ──
+const _DEFAULT_EXCL_PAGES   = ['Infrastructure Pages', 'API', 'Shared Controls'];
+const _DEFAULT_EXCL_MODULES = ['Shared Controls'];
+let EXCLUDED_FROM_PAGES  = new Set(_DEFAULT_EXCL_PAGES);
+let EXCLUDED_FROM_MODULE = new Set(_DEFAULT_EXCL_MODULES);
+
 // ── State ──────────────────────────────────────────────
 let allPRs = [], allReleases = [], allModulePages = [];
 let lookupModules = [], lookupDevelopers = [], lookupReviewers = [], lookupTimeline = [];
@@ -27,16 +33,23 @@ async function init() {
 }
 
 async function loadLookups() {
-  const [mods, devs, revs, tl] = await Promise.all([
+  const [mods, devs, revs, tl, proj] = await Promise.all([
     api('lookup/modules'),
     api('lookup/developers'),
     api('lookup/reviewers'),
     api('lookup/timeline'),
+    currentUser?.project_id ? api(`projects/${currentUser.project_id}`) : Promise.resolve(null),
   ]);
   lookupModules = mods || [];
   lookupDevelopers = (devs || []).sort((a, b) => a.localeCompare(b));
   lookupReviewers  = (revs || []).sort((a, b) => a.localeCompare(b));
   lookupTimeline = tl || [];
+  _applyProjectExclusions(proj);
+}
+
+function _applyProjectExclusions(proj) {
+  EXCLUDED_FROM_PAGES  = new Set(proj?.excluded_pages  ?? _DEFAULT_EXCL_PAGES);
+  EXCLUDED_FROM_MODULE = new Set(proj?.excluded_modules ?? _DEFAULT_EXCL_MODULES);
 }
 
 async function api(path, opts = {}) {
@@ -81,6 +94,7 @@ function showSection(name) {
     releases:  'Releases',
     modules:   'Module Pages',
     status:    'Status Tracker',
+    reports:   'Reports',
     sync:      'Sync Excel',
     admin:     'Admin',
   };
@@ -95,6 +109,7 @@ function showSection(name) {
   if (name === 'releases')  renderReleases();
   if (name === 'modules')   renderModulePages();
   if (name === 'status')    renderStatusTracker();
+  if (name === 'reports')   renderReports();
   if (name === 'admin')     renderAdminPage();
 }
 

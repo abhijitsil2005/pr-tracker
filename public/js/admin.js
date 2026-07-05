@@ -88,8 +88,9 @@ function switchAdminTab(tab) {
   document.querySelectorAll('.admin-panel').forEach(p => {
     p.style.display = p.dataset.panel === tab ? '' : 'none';
   });
-  if (tab === 'projects') renderProjectsTab();
-  else                    renderUsersTab();
+  if (tab === 'projects')   renderProjectsTab();
+  else if (tab === 'users') renderUsersTab();
+  else if (tab === 'exclusions') renderExclusionsTab();
 }
 
 // ══════════════════════════════════════════════════════
@@ -504,4 +505,99 @@ async function saveProjectMemberships() {
   closeModal('manageProjectsModal');
   showToast('Project access updated', 'success');
   renderUsersTab();
+}
+
+// ══════════════════════════════════════════════════════
+// EXCLUSIONS TAB
+// ══════════════════════════════════════════════════════
+
+let _exclPages   = [];  // page names excluded from page-count stats
+let _exclModules = [];  // module names excluded from all stats (PRs + pages)
+
+async function renderExclusionsTab() {
+  const panel = document.getElementById('exclusionsPanel');
+  if (!panel) return;
+  panel.innerHTML = `<div style="color:var(--text2);font-size:13px;padding:32px;text-align:center">Loading…</div>`;
+
+  const proj = currentUser?.project_id ? await api(`projects/${currentUser.project_id}`) : null;
+  _exclPages   = [...(proj?.excluded_pages   ?? _DEFAULT_EXCL_PAGES)];
+  _exclModules = [...(proj?.excluded_modules ?? _DEFAULT_EXCL_MODULES)];
+  _renderExclusionsPanel();
+}
+
+function _renderExclusionsPanel() {
+  const panel  = document.getElementById('exclusionsPanel');
+  if (!panel) return;
+  const canEdit = isAdmin() || isCompanyAdmin();
+
+  panel.innerHTML = `
+    <div class="excl-desc">
+      Configure which pages and modules are skipped in all calculations — dashboard stats, module completion counts, and report charts.
+    </div>
+    <div class="excl-two-col">
+      ${_exclGroup('pages',   'Excluded Pages',
+        'Page names excluded from page-count and completion stats.',
+        _exclPages, _DEFAULT_EXCL_PAGES, canEdit)}
+      ${_exclGroup('modules', 'Excluded Modules',
+        'Module names excluded from all stats including PR counts.',
+        _exclModules, _DEFAULT_EXCL_MODULES, canEdit)}
+    </div>`;
+}
+
+function _exclGroup(key, title, subtitle, list, defaults, canEdit) {
+  const rows = list.map((item, i) => `
+    <div class="excl-row">
+      <span class="excl-name">${item}</span>
+      ${canEdit ? `<button class="btn btn-danger btn-sm" onclick="_removeExclItem('${key}',${i})">✕</button>` : ''}
+    </div>`).join('') ||
+    `<div class="excl-empty">None configured — defaults apply: ${defaults.join(', ')}.</div>`;
+
+  return `
+    <div class="excl-group">
+      <div class="excl-group-title">${title}</div>
+      <div class="excl-group-sub">${subtitle}</div>
+      <div class="excl-list">${rows}</div>
+      ${canEdit ? `
+      <div class="excl-add-row">
+        <input id="exclInput_${key}" class="excl-input" placeholder="Add name…"
+               onkeydown="if(event.key==='Enter')_addExclItem('${key}')" />
+        <button class="btn btn-primary btn-sm" onclick="_addExclItem('${key}')">＋ Add</button>
+      </div>
+      <div id="exclError_${key}" class="excl-error"></div>` : ''}
+    </div>`;
+}
+
+function _removeExclItem(key, index) {
+  (key === 'pages' ? _exclPages : _exclModules).splice(index, 1);
+  _renderExclusionsPanel();
+  _saveExclusions();
+}
+
+function _addExclItem(key) {
+  const list = key === 'pages' ? _exclPages : _exclModules;
+  const inp  = document.getElementById(`exclInput_${key}`);
+  const err  = document.getElementById(`exclError_${key}`);
+  const name = inp?.value.trim();
+  if (err) err.textContent = '';
+  if (!name) { if (err) err.textContent = 'Enter a name'; return; }
+  if (list.some(e => e.toLowerCase() === name.toLowerCase())) {
+    if (err) err.textContent = `"${name}" is already in the list`;
+    return;
+  }
+  list.push(name);
+  if (inp) inp.value = '';
+  _renderExclusionsPanel();
+  _saveExclusions();
+}
+
+async function _saveExclusions() {
+  if (!currentUser?.project_id) return;
+  const res  = await authFetch(`${API}/projects/${currentUser.project_id}`, {
+    method: 'PUT',
+    body:   JSON.stringify({ excluded_pages: _exclPages, excluded_modules: _exclModules }),
+  });
+  const json = await res.json();
+  if (!res.ok) { showToast(json.error || 'Failed to save', 'error'); return; }
+  _applyProjectExclusions({ excluded_pages: _exclPages, excluded_modules: _exclModules });
+  showToast('Exclusions saved', 'success');
 }

@@ -37,7 +37,12 @@ async function renderModulePages() {
   }));
 
   const openIds = getOpenAccordions();
-  container.innerHTML = modules.sort((a, b) => a.Module.localeCompare(b.Module)).map(m => buildModuleAccordion(m, prsByPage)).join('');
+  container.innerHTML = modules
+    .sort((a, b) => {
+      if (!!a.IsOutOfScope !== !!b.IsOutOfScope) return a.IsOutOfScope ? 1 : -1;
+      return a.Module.localeCompare(b.Module);
+    })
+    .map(m => buildModuleAccordion(m, prsByPage)).join('');
   reopenAccordions(openIds);
 }
 
@@ -110,12 +115,12 @@ function buildModuleAccordion(mod, prsByPage = {}) {
           <span class="chevron" id="c-${accId}">▼</span>
           <span class="mp-acc-name">📦 ${mod.Module}</span>
           <div class="mp-acc-counts">
+            ${mod.IsOutOfScope ? `<span class="badge badge-red">MODULE OUT OF SCOPE</span>` : `
             <span class="badge badge-blue">${modulePages.length} page${modulePages.length!==1?'s':''}</span>
             <span class="badge badge-green" title="Prod Deployed">${prodDep} prod</span>
             <span class="badge badge-teal" title="Demo Done">${demoDone} demo</span>
             <span class="badge ${ffEn===modulePages.length&&modulePages.length?'badge-green':'badge-yellow'}" title="FF Enabled">${ffEn}/${modulePages.length} FF</span>
-            ${releaseBadge}
-            ${mod.IsOutOfScope ? `<span class="badge badge-red">MODULE OUT OF SCOPE</span>` : ''}
+            ${releaseBadge}`}
           </div>
           <div style="width:80px;height:4px;border-radius:2px;background:var(--surface3);margin-left:4px" title="${prodPct}% deployed">
             <div style="height:100%;width:${prodPct}%;background:${barColor};border-radius:2px"></div>
@@ -130,7 +135,9 @@ function buildModuleAccordion(mod, prsByPage = {}) {
         </div>` : ''}
       </div>
       <div class="mp-acc-body" id="b-${accId}">
-        <table class="mp-pages-table">
+        ${mod.IsOutOfScope
+          ? `<div style="padding:16px 20px;color:var(--text2);font-size:13px">This module is out of scope.</div>`
+          : `<table class="mp-pages-table">
           <colgroup>
             <col class="mpc-page"><col class="mpc-ff"><col class="mpc-ffs">
             <col class="mpc-demo"><col class="mpc-prod">
@@ -144,7 +151,7 @@ function buildModuleAccordion(mod, prsByPage = {}) {
             </tr>
           </thead>
           <tbody>${pagesHtml || '<tr><td colspan="8" style="color:var(--text2);text-align:center;padding:16px">No pages defined</td></tr>'}</tbody>
-        </table>
+        </table>`}
       </div>
     </div>`;
 }
