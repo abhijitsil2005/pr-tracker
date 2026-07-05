@@ -68,11 +68,13 @@ router.put('/:id', async (req, res) => {
       return res.status(403).json({ error: 'Admin access required to update project' });
     }
 
-    const { name, description, active } = req.body;
+    const { name, description, active, excluded_pages } = req.body;
     const updates = {};
     if (name        !== undefined) updates.name        = name.trim();
     if (description !== undefined) updates.description = description;
     if (typeof active === 'boolean') updates.active    = active;
+    if (Array.isArray(excluded_pages))   updates.excluded_pages   = excluded_pages;
+    if (Array.isArray(excluded_modules)) updates.excluded_modules = excluded_modules;
 
     const updated = await ds.updateProject(req.params.id, updates);
     res.json({ message: 'Project updated', data: updated });

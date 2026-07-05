@@ -43,6 +43,7 @@
     <li><a href="#" data-section="releases" title="Releases"><span class="nav-icon">🚀</span><span class="nav-label"> Releases</span></a></li>
     <li><a href="#" data-section="modules" title="Module Pages"><span class="nav-icon">📦</span><span class="nav-label"> Module Pages</span></a></li>
     <li><a href="#" data-section="status" title="Status Tracker"><span class="nav-icon">📋</span><span class="nav-label"> Status Tracker</span></a></li>
+    <li><a href="#" data-section="reports" title="Reports"><span class="nav-icon">📈</span><span class="nav-label"> Reports</span></a></li>
     <li id="navAdminLi" style="display:none"><a href="#" data-section="admin" title="Admin"><span class="nav-icon">⚙️</span><span class="nav-label"> Admin</span></a></li>
   </ul>
 </nav>
@@ -142,6 +143,27 @@
       <div id="stDevSection" style="margin-top:24px"></div>
     </div>
 
+    <!-- REPORTS -->
+    <div id="section-reports" class="section">
+      <div class="toolbar" style="justify-content:space-between;margin-bottom:20px">
+        <select id="rptReportSel" style="width:350px" onchange="_renderReportView()">
+          <option value="completion">Module Completion by Release</option>
+          <option value="timeline">Planned vs Actual Release Timeline</option>
+          <option value="sprints">PRs by Sprint — Created vs Approved</option>
+        </select>
+        <div id="rptModuleFilters" style="display:flex;gap:10px;align-items:center">
+          <select id="rptReleaseFilter" style="width:220px" onchange="_renderReportView()">
+            <option value="">All Releases</option>
+          </select>
+          <label style="display:flex;align-items:center;gap:6px;font-size:13px;color:var(--text2);cursor:pointer;white-space:nowrap">
+            <input type="checkbox" id="rptShowOOS" onchange="_renderReportView()">
+            Include Out of Scope
+          </label>
+        </div>
+      </div>
+      <div id="rptContainer"></div>
+    </div>
+
     <!-- ADMIN -->
     <div id="section-admin" class="section">
 
@@ -150,8 +172,9 @@
 
       <!-- Tab switcher -->
       <div class="admin-tabs">
-        <button class="admin-tab active" data-tab="projects" onclick="switchAdminTab('projects')">Projects</button>
-        <button class="admin-tab"        data-tab="users"    onclick="switchAdminTab('users')">Users</button>
+        <button class="admin-tab active" data-tab="projects"   onclick="switchAdminTab('projects')">Projects</button>
+        <button class="admin-tab"        data-tab="users"      onclick="switchAdminTab('users')">Users</button>
+        <button class="admin-tab"        data-tab="exclusions" onclick="switchAdminTab('exclusions')">Calc Exclusions</button>
       </div>
 
       <!-- ── Projects panel ───────────────────────────── -->
@@ -182,6 +205,11 @@
             <tbody></tbody>
           </table>
         </div>
+      </div>
+
+      <!-- ── Exclusions panel ────────────────────────── -->
+      <div class="admin-panel" data-panel="exclusions" style="display:none">
+        <div id="exclusionsPanel"></div>
       </div>
 
     </div>
@@ -683,6 +711,7 @@
 <script src="js/status.js"></script>
 <script src="js/sync.js"></script>
 <script src="js/admin.js"></script>
+<script src="js/reports.js"></script>
 <script src="js/auth.js"></script>
 </body>
 </html>

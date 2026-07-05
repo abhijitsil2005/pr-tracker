@@ -17,11 +17,6 @@ function demoStatusBadge(s) {
   return `<span class="badge badge-gray">${s||'Pending'}</span>`;
 }
 
-// Excluded from ALL stats (PRs, pages, module table, developer table)
-const EXCLUDED_FROM_MODULE   = new Set(['Shared Controls']);
-// Excluded from page-count stats and module table only (PRs still counted)
-const EXCLUDED_FROM_PAGES = new Set(['Infrastructure Pages', 'API', 'Shared Controls']);
-
 async function renderDashboard() {
   const [prData, mpData] = await Promise.all([api('prs'), api('modules')]);
   allPRs         = (prData && prData.data) || [];
