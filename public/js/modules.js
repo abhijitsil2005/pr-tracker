@@ -151,7 +151,18 @@ function buildModuleAccordion(mod, prsByPage = {}) {
             </tr>
           </thead>
           <tbody>${pagesHtml || '<tr><td colspan="8" style="color:var(--text2);text-align:center;padding:16px">No pages defined</td></tr>'}</tbody>
-        </table>`}
+        </table>
+        ${(() => {
+          const oos = mod.OutOfScope || [];
+          if (!oos.length) return '';
+          return `<div class="mp-oos-section">
+            <div class="mp-oos-header">Out-of-Scope Pages <span class="badge badge-yellow" style="font-size:10px">${oos.length}</span></div>
+            ${oos.map(p => `<div class="mp-oos-row">
+              <span class="mp-oos-name">${p}</span>
+              ${canWrite() ? `<button class="btn btn-danger btn-xs" onclick="removeOOS('${escAttr(mod.Module)}','${escAttr(p)}')">Remove</button>` : ''}
+            </div>`).join('')}
+          </div>`;
+        })()}`}
       </div>
     </div>`;
 }
