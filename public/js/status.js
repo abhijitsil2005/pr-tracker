@@ -79,6 +79,15 @@ async function renderStatusTracker() {
   renderDevPRSummary();
 }
 
+function toggleStDevSection() {
+  const body = document.getElementById('stDevBody');
+  const chev = document.getElementById('stDevChev');
+  if (!body) return;
+  const collapsed = body.classList.toggle('st-collapsed');
+  if (chev) chev.classList.toggle('open', !collapsed);
+  try { localStorage.setItem('st-devsum-collapsed', collapsed ? '1' : '0'); } catch {}
+}
+
 function renderDevPRSummary() {
   const excluded = typeof EXCLUDED_FROM_MODULE !== 'undefined' ? EXCLUDED_FROM_MODULE : new Set();
   const devMap = {};
@@ -97,84 +106,188 @@ function renderDevPRSummary() {
       <td><div class="tag-list">${[...v.modules].map(m => `<span class="tag">${escHtml(m)}</span>`).join('')}</div></td>
     </tr>`).join('');
 
+  let collapsed = true;
+  try { collapsed = localStorage.getItem('st-devsum-collapsed') !== '0'; } catch {}
+
   document.getElementById('stDevSection').innerHTML = `
-    <h3 style="font-size:14px;margin-bottom:12px;color:var(--text2)">BY DEVELOPER</h3>
-    <div class="table-wrap">
-      <table style="font-size:12px">
-        <thead><tr><th>Developer</th><th>PRs</th><th>Modules</th></tr></thead>
-        <tbody>${tbody || '<tr><td colspan="3" style="text-align:center;color:var(--text2);padding:16px">No PR data</td></tr>'}</tbody>
-      </table>
+    <div class="st-devsum-header" onclick="toggleStDevSection()">
+      <span class="st-chev${collapsed ? '' : ' open'}" id="stDevChev">▶</span>
+      <span style="font-size:13px;font-weight:600;color:var(--text2);letter-spacing:.04em;text-transform:uppercase">PR Summary by Developer</span>
+    </div>
+    <div id="stDevBody" class="st-dev-body${collapsed ? ' st-collapsed' : ''}">
+      <div class="table-wrap" style="margin-top:10px">
+        <table style="font-size:12px">
+          <thead><tr><th>Developer</th><th>PRs</th><th>Modules</th></tr></thead>
+          <tbody>${tbody || '<tr><td colspan="3" style="text-align:center;color:var(--text2);padding:16px">No PR data</td></tr>'}</tbody>
+        </table>
+      </div>
     </div>`;
+}
+
+// ── Dev card helpers ────────────────────────────────────
+const _ST_PALETTE = ['#4f7ef8','#22c55e','#f97316','#a855f7','#06b6d4','#ef4444','#eab308','#7c5cfc'];
+function _stHash(str) {
+  let h = 0;
+  for (let i = 0; i < str.length; i++) h = str.charCodeAt(i) + ((h << 5) - h);
+  return Math.abs(h);
+}
+function _devColor(name)  { return _ST_PALETTE[_stHash(name)  % _ST_PALETTE.length]; }
+function _modColor(name)  { return _ST_PALETTE[(_stHash(name) + 3) % _ST_PALETTE.length]; }
+function _devInitial(n)   { return (n || '?').trim().charAt(0).toUpperCase(); }
+
+function toggleDevCard(safeId) {
+  const body = document.getElementById(`st-body-${safeId}`);
+  const chev = document.getElementById(`st-chev-${safeId}`);
+  if (!body) return;
+  const collapsed = body.classList.toggle('st-collapsed');
+  if (chev) chev.classList.toggle('open', !collapsed);
+  try { localStorage.setItem(`st-col-${safeId}`, collapsed ? '1' : '0'); } catch {}
 }
 
 function buildDevCard(dev, items) {
   const done    = items.filter(i => i.Status === 'Done').length;
   const blocked = items.filter(i => i.Status === 'Blocked').length;
+  const inProg  = items.filter(i => i.Status === 'In Progress').length;
   const total   = items.length;
 
-  const rows = items.map(a => {
-    const logs    = a.ActivityLog || [];
-    const lastLog = logs[logs.length - 1];
-    const lastNote = lastLog
-      ? `<span style="color:var(--text2);font-size:11px" title="${escHtml(lastLog.note)}">${timeAgo(lastLog.timestamp)} — ${escHtml(lastLog.note.slice(0, 55))}${lastLog.note.length > 55 ? '…' : ''}</span>`
-      : '<span style="color:var(--text2);font-size:11px">No activity yet</span>';
-    const prRec   = a.PR ? (allPRs.find(p => p.PR === Number(a.PR) && p.Module === a.Module) || allPRs.find(p => p.PR === Number(a.PR))) : null;
-    const prBadge = prRec
-      ? `<span class="pr-pill" onclick="openEditPRModal('${prRec.id}')">#${a.PR}</span>`
-      : (a.PR ? `<span class="pr-pill" style="opacity:.5">#${a.PR}</span>` : '<span style="color:var(--text2);font-size:11px">—</span>');
-    const taskVal = (prRec && prRec.Task) || a.Task || null;
-    const taskDisplay = taskVal
-      ? `<span style="color:var(--text2);font-size:11px">#${escHtml(String(taskVal))}</span>`
-      : '<span style="color:var(--text2);font-size:11px">—</span>';
-    const pageName = (a.Page || '').split('/').pop() || a.Page || '—';
-    const sprintVal  = a.Sprint || (prRec && prRec.Dev_Sprint) || null;
-    const subLabels  = [
-      a.Week   ? `wk ${a.Week}`           : null,
-      sprintVal ? `S${sprintVal}` : null,
-    ].filter(Boolean).join(' · ');
-    const subLine = subLabels
-      ? `<div style="font-size:10px;color:var(--text2);margin-top:2px">${subLabels}</div>`
-      : '';
-    return `<tr>
-      <td style="font-family:monospace;font-size:11px;overflow:hidden;text-overflow:ellipsis" title="${escHtml(a.Module||'')} / ${escHtml(a.Page||'')}">
-        ${escHtml(a.Module||'—')} / ${escHtml(pageName)}${subLine}
-      </td>
-      <td>${stStatusBadge(a.Status)}</td>
-      <td>${prBadge}</td>
-      <td style="white-space:nowrap">${taskDisplay}</td>
-      <td style="max-width:240px">${lastNote}</td>
-      <td style="white-space:nowrap">
-        <button class="btn btn-primary btn-xs" onclick="openActivityModal('${a.id}')" title="View activity &amp; updates">📝 ${logs.length}</button>
-        ${canWrite() ? `<button class="btn btn-ghost btn-xs" onclick="openEditAssignmentModal('${a.id}')" title="Edit assignment">✏️</button>
-        <button class="btn btn-danger btn-xs" onclick="deleteAssignment('${a.id}')" title="Remove">🗑</button>` : ''}
-      </td>
-    </tr>`;
-  }).join('');
+  const safeId  = dev.replace(/[^a-z0-9]/gi, '_');
+  const devClr  = _devColor(dev);
+  const initial = _devInitial(dev);
 
-  return `<div class="st-dev-card">
-    <div class="st-dev-header">
+  let startCollapsed = true;
+  try { startCollapsed = localStorage.getItem(`st-col-${safeId}`) !== '0'; } catch {}
+
+  // Group by module, sorted alphabetically
+  const byModule = {};
+  items.forEach(a => {
+    const mod = a.Module || '(no module)';
+    if (!byModule[mod]) byModule[mod] = [];
+    byModule[mod].push(a);
+  });
+
+  const tableRows = Object.entries(byModule)
+    .sort(([a], [b]) => a.localeCompare(b))
+    .flatMap(([mod, modItems]) => {
+      const mc         = _modColor(mod);
+      const modDone    = modItems.filter(i => i.Status === 'Done').length;
+      const modBlocked = modItems.filter(i => i.Status === 'Blocked').length;
+      const modInProg  = modItems.filter(i => i.Status === 'In Progress').length;
+      const modTotal   = modItems.length;
+
+      const modRow = `<tr class="st-mod-row">
+        <td colspan="7" class="st-mod-cell" style="border-left:3px solid ${mc}">
+          <div class="st-mod-header">
+            <span class="st-mod-dot" style="background:${mc}"></span>
+            <span class="st-mod-name">${escHtml(mod)}</span>
+            <span class="st-mod-count">${modTotal} page${modTotal !== 1 ? 's' : ''}</span>
+            ${modInProg  ? `<span class="badge badge-orange" style="font-size:10px">${modInProg} in progress</span>` : ''}
+            ${modDone    ? `<span class="badge badge-green"  style="font-size:10px">${modDone} done</span>` : ''}
+            ${modBlocked ? `<span class="badge badge-red"    style="font-size:10px">${modBlocked} blocked</span>` : ''}
+          </div>
+        </td>
+      </tr>`;
+
+      const pageRows = modItems.map((a, idx) => {
+        const isLast  = idx === modItems.length - 1;
+        const logs    = a.ActivityLog || [];
+        const lastLog = logs[logs.length - 1];
+        const lastNote = lastLog
+          ? `<span class="st-last-note" title="${escHtml(lastLog.note)}">${timeAgo(lastLog.timestamp)} — ${escHtml(lastLog.note.slice(0, 52))}${lastLog.note.length > 52 ? '…' : ''}</span>`
+          : '<span class="st-last-note muted">No activity</span>';
+        const prRec   = a.PR ? (allPRs.find(p => p.PR === Number(a.PR) && p.Module === a.Module) || allPRs.find(p => p.PR === Number(a.PR))) : null;
+        const prBadge = prRec
+          ? `<span class="pr-pill" onclick="openEditPRModal('${prRec.id}')">#${a.PR}</span>`
+          : (a.PR ? `<span class="pr-pill" style="opacity:.5">#${a.PR}</span>` : '<span class="st-dash">—</span>');
+        const taskVal     = (prRec && prRec.Task) || a.Task || null;
+        const taskDisplay = taskVal
+          ? `<span class="st-meta">#${escHtml(String(taskVal))}</span>`
+          : '<span class="st-dash">—</span>';
+        const sprintVal     = a.Sprint || (prRec && prRec.Dev_Sprint) || null;
+        const sprintDisplay = sprintVal
+          ? `<span class="badge badge-gray" style="font-size:10px">${escHtml(String(sprintVal))}</span>`
+          : '<span class="st-dash">—</span>';
+
+        const statusKey  = (a.Status || 'pending').toLowerCase().replace(/\s+/g, '-');
+        const statusOpts = ['Pending', 'In Progress', 'In Review', 'Blocked', 'Done']
+          .map(s => `<option${a.Status === s ? ' selected' : ''}>${s}</option>`).join('');
+        const statusCell = canWrite()
+          ? `<select class="st-status-sel" data-status="${statusKey}" onchange="quickUpdateStatus(this,'${a.id}','${escAttr(a.Status || 'Pending')}',this.value)">${statusOpts}</select>`
+          : stStatusBadge(a.Status);
+
+        return `<tr class="st-page-row">
+          <td class="st-page-name" style="border-left:3px solid ${mc}40" title="${escHtml(a.Page || '')}">
+            <span class="st-tree">${isLast ? '└' : '├'}</span><span class="st-pname">${escHtml(a.Page || '—')}</span>
+          </td>
+          <td>${statusCell}</td>
+          <td>${prBadge}</td>
+          <td>${taskDisplay}</td>
+          <td>${sprintDisplay}</td>
+          <td class="st-act-cell">${lastNote}</td>
+          <td style="white-space:nowrap">
+            <button class="btn btn-primary btn-xs" onclick="openActivityModal('${a.id}')" title="Activity log (${logs.length})">📝 ${logs.length}</button>
+            ${canWrite() ? `<button class="btn btn-ghost btn-xs" onclick="openEditAssignmentModal('${a.id}')" title="Edit">✏️</button>
+            <button class="btn btn-danger btn-xs" onclick="deleteAssignment('${a.id}')" title="Remove">🗑</button>` : ''}
+          </td>
+        </tr>`;
+      }).join('');
+
+      return modRow + pageRows;
+    }).join('');
+
+  return `<div class="st-dev-card" style="border-top:3px solid ${devClr}">
+    <div class="st-dev-header" onclick="toggleDevCard('${safeId}')" style="cursor:pointer">
       <div class="st-dev-left">
-        <span class="st-dev-name">👤 ${escHtml(dev)}</span>
+        <span class="st-chev${startCollapsed ? '' : ' open'}" id="st-chev-${safeId}">▶</span>
+        <span class="st-dev-avatar" style="background:${devClr}">${initial}</span>
+        <span class="st-dev-name">${escHtml(dev)}</span>
         <span class="badge badge-blue">${total} page${total !== 1 ? 's' : ''}</span>
+        ${inProg  ? `<span class="badge badge-orange">${inProg} in progress</span>` : ''}
         ${done    ? `<span class="badge badge-green">${done} done</span>` : ''}
         ${blocked ? `<span class="badge badge-red">${blocked} blocked</span>` : ''}
       </div>
-      ${canWrite() ? `<button class="btn btn-ghost btn-sm" onclick="openAssignmentModalForDev('${escAttr(dev)}')">＋ Add Page</button>` : ''}
+      ${canWrite() ? `<button class="btn btn-ghost btn-sm" onclick="event.stopPropagation();openAssignmentModalForDev('${escAttr(dev)}')">＋ Add Page</button>` : ''}
     </div>
-    <div class="table-wrap" style="border-radius:0;border-left:none;border-right:none;border-bottom:none">
-      <table style="font-size:12px">
-        <colgroup>
-          <col style="width:20%"><col style="width:11%"><col style="width:8%">
-          <col style="width:8%"><col style="width:39%"><col style="width:14%">
-        </colgroup>
-        <thead><tr>
-          <th>Module / Page</th><th>Status</th><th>PR</th>
-          <th>Task #</th><th>Last Activity</th><th>Actions</th>
-        </tr></thead>
-        <tbody>${rows}</tbody>
-      </table>
+    <div class="st-dev-body${startCollapsed ? ' st-collapsed' : ''}" id="st-body-${safeId}">
+      <div class="table-wrap" style="border-radius:0;border-left:none;border-right:none;border-bottom:none">
+        <table class="st-table">
+          <colgroup>
+            <col style="width:21%"><col style="width:13%"><col style="width:7%">
+            <col style="width:8%"><col style="width:7%"><col style="width:30%"><col style="width:14%">
+          </colgroup>
+          <thead><tr>
+            <th class="st-th-page">Page</th><th>Status</th><th>PR</th>
+            <th>Task</th><th>Sprint</th><th>Last Activity</th><th>Actions</th>
+          </tr></thead>
+          <tbody>${tableRows}</tbody>
+        </table>
+      </div>
     </div>
   </div>`;
+}
+
+async function quickUpdateStatus(el, id, oldStatus, newStatus) {
+  if (oldStatus === newStatus) return;
+  // Optimistically update the select colour
+  el.dataset.status = newStatus.toLowerCase().replace(/\s+/g, '-');
+  const res = await authFetch(`${API}/status/${id}`, {
+    method: 'PUT', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ Status: newStatus }),
+  });
+  if (!res.ok) {
+    const j = await res.json();
+    showToast(j.error || 'Update failed', 'error');
+    // Revert the optimistic UI change in place — no full re-render so cards stay open
+    el.value = oldStatus;
+    el.dataset.status = oldStatus.toLowerCase().replace(/\s+/g, '-');
+    return;
+  }
+  await authFetch(`${API}/status/${id}/activity`, {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ note: `Status changed from "${oldStatus}" to "${newStatus}"`, type: 'status_change' }),
+  });
+  showToast(`Status → ${newStatus}`, 'success');
+  const idx = stAssignments.findIndex(a => a.id === id);
+  if (idx !== -1) stAssignments[idx] = { ...stAssignments[idx], Status: newStatus };
 }
 
 function stStatusBadge(s) {

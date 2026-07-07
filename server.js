@@ -124,7 +124,7 @@ async function seedAdmin(companyId, projectId) {
 }
 
 app.listen(PORT, async () => {
-  console.log(`PR Tracker running on http://localhost:${PORT}`);
+  console.log(`ProjectPulse running on http://localhost:${PORT}`);
   await ds.ensurePRDetailsTable();
   await ds.ensureSprintsTable();
 
