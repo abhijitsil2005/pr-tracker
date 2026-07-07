@@ -47,6 +47,7 @@ jobs:
             --version-label "${{ github.sha }}" \
             --source-bundle S3Bucket="${{ secrets.EB_S3_BUCKET }}",S3Key="deployments/${{ github.sha }}.zip" \
             --process \
+            --use-existing-version-if-available \
             --no-cli-pager
 
       - name: Deploy to Elastic Beanstalk environment
