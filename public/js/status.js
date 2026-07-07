@@ -134,6 +134,12 @@ function _stHash(str) {
 function _devColor(name)  { return _ST_PALETTE[_stHash(name)  % _ST_PALETTE.length]; }
 function _modColor(name)  { return _ST_PALETTE[(_stHash(name) + 3) % _ST_PALETTE.length]; }
 function _devInitial(n)   { return (n || '?').trim().charAt(0).toUpperCase(); }
+function _typeBadge(type) {
+  const t = (type || 'Development').trim();
+  const map = { 'Development': 'badge-blue', 'Iteration Bug': 'badge-orange', 'TCR Bug': 'badge-yellow', 'Prod Bug': 'badge-red' };
+  const cls = map[t] || 'badge-blue';
+  return `<span class="badge ${cls}" style="font-size:10px;white-space:nowrap">${escHtml(t)}</span>`;
+}
 
 function toggleDevCard(safeId) {
   const body = document.getElementById(`st-body-${safeId}`);
@@ -175,7 +181,7 @@ function buildDevCard(dev, items) {
       const modTotal   = modItems.length;
 
       const modRow = `<tr class="st-mod-row">
-        <td colspan="7" class="st-mod-cell" style="border-left:3px solid ${mc}">
+        <td colspan="8" class="st-mod-cell" style="border-left:3px solid ${mc}">
           <div class="st-mod-header">
             <span class="st-mod-dot" style="background:${mc}"></span>
             <span class="st-mod-name">${escHtml(mod)}</span>
@@ -187,7 +193,7 @@ function buildDevCard(dev, items) {
         </td>
       </tr>`;
 
-      const pageRows = modItems.map((a, idx) => {
+      const pageRows = [...modItems].sort((a, b) => (a.Page || '').localeCompare(b.Page || '')).map((a, idx) => {
         const isLast  = idx === modItems.length - 1;
         const logs    = a.ActivityLog || [];
         const lastLog = logs[logs.length - 1];
@@ -208,7 +214,7 @@ function buildDevCard(dev, items) {
           : '<span class="st-dash">—</span>';
 
         const statusKey  = (a.Status || 'pending').toLowerCase().replace(/\s+/g, '-');
-        const statusOpts = ['Pending', 'In Progress', 'In Review', 'Blocked', 'Done']
+        const statusOpts = ['Pending', 'In Progress', 'In Review', 'Blocked', 'Dev Done', 'Bug Fixing', 'Done']
           .map(s => `<option${a.Status === s ? ' selected' : ''}>${s}</option>`).join('');
         const statusCell = canWrite()
           ? `<select class="st-status-sel" data-status="${statusKey}" onchange="quickUpdateStatus(this,'${a.id}','${escAttr(a.Status || 'Pending')}',this.value)">${statusOpts}</select>`
@@ -219,6 +225,7 @@ function buildDevCard(dev, items) {
             <span class="st-tree">${isLast ? '└' : '├'}</span><span class="st-pname">${escHtml(a.Page || '—')}</span>
           </td>
           <td>${statusCell}</td>
+          <td>${_typeBadge(a.Type)}</td>
           <td>${prBadge}</td>
           <td>${taskDisplay}</td>
           <td>${sprintDisplay}</td>
@@ -251,11 +258,11 @@ function buildDevCard(dev, items) {
       <div class="table-wrap" style="border-radius:0;border-left:none;border-right:none;border-bottom:none">
         <table class="st-table">
           <colgroup>
-            <col style="width:21%"><col style="width:13%"><col style="width:7%">
-            <col style="width:8%"><col style="width:7%"><col style="width:30%"><col style="width:14%">
+            <col style="width:19%"><col style="width:12%"><col style="width:9%">
+            <col style="width:6%"><col style="width:6%"><col style="width:6%"><col style="width:28%"><col style="width:14%">
           </colgroup>
           <thead><tr>
-            <th class="st-th-page">Page</th><th>Status</th><th>PR</th>
+            <th class="st-th-page">Page</th><th>Status</th><th>Type</th><th>PR</th>
             <th>Task</th><th>Sprint</th><th>Last Activity</th><th>Actions</th>
           </tr></thead>
           <tbody>${tableRows}</tbody>
@@ -341,6 +348,7 @@ function openAssignmentModal(prefilledDev) {
   document.getElementById('amSaveBtn').textContent   = 'Assign';
   document.getElementById('am_week').textContent     = weekLabel(currentWeek);
   document.getElementById('am_status').value         = 'In Progress';
+  document.getElementById('am_type').value           = 'Development';
   document.getElementById('am_task').value           = '';
   document.getElementById('am_sprint').value         = '';
   document.getElementById('am_note').value           = '';
@@ -360,6 +368,8 @@ function openAssignmentModal(prefilledDev) {
   const qf1 = document.getElementById('amQuickPRForm'); if (qf1) qf1.style.display = 'none';
   const tb1 = document.getElementById('amToggleQPR');   if (tb1) tb1.textContent = '＋ New PR';
   const qn1 = document.getElementById('am_qpr_number'); if (qn1) qn1.value = '';
+  const qr1 = document.getElementById('am_qpr_raised'); if (qr1) qr1.value = '';
+  const qs1 = document.getElementById('am_qpr_sprint'); if (qs1) qs1.value = '';
   document.getElementById('assignmentModal').classList.add('open');
 }
 
@@ -375,6 +385,7 @@ async function openEditAssignmentModal(id) {
   document.getElementById('amSaveBtn').textContent   = 'Update';
   document.getElementById('am_week').textContent     = weekLabel(currentWeek);
   document.getElementById('am_status').value         = assignments.Status || 'In Progress';
+  document.getElementById('am_type').value           = assignments.Type   || 'Development';
   document.getElementById('am_note').value           = '';
   const existingPRRec = assignments.PR
     ? (allPRs.find(p => p.PR === Number(assignments.PR) && p.Module === assignments.Module) || allPRs.find(p => p.PR === Number(assignments.PR)))
@@ -401,6 +412,8 @@ async function openEditAssignmentModal(id) {
   const qf2 = document.getElementById('amQuickPRForm'); if (qf2) qf2.style.display = 'none';
   const tb2 = document.getElementById('amToggleQPR');   if (tb2) tb2.textContent = '＋ New PR';
   const qn2 = document.getElementById('am_qpr_number'); if (qn2) qn2.value = '';
+  const qr2 = document.getElementById('am_qpr_raised'); if (qr2) qr2.value = '';
+  const qs2 = document.getElementById('am_qpr_sprint'); if (qs2) qs2.value = '';
   document.getElementById('assignmentModal').classList.add('open');
 }
 
@@ -422,16 +435,7 @@ async function amLoadPageOptions() {
     chip.className     = 'page-chip';
     chip.textContent   = p.page_name;
     chip.dataset.value = p.page_name;
-    chip.onclick       = () => {
-      if (stCtx) {
-        // edit mode: single-select
-        container.querySelectorAll('.page-chip').forEach(c => c.classList.remove('selected'));
-        chip.classList.add('selected');
-      } else {
-        // create mode: multi-select toggle
-        chip.classList.toggle('selected');
-      }
-    };
+    chip.onclick       = () => chip.classList.toggle('selected');
     container.appendChild(chip);
   });
 }
@@ -448,16 +452,19 @@ async function saveAssignment() {
   const linkedPR = prEl ? (Number(prEl.value) || null) : null;
   const task   = document.getElementById('am_task').value.trim()   || null;
   const sprint = document.getElementById('am_sprint').value.trim() || null;
+  const type   = document.getElementById('am_type').value          || 'Development';
 
   if (stCtx) {
-    // Edit mode: single-select
-    const chip = document.querySelector('#am_pages .page-chip.selected');
-    if (!chip) return showToast('Select a page', 'error');
-    const page = chip.dataset.value;
+    // Edit mode: multi-select — update existing assignment for first page, create new for any extras
+    const selectedChips = [...document.querySelectorAll('#am_pages .page-chip.selected')];
+    if (!selectedChips.length) return showToast('Select at least one page', 'error');
+    const [firstChip, ...extraChips] = selectedChips;
     const oldStatus = stCtx.Status;
+
+    // Update the existing assignment record
     const res = await authFetch(`${API}/status/${stCtx.id}`, {
       method: 'PUT', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ Developer: dev, Module: mod, Page: page, Status: status, PR: linkedPR, Task: task, Sprint: sprint }),
+      body: JSON.stringify({ Developer: dev, Module: mod, Page: firstChip.dataset.value, Status: status, Type: type, PR: linkedPR, Task: task, Sprint: sprint }),
     });
     if (!res.ok) { const j = await res.json(); return showToast(j.error, 'error'); }
     if (oldStatus !== status) {
@@ -480,13 +487,23 @@ async function saveAssignment() {
         method: 'PUT', body: JSON.stringify(prUpdates),
       });
     }
-    showToast('Assignment updated', 'success');
+    // Create new assignments for any additional pages selected
+    for (const chip of extraChips) {
+      const body = { Developer: dev, Module: mod, Page: chip.dataset.value, Week: weekKey(currentWeek), Status: status, Type: type, PR: linkedPR, Task: task, Sprint: sprint };
+      if (note) body.note = note;
+      await authFetch(`${API}/status`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+    }
+    const total = selectedChips.length;
+    showToast(total === 1 ? 'Assignment updated' : `Assignment updated + ${total - 1} new page${total > 2 ? 's' : ''} assigned`, 'success');
   } else {
     // Create mode: multi-select — one assignment per page
     const selectedChips = [...document.querySelectorAll('#am_pages .page-chip.selected')];
     if (!selectedChips.length) return showToast('Select at least one page', 'error');
     for (const chip of selectedChips) {
-      const body = { Developer: dev, Module: mod, Page: chip.dataset.value, Week: weekKey(currentWeek), Status: status, PR: linkedPR, Task: task, Sprint: sprint };
+      const body = { Developer: dev, Module: mod, Page: chip.dataset.value, Week: weekKey(currentWeek), Status: status, Type: type, PR: linkedPR, Task: task, Sprint: sprint };
       if (note) body.note = note;
       const res = await authFetch(`${API}/status`, {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
@@ -746,17 +763,38 @@ function toggleAmQuickPRForm() {
   if (show) { const n = document.getElementById('am_qpr_number'); if (n) n.focus(); }
 }
 
+async function amQPRDateChanged() {
+  await loadSprints();
+  const sprint = sprintForDate(document.getElementById('am_qpr_raised').value);
+  if (!sprint) return;
+  document.getElementById('am_qpr_sprint').value = sprint;
+  const mainSprint = document.getElementById('am_sprint');
+  if (mainSprint && !mainSprint.value) mainSprint.value = sprint;
+}
+
+async function actQPRDateChanged() {
+  await loadSprints();
+  const sprint = sprintForDate(document.getElementById('qpr_raised').value);
+  if (sprint) document.getElementById('qpr_devSprint').value = sprint;
+}
+
 async function saveAmQuickPR() {
   const prNum = Number(document.getElementById('am_qpr_number').value);
   if (!prNum) return showToast('PR number is required', 'error');
-  const status = document.getElementById('am_qpr_status').value;
+  const status     = document.getElementById('am_qpr_status').value;
+  const raisedDate = document.getElementById('am_qpr_raised').value || null;
+  const devSprint  = document.getElementById('am_qpr_sprint').value.trim() || null;
   const dev    = document.getElementById('am_dev').value || null;
   const mod    = document.getElementById('am_module').value || null;
   const pages  = [...document.querySelectorAll('#am_pages .page-chip.selected')].map(c => c.dataset.value);
 
+  const prBody = { PR: prNum, Type: 'Development', Developer: dev, Module: mod, Page: pages, Status: status };
+  if (raisedDate) prBody['PR Raised Date'] = raisedDate;
+  if (devSprint)  prBody.Dev_Sprint        = devSprint;
+
   const prRes = await authFetch(`${API}/prs`, {
     method: 'POST', headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ PR: prNum, Type: 'Development', Developer: dev, Module: mod, Page: pages, Status: status }),
+    body: JSON.stringify(prBody),
   });
   const prJson = await prRes.json();
   if (!prRes.ok) return showToast(prJson.error || 'Failed to create PR', 'error');
@@ -771,9 +809,17 @@ async function saveAmQuickPR() {
     sel.value = prNum;
   }
 
+  // Propagate sprint to the assignment form fields
+  if (devSprint) {
+    const mainSprint = document.getElementById('am_sprint');
+    if (mainSprint && !mainSprint.value) mainSprint.value = devSprint;
+  }
+
   document.getElementById('amQuickPRForm').style.display = 'none';
   document.getElementById('amToggleQPR').textContent = '＋ New PR';
   document.getElementById('am_qpr_number').value = '';
+  document.getElementById('am_qpr_raised').value = '';
+  document.getElementById('am_qpr_sprint').value = '';
   showToast(`PR #${prNum} created`, 'success');
 }
 
@@ -790,7 +836,9 @@ function toggleQuickPRForm() {
 async function saveQuickPR() {
   const prNum = Number(document.getElementById('qpr_number').value);
   if (!prNum) return showToast('PR number is required', 'error');
-  const status = document.getElementById('qpr_status').value;
+  const status     = document.getElementById('qpr_status').value;
+  const raisedDate = document.getElementById('qpr_raised').value || null;
+  const devSprint  = document.getElementById('qpr_devSprint').value.trim() || null;
   const { Developer: dev, Module: mod, Page: page } = stCtx;
 
   // Create the PR with minimal details
@@ -802,6 +850,8 @@ async function saveQuickPR() {
     Page:      page  ? [page] : [],
     Status:    status,
   };
+  if (raisedDate) prBody['PR Raised Date'] = raisedDate;
+  if (devSprint)  prBody.Dev_Sprint        = devSprint;
   const prRes = await authFetch(`${API}/prs`, {
     method: 'POST', headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(prBody),
@@ -826,6 +876,8 @@ async function saveQuickPR() {
   document.getElementById('actQuickPRForm').style.display = 'none';
   document.getElementById('actToggleQPR').textContent     = '＋ New PR';
   document.getElementById('qpr_number').value             = '';
+  document.getElementById('qpr_raised').value             = '';
+  document.getElementById('qpr_devSprint').value          = '';
 
   // Refresh PRs global list + modal
   const fresh = await api('prs');
