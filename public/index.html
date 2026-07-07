@@ -266,7 +266,7 @@
     <button class="modal-close" onclick="closePRModal()">✕</button>
     <div class="form-grid">
       <div class="form-group"><label>PR Number *</label><input type="text" id="f_pr"></div>
-      <div class="form-group"><label>Type</label><select id="f_type"><option>Development</option><option>Bug Fix</option><option>Hotfix</option><option>Remove FF</option></select></div>
+      <div class="form-group"><label>Type</label><select id="f_type"><option>Development</option><option>QA Bug Fix</option><option>Hotfix</option><option>Remove FF</option><option>Prod Bug Fix</option></select></div>
       <div class="form-group"><label>Module</label><select id="f_module" onchange="loadPageOptions()"><option value="">— select —</option></select></div>
       <div class="form-group"><label>Developer</label><select id="f_developer"><option value="">— select —</option></select></div>
       <div class="form-group full">
@@ -480,7 +480,15 @@
         <label>Module *</label>
         <select id="am_module" onchange="amLoadPageOptions()"><option value="">— select —</option></select>
       </div>
-      <div class="form-group"></div>
+      <div class="form-group">
+        <label>Type</label>
+        <select id="am_type">
+          <option value="Development">Development</option>
+          <option value="Iteration Bug">Iteration Bug</option>
+          <option value="TCR Bug">TCR Bug</option>
+          <option value="Prod Bug">Prod Bug</option>
+        </select>
+      </div>
       <div class="form-group full">
         <label>Page * <span style="color:var(--text2);font-weight:400">— click to select</span></label>
         <div id="am_pages" class="page-chips"><span class="page-chip-hint">— select a module first —</span></div>
@@ -494,7 +502,7 @@
           <button class="btn btn-ghost btn-sm" id="amToggleQPR" onclick="toggleAmQuickPRForm()" type="button">＋ New PR</button>
         </div>
         <div id="amQuickPRForm" style="display:none;margin-top:10px;padding:12px;background:var(--surface);border:1px solid var(--border);border-radius:8px">
-          <div style="display:grid;grid-template-columns:1fr 1fr auto;gap:8px;align-items:flex-end">
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
             <div>
               <label style="font-size:11px;color:var(--text2);margin-bottom:4px;display:block">PR Number *</label>
               <input type="number" id="am_qpr_number" placeholder="e.g. 8890" style="background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:8px 12px;border-radius:8px;font-size:13px;outline:none;width:100%;box-sizing:border-box">
@@ -512,8 +520,16 @@
                 <option>Closed</option>
               </select>
             </div>
-            <button class="btn btn-success btn-sm" onclick="saveAmQuickPR()" type="button" style="white-space:nowrap">Create &amp; Select</button>
+            <div>
+              <label style="font-size:11px;color:var(--text2);margin-bottom:4px;display:block">PR Raised Date</label>
+              <input type="date" id="am_qpr_raised" onchange="amQPRDateChanged()" style="background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:8px 12px;border-radius:8px;font-size:13px;outline:none;width:100%;box-sizing:border-box">
+            </div>
+            <div>
+              <label style="font-size:11px;color:var(--text2);margin-bottom:4px;display:block">Dev Sprint <span style="font-weight:400;color:var(--text2)">(auto-filled)</span></label>
+              <input type="text" id="am_qpr_sprint" placeholder="e.g. 3.1" style="background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:8px 12px;border-radius:8px;font-size:13px;outline:none;width:100%;box-sizing:border-box">
+            </div>
           </div>
+          <button class="btn btn-success btn-sm" onclick="saveAmQuickPR()" type="button" style="white-space:nowrap;">Create &amp; Select</button>
         </div>
       </div>
       <div class="form-group">
@@ -576,10 +592,10 @@
       </div>
       <!-- Quick PR creation form (hidden by default) -->
       <div id="actQuickPRForm" style="display:none;margin-top:12px;padding-top:12px;border-top:1px solid var(--border)">
-        <div style="display:grid;grid-template-columns:1fr 1fr auto;gap:8px;align-items:flex-end">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
           <div>
             <label style="font-size:11px;color:var(--text2);margin-bottom:4px;display:block">PR Number *</label>
-            <input type="text" id="qpr_number" placeholder="e.g. 8890" style="background:var(--surface);border:1px solid var(--border);color:var(--text);padding:8px 12px;border-radius:8px;font-size:13px;outline:none;width:100%">
+            <input type="text" id="qpr_number" placeholder="e.g. 8890" style="background:var(--surface);border:1px solid var(--border);color:var(--text);padding:8px 12px;border-radius:8px;font-size:13px;outline:none;width:100%;box-sizing:border-box">
           </div>
           <div>
             <label style="font-size:11px;color:var(--text2);margin-bottom:4px;display:block">Status</label>
@@ -594,9 +610,19 @@
               <option>Closed</option>
             </select>
           </div>
-          <button class="btn btn-success btn-sm" onclick="saveQuickPR()" style="white-space:nowrap">Create &amp; Link</button>
+          <div>
+            <label style="font-size:11px;color:var(--text2);margin-bottom:4px;display:block">PR Raised Date</label>
+            <input type="date" id="qpr_raised" onchange="actQPRDateChanged()" style="background:var(--surface);border:1px solid var(--border);color:var(--text);padding:8px 12px;border-radius:8px;font-size:13px;outline:none;width:100%;box-sizing:border-box">
+          </div>
+          <div>
+            <label style="font-size:11px;color:var(--text2);margin-bottom:4px;display:block">Dev Sprint <span style="font-weight:400;color:var(--text2)">(auto-filled)</span></label>
+            <input type="text" id="qpr_devSprint" placeholder="e.g. 3.1" style="background:var(--surface);border:1px solid var(--border);color:var(--text);padding:8px 12px;border-radius:8px;font-size:13px;outline:none;width:100%;box-sizing:border-box">
+          </div>
         </div>
-        <div style="font-size:11px;color:var(--text2);margin-top:6px">Developer, module and page will be pre-filled from the assignment.</div>
+        <div style="display:flex;gap:8px;align-items:center">
+          <button class="btn btn-success btn-sm" onclick="saveQuickPR()" style="white-space:nowrap">Create &amp; Link</button>
+          <span style="font-size:11px;color:var(--text2)">Developer, module and page will be pre-filled from the assignment.</span>
+        </div>
       </div>
     </div>
 
