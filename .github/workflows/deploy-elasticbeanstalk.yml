@@ -48,16 +48,28 @@ jobs:
           if aws elasticbeanstalk describe-application-versions \
             --application-name "${{ secrets.EB_APPLICATION_NAME }}" \
             --version-labels "$VERSION_LABEL" \
-            --query 'ApplicationVersions[0].VersionLabel' \
-            --output text 2>/dev/null | grep -q "$VERSION_LABEL"; then
+            --query 'ApplicationVersions[*].VersionLabel' \
+            --output text 2>/dev/null | grep -q "^$VERSION_LABEL$"; then
             echo "Application version $VERSION_LABEL already exists; reusing it."
           else
+            set +e
             aws elasticbeanstalk create-application-version \
               --application-name "${{ secrets.EB_APPLICATION_NAME }}" \
               --version-label "$VERSION_LABEL" \
               --source-bundle S3Bucket="${{ secrets.EB_S3_BUCKET }}",S3Key="deployments/${{ github.sha }}.zip" \
               --process \
-              --no-cli-pager
+              --no-cli-pager > /tmp/eb-create.log 2>&1
+            CREATE_EXIT=$?
+            set -e
+
+            if [ $CREATE_EXIT -eq 0 ]; then
+              echo "Created application version $VERSION_LABEL."
+            elif grep -q "already exists" /tmp/eb-create.log; then
+              echo "Application version $VERSION_LABEL already exists; continuing."
+            else
+              cat /tmp/eb-create.log
+              exit $CREATE_EXIT
+            fi
           fi
 
       - name: Deploy to Elastic Beanstalk environment
