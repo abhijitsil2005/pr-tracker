@@ -40,15 +40,25 @@ jobs:
         run: |
           aws s3 cp .deploy/app.zip s3://${{ secrets.EB_S3_BUCKET }}/deployments/${{ github.sha }}.zip
 
-      - name: Create Elastic Beanstalk application version
+      - name: Create or reuse Elastic Beanstalk application version
         run: |
-          aws elasticbeanstalk create-application-version \
+          set -e
+          VERSION_LABEL="${{ github.sha }}"
+
+          if aws elasticbeanstalk describe-application-versions \
             --application-name "${{ secrets.EB_APPLICATION_NAME }}" \
-            --version-label "${{ github.sha }}" \
-            --source-bundle S3Bucket="${{ secrets.EB_S3_BUCKET }}",S3Key="deployments/${{ github.sha }}.zip" \
-            --process \
-            --use-existing-version-if-available \
-            --no-cli-pager
+            --version-labels "$VERSION_LABEL" \
+            --query 'ApplicationVersions[0].VersionLabel' \
+            --output text 2>/dev/null | grep -q "$VERSION_LABEL"; then
+            echo "Application version $VERSION_LABEL already exists; reusing it."
+          else
+            aws elasticbeanstalk create-application-version \
+              --application-name "${{ secrets.EB_APPLICATION_NAME }}" \
+              --version-label "$VERSION_LABEL" \
+              --source-bundle S3Bucket="${{ secrets.EB_S3_BUCKET }}",S3Key="deployments/${{ github.sha }}.zip" \
+              --process \
+              --no-cli-pager
+          fi
 
       - name: Deploy to Elastic Beanstalk environment
         run: |
