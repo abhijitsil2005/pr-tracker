@@ -1,96 +1,126 @@
 const express = require('express');
 const router  = express.Router();
-const ds      = require('../services/dynamoService');
-const { authenticate, requireCompanyAdmin, requireProjectAdmin } = require('../middleware/auth');
+const { pool, query } = require('../services/pgClient');
+const { authenticate, requireCompanyAdmin } = require('../middleware/auth');
 
 router.use(authenticate);
 
-// GET /api/projects — list all accessible projects for the logged-in user
+// Helper: verify a project belongs to the caller's company; returns the row or null
+async function getProjectForCompany(projectId, companyId) {
+  const { rows } = await pool.query(
+    'SELECT * FROM projects WHERE id = $1 AND company_id = $2',
+    [projectId, companyId]
+  );
+  return rows[0] || null;
+}
+
+// Helper: true if the caller is a CompanyAdmin or an Admin of the specific project
+function isAdmin(req, projectId) {
+  return (
+    req.user.company_role === 'CompanyAdmin' ||
+    (req.user.project_id === projectId && req.user.role === 'Admin')
+  );
+}
+
+// ── Projects ──────────────────────────────────────────────────────
+
+// GET /api/projects
 router.get('/', async (req, res) => {
   try {
     if (!req.user.company_id) return res.json([]);
-    const allProjects = await ds.getProjectsByCompany(req.user.company_id);
-    const active = allProjects.filter(p => p.active !== false);
 
-    if (req.user.company_role === 'CompanyAdmin' || req.user.company_role === 'CompanyReadOnly') {
-      return res.json(active);
+    const isCompanyLevel =
+      req.user.company_role === 'CompanyAdmin' ||
+      req.user.company_role === 'CompanyReadOnly';
+
+    if (isCompanyLevel) {
+      const { rows } = await pool.query(
+        'SELECT * FROM projects WHERE company_id = $1 AND active = true ORDER BY name',
+        [req.user.company_id]
+      );
+      return res.json(rows);
     }
 
-    // Return only projects this user has a membership in
-    const memberships = new Set((req.user.project_memberships || []).map(m => m.project_id));
-    res.json(active.filter(p => memberships.has(p.id)));
+    // Regular user: only projects they have an explicit membership in
+    const { rows } = await pool.query(
+      `SELECT p.* FROM projects p
+       INNER JOIN project_members pm ON pm.project_id = p.id AND pm.user_email = $1
+       WHERE p.company_id = $2 AND p.active = true
+       ORDER BY p.name`,
+      [req.user.email, req.user.company_id]
+    );
+    res.json(rows);
   } catch (e) {
     res.status(500).json({ error: e.message });
   }
 });
 
-// POST /api/projects — create project (CompanyAdmin only)
+// POST /api/projects
 router.post('/', requireCompanyAdmin, async (req, res) => {
+  const { name, description } = req.body;
+  if (!name) return res.status(400).json({ error: 'name required' });
   try {
-    const { name, description } = req.body;
-    if (!name) return res.status(400).json({ error: 'name required' });
-    const project = await ds.createProject({
-      company_id:  req.user.company_id,
-      name,
-      description: description || '',
-    });
-    res.status(201).json({ message: 'Project created', data: project });
+    const { rows } = await pool.query(
+      `INSERT INTO projects (company_id, name, description)
+       VALUES ($1, $2, $3)
+       RETURNING *`,
+      [req.user.company_id, name.trim(), description || '']
+    );
+    res.status(201).json({ message: 'Project created', data: rows[0] });
   } catch (e) {
     res.status(400).json({ error: e.message });
   }
 });
 
-// GET /api/projects/:id — get one project (must have access)
+// GET /api/projects/:id
 router.get('/:id', async (req, res) => {
   try {
-    const project = await ds.getProject(req.params.id);
-    if (!project || project.company_id !== req.user.company_id) {
-      return res.status(404).json({ error: 'Project not found' });
-    }
+    const project = await getProjectForCompany(req.params.id, req.user.company_id);
+    if (!project) return res.status(404).json({ error: 'Project not found' });
     res.json(project);
   } catch (e) {
     res.status(500).json({ error: e.message });
   }
 });
 
-// PUT /api/projects/:id — update project (CompanyAdmin or ProjectAdmin)
+// PUT /api/projects/:id
 router.put('/:id', async (req, res) => {
   try {
-    const project = await ds.getProject(req.params.id);
-    if (!project || project.company_id !== req.user.company_id) {
-      return res.status(404).json({ error: 'Project not found' });
-    }
+    const project = await getProjectForCompany(req.params.id, req.user.company_id);
+    if (!project) return res.status(404).json({ error: 'Project not found' });
 
-    // Only CompanyAdmin or users with Admin role in THIS project can update it
-    const isCompanyAdmin  = req.user.company_role === 'CompanyAdmin';
-    const isProjectAdmin  = req.user.project_id === req.params.id && req.user.role === 'Admin';
-    if (!isCompanyAdmin && !isProjectAdmin) {
+    if (!isAdmin(req, req.params.id)) {
       return res.status(403).json({ error: 'Admin access required to update project' });
     }
 
-    const { name, description, active, excluded_pages } = req.body;
-    const updates = {};
-    if (name        !== undefined) updates.name        = name.trim();
-    if (description !== undefined) updates.description = description;
-    if (typeof active === 'boolean') updates.active    = active;
-    if (Array.isArray(excluded_pages))   updates.excluded_pages   = excluded_pages;
-    if (Array.isArray(excluded_modules)) updates.excluded_modules = excluded_modules;
+    const sets = [];
+    const vals = [req.params.id];
+    const push = (col, val) => { vals.push(val); sets.push(`${col} = $${vals.length}`); };
 
-    const updated = await ds.updateProject(req.params.id, updates);
-    res.json({ message: 'Project updated', data: updated });
+    const { name, description, active } = req.body;
+    if (name        !== undefined) push('name',        name.trim());
+    if (description !== undefined) push('description', description);
+    if (typeof active === 'boolean') push('active',    active);
+
+    if (!sets.length) return res.json({ message: 'Project updated', data: project });
+
+    const { rows } = await pool.query(
+      `UPDATE projects SET ${sets.join(', ')} WHERE id = $1 RETURNING *`,
+      vals
+    );
+    res.json({ message: 'Project updated', data: rows[0] });
   } catch (e) {
     res.status(500).json({ error: e.message });
   }
 });
 
-// DELETE /api/projects/:id — delete project (CompanyAdmin only)
+// DELETE /api/projects/:id
 router.delete('/:id', requireCompanyAdmin, async (req, res) => {
   try {
-    const project = await ds.getProject(req.params.id);
-    if (!project || project.company_id !== req.user.company_id) {
-      return res.status(404).json({ error: 'Project not found' });
-    }
-    await ds.deleteProject(req.params.id);
+    const project = await getProjectForCompany(req.params.id, req.user.company_id);
+    if (!project) return res.status(404).json({ error: 'Project not found' });
+
+    await pool.query('DELETE FROM projects WHERE id = $1', [req.params.id]);
     res.json({ message: `Project "${project.name}" deleted` });
   } catch (e) {
     res.status(500).json({ error: e.message });
@@ -99,37 +129,40 @@ router.delete('/:id', requireCompanyAdmin, async (req, res) => {
 
 // ── Project Members ───────────────────────────────────────────────
 
-// GET /api/projects/:id/members — list members (CompanyAdmin or ProjectAdmin)
+// GET /api/projects/:id/members
 router.get('/:id/members', async (req, res) => {
   try {
-    const project = await ds.getProject(req.params.id);
-    if (!project || project.company_id !== req.user.company_id) {
-      return res.status(404).json({ error: 'Project not found' });
-    }
+    const project = await getProjectForCompany(req.params.id, req.user.company_id);
+    if (!project) return res.status(404).json({ error: 'Project not found' });
 
-    const isCompanyAdmin = req.user.company_role === 'CompanyAdmin';
-    const isProjectAdmin = req.user.project_id === req.params.id && req.user.role === 'Admin';
-    if (!isCompanyAdmin && !isProjectAdmin) {
+    if (!isAdmin(req, req.params.id)) {
       return res.status(403).json({ error: 'Admin access required' });
     }
 
-    const users = await ds.getUsersByCompany(req.user.company_id);
-    const members = users
-      .filter(u => {
-        if (u.company_role === 'CompanyAdmin' || u.company_role === 'CompanyReadOnly') return true;
-        return (u.project_memberships || []).some(m => m.project_id === req.params.id);
-      })
-      .map(u => {
-        let role;
-        if (u.company_role === 'CompanyAdmin')    role = 'Admin (Company)';
-        else if (u.company_role === 'CompanyReadOnly') role = 'ReadOnly (Company)';
-        else {
-          const m = (u.project_memberships || []).find(m => m.project_id === req.params.id);
-          role = m ? m.role : null;
-        }
-        return { email: u.email, name: u.name, role, active: u.active, company_role: u.company_role || null };
-      })
-      .filter(m => m.role);
+    // Company-level users always have implicit access; direct members have a row in project_members
+    const { rows } = await pool.query(
+      `SELECT
+         u.email, u.name, u.active, u.company_role,
+         pm.role AS project_role
+       FROM users u
+       LEFT JOIN project_members pm
+         ON pm.user_email = u.email AND pm.project_id = $1
+       WHERE u.company_id = $2
+         AND (
+           pm.project_id IS NOT NULL
+           OR u.company_role IN ('CompanyAdmin', 'CompanyReadOnly')
+         )
+       ORDER BY u.name`,
+      [req.params.id, req.user.company_id]
+    );
+
+    const members = rows.map(u => {
+      let role;
+      if (u.company_role === 'CompanyAdmin')     role = 'Admin (Company)';
+      else if (u.company_role === 'CompanyReadOnly') role = 'ReadOnly (Company)';
+      else role = u.project_role;
+      return { email: u.email, name: u.name, role, active: u.active, company_role: u.company_role || null };
+    }).filter(m => m.role);
 
     res.json(members);
   } catch (e) {
@@ -137,17 +170,13 @@ router.get('/:id/members', async (req, res) => {
   }
 });
 
-// POST /api/projects/:id/members — add/update a member's role
+// POST /api/projects/:id/members
 router.post('/:id/members', async (req, res) => {
   try {
-    const project = await ds.getProject(req.params.id);
-    if (!project || project.company_id !== req.user.company_id) {
-      return res.status(404).json({ error: 'Project not found' });
-    }
+    const project = await getProjectForCompany(req.params.id, req.user.company_id);
+    if (!project) return res.status(404).json({ error: 'Project not found' });
 
-    const isCompanyAdmin = req.user.company_role === 'CompanyAdmin';
-    const isProjectAdmin = req.user.project_id === req.params.id && req.user.role === 'Admin';
-    if (!isCompanyAdmin && !isProjectAdmin) {
+    if (!isAdmin(req, req.params.id)) {
       return res.status(403).json({ error: 'Admin access required' });
     }
 
@@ -157,41 +186,45 @@ router.post('/:id/members', async (req, res) => {
       return res.status(400).json({ error: 'role must be Admin, ReadWrite, or ReadOnly' });
     }
 
-    const user = await ds.getUserByEmail(email.toLowerCase().trim());
-    if (!user) return res.status(404).json({ error: 'User not found' });
-    if (user.company_id !== req.user.company_id) {
+    const normalEmail = email.toLowerCase().trim();
+
+    const { rows: userRows } = await pool.query(
+      'SELECT email, company_id FROM users WHERE email = $1',
+      [normalEmail]
+    );
+    if (!userRows.length) return res.status(404).json({ error: 'User not found' });
+    if (userRows[0].company_id !== req.user.company_id) {
       return res.status(403).json({ error: 'User does not belong to your company' });
     }
 
-    const memberships = (user.project_memberships || []).filter(m => m.project_id !== req.params.id);
-    memberships.push({ project_id: req.params.id, role });
-    await ds.upsertUser({ ...user, project_memberships: memberships });
-    res.json({ message: `${email} added to project with role ${role}` });
+    await pool.query(
+      `INSERT INTO project_members (project_id, user_email, role)
+       VALUES ($1, $2, $3)
+       ON CONFLICT (project_id, user_email) DO UPDATE SET role = $3`,
+      [req.params.id, normalEmail, role]
+    );
+    res.json({ message: `${normalEmail} added to project with role ${role}` });
   } catch (e) {
     res.status(500).json({ error: e.message });
   }
 });
 
-// DELETE /api/projects/:id/members/:email — remove a member from the project
+// DELETE /api/projects/:id/members/:email
 router.delete('/:id/members/:email', async (req, res) => {
   try {
-    const project = await ds.getProject(req.params.id);
-    if (!project || project.company_id !== req.user.company_id) {
-      return res.status(404).json({ error: 'Project not found' });
-    }
+    const project = await getProjectForCompany(req.params.id, req.user.company_id);
+    if (!project) return res.status(404).json({ error: 'Project not found' });
 
-    const isCompanyAdmin = req.user.company_role === 'CompanyAdmin';
-    const isProjectAdmin = req.user.project_id === req.params.id && req.user.role === 'Admin';
-    if (!isCompanyAdmin && !isProjectAdmin) {
+    if (!isAdmin(req, req.params.id)) {
       return res.status(403).json({ error: 'Admin access required' });
     }
 
     const email = decodeURIComponent(req.params.email).toLowerCase();
-    const user  = await ds.getUserByEmail(email);
-    if (!user) return res.status(404).json({ error: 'User not found' });
-
-    const memberships = (user.project_memberships || []).filter(m => m.project_id !== req.params.id);
-    await ds.upsertUser({ ...user, project_memberships: memberships });
+    const { rowCount } = await pool.query(
+      'DELETE FROM project_members WHERE project_id = $1 AND user_email = $2',
+      [req.params.id, email]
+    );
+    if (!rowCount) return res.status(404).json({ error: 'User not found in project' });
     res.json({ message: `${email} removed from project` });
   } catch (e) {
     res.status(500).json({ error: e.message });

@@ -27,10 +27,10 @@ async function renderReports() {
     api('import/sprints'),
   ]);
 
-  _rptModules  = mpData || [];
-  _rptTimeline = [...(tlData || [])].sort((a, b) => Number(a.Release_Number) - Number(b.Release_Number));
+  _rptModules  = Array.isArray(mpData) ? mpData : [];
+  _rptTimeline = [...(Array.isArray(tlData) ? tlData : [])].sort((a, b) => Number(a.Release_Number) - Number(b.Release_Number));
   _rptPRs      = (prData && prData.data) || [];
-  _rptSprints  = [...(spData || [])].sort((a, b) => a.StartDate.localeCompare(b.StartDate));
+  _rptSprints  = [...(Array.isArray(spData) ? spData : [])].sort((a, b) => (a.StartDate || '').localeCompare(b.StartDate || ''));
 
   const sel  = document.getElementById('rptReleaseFilter');
   const prev = sel.value;
@@ -59,6 +59,10 @@ function _modStats(mod) {
 
 function _parseDate(s) {
   if (!s) return null;
+  if (/^\d{4}-\d{2}-\d{2}$/.test(s)) {
+    const [y, m, d] = s.split('-').map(Number);
+    return new Date(y, m - 1, d);
+  }
   const [m, d, y] = s.split('/').map(Number);
   return (y && m && d) ? new Date(y, m - 1, d) : null;
 }
@@ -80,7 +84,7 @@ function _normDate(s) {
   return null;
 }
 
-// ── Chart 3: PRs Created vs Approved per Sprint ──
+// ── Chart 3: PRs Created vs Approved/Deployed per Sprint ──
 function _buildPRSprintChart(prs, sprints) {
   const EXCL = new Set([...EXCLUDED_FROM_PAGES].map(s => s.toLowerCase()));
   const filtered = prs.filter(pr => {
@@ -89,36 +93,62 @@ function _buildPRSprintChart(prs, sprints) {
     return !pages.every(p => EXCL.has(p.split('/').pop().toLowerCase()));
   });
 
-  if (!sprints || !sprints.length) {
-    return `<div class="rpt-chart-card">
-      <div class="rpt-chart-title">PRs by Sprint — Created vs Approved</div>
-      <div class="rpt-chart-subtitle">Based on PR Raised Date and PR Approved Date within each sprint's date range</div>
-      <p style="color:${_C.text2};text-align:center;padding:40px 20px;font-size:13px">No sprint date ranges found. Import sprint data to see this chart.</p>
-    </div>`;
+  let BARS, chartData, subtitle;
+
+  if (sprints && sprints.length) {
+    // Sprint date ranges available: group by raised/approved date within range
+    BARS = [
+      { key: 'created',  color: _C.orange, label: 'Created'  },
+      { key: 'approved', color: _C.accent,  label: 'Approved' },
+    ];
+    subtitle = 'Created = PR Raised Date within sprint range · Approved = PR Approved Date within sprint range';
+    chartData = sprints.map(s => {
+      const start = s.StartDate, end = s.EndDate;
+      const created  = filtered.filter(pr => { const d = _normDate(pr['PR Raised Date']);   return d && d >= start && d <= end; }).length;
+      const approved = filtered.filter(pr => { const d = _normDate(pr['PR Approved Date']); return d && d >= start && d <= end; }).length;
+      return { sprint: String(s.Sprint), start, end, created, approved };
+    }).filter(d => d.created > 0 || d.approved > 0);
+  } else {
+    // No sprint date ranges — group directly by Dev_Sprint field on PRs
+    const DEPLOYED = new Set(['Ready for Prod Deploy', 'Prod Deployed FF OFF', 'Prod Deployed']);
+    BARS = [
+      { key: 'created',  color: _C.orange, label: 'Created'  },
+      { key: 'approved', color: _C.green,  label: 'Deployed' },
+    ];
+    subtitle = 'Grouped by Dev Sprint field · Deployed = status is Ready for Prod Deploy or Prod Deployed';
+
+    const sprintMap = new Map();
+    filtered.forEach(pr => {
+      const sprint = pr.Dev_Sprint;
+      if (!sprint) return;
+      if (!sprintMap.has(sprint)) sprintMap.set(sprint, { created: 0, approved: 0 });
+      sprintMap.get(sprint).created++;
+      if (DEPLOYED.has(pr.Status)) sprintMap.get(sprint).approved++;
+    });
+
+    // Sort sprint names numerically (e.g. "1.5" < "2.3" < "3.6")
+    chartData = [...sprintMap.entries()]
+      .sort(([a], [b]) => {
+        const pa = a.split('.').map(Number), pb = b.split('.').map(Number);
+        for (let i = 0; i < Math.max(pa.length, pb.length); i++) {
+          const d = (pa[i] || 0) - (pb[i] || 0);
+          if (d !== 0) return d;
+        }
+        return 0;
+      })
+      .map(([sprint, counts]) => ({ sprint, ...counts }));
   }
-
-  const BARS = [
-    { key: 'created',  color: _C.orange, label: 'Created'  },
-    { key: 'approved', color: _C.accent,  label: 'Approved' },
-  ];
-
-  const chartData = sprints.map(s => {
-    const start = s.StartDate, end = s.EndDate;
-    const created  = filtered.filter(pr => { const d = _normDate(pr['PR Raised Date']);   return d && d >= start && d <= end; }).length;
-    const approved = filtered.filter(pr => { const d = _normDate(pr['PR Approved Date']); return d && d >= start && d <= end; }).length;
-    return { sprint: String(s.Sprint), start, end, created, approved };
-  }).filter(d => d.created > 0 || d.approved > 0);
 
   if (!chartData.length) {
     return `<div class="rpt-chart-card">
       <div class="rpt-chart-title">PRs by Sprint — Created vs Approved</div>
-      <div class="rpt-chart-subtitle">Based on PR Raised Date and PR Approved Date within each sprint's date range</div>
-      <p style="color:${_C.text2};text-align:center;padding:40px 20px;font-size:13px">No PRs with Raised Date or Approved Date found within any sprint range.</p>
+      <div class="rpt-chart-subtitle">${subtitle}</div>
+      <p style="color:${_C.text2};text-align:center;padding:40px 20px;font-size:13px">No PRs with sprint data found.</p>
     </div>`;
   }
 
-  const W = 900, H = 340;
-  const ML = 46, MR = 24, MT = 28, MB = 72;
+  const W = 900, H = 300;
+  const ML = 40, MR = 20, MT = 24, MB = 60;
   const CW = W - ML - MR, CH = H - MT - MB;
 
   const maxVal = Math.max(...chartData.map(d => Math.max(d.created, d.approved)), 1);
@@ -136,9 +166,9 @@ function _buildPRSprintChart(prs, sprints) {
   ticks.forEach(v => {
     const y = (MT + CH - (v / yMax) * CH).toFixed(1);
     grid += `<line x1="${ML}" y1="${y}" x2="${W - MR}" y2="${y}" stroke="${_C.border}" stroke-width="1"/>
-      <text x="${ML - 8}" y="${(+y + 4).toFixed(1)}" text-anchor="end" fill="${_C.text2}" font-size="11" font-family="Segoe UI,system-ui,sans-serif">${v}</text>`;
+      <text x="${ML - 6}" y="${(+y + 3.5).toFixed(1)}" text-anchor="end" fill="${_C.text2}" font-size="10" font-family="Segoe UI,system-ui,sans-serif">${v}</text>`;
   });
-  grid += `<text transform="rotate(-90)" x="${-(MT + CH / 2)}" y="13" text-anchor="middle" fill="${_C.text2}" font-size="11" font-family="Segoe UI,system-ui,sans-serif">PRs</text>`;
+  grid += `<text transform="rotate(-90)" x="${-(MT + CH / 2)}" y="11" text-anchor="middle" fill="${_C.text2}" font-size="10" font-family="Segoe UI,system-ui,sans-serif">PRs</text>`;
 
   // Bars + dashed trend lines
   let bars = '', lines = '';
@@ -169,44 +199,44 @@ function _buildPRSprintChart(prs, sprints) {
 
       if (h > 0) {
         bars += `<rect x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${(barW - 2).toFixed(1)}" height="${h.toFixed(1)}" fill="${b.color}" rx="2">
-          <title>Sprint ${_svgEsc(d.sprint)} (${d.start} – ${d.end}) · ${b.label}: ${v}</title></rect>`;
+          <title>Sprint ${_svgEsc(d.sprint)}${d.start ? ` (${d.start} – ${d.end})` : ''} · ${b.label}: ${v}</title></rect>`;
       }
-      if (h > 20) {
-        bars += `<text x="${(x + (barW - 2) / 2).toFixed(1)}" y="${(y + h / 2 + 4.5).toFixed(1)}"
-          text-anchor="middle" fill="#fff" font-size="10" font-weight="600"
+      if (h > 18) {
+        bars += `<text x="${(x + (barW - 2) / 2).toFixed(1)}" y="${(y + h / 2 + 4).toFixed(1)}"
+          text-anchor="middle" fill="#fff" font-size="9" font-weight="600"
           font-family="Segoe UI,system-ui,sans-serif" pointer-events="none">${v}</text>`;
       } else if (v > 0 && h > 0) {
-        bars += `<text x="${(x + (barW - 2) / 2).toFixed(1)}" y="${(y - 4).toFixed(1)}"
-          text-anchor="middle" fill="${b.color}" font-size="10" font-weight="700"
+        bars += `<text x="${(x + (barW - 2) / 2).toFixed(1)}" y="${(y - 3).toFixed(1)}"
+          text-anchor="middle" fill="${b.color}" font-size="9" font-weight="700"
           font-family="Segoe UI,system-ui,sans-serif">${v}</text>`;
       }
     });
 
     // Sprint label
     if (rotate) {
-      bars += `<text x="${cx.toFixed(1)}" y="${base + 8}" text-anchor="end" fill="${_C.text2}" font-size="10"
+      bars += `<text x="${cx.toFixed(1)}" y="${base + 7}" text-anchor="end" fill="${_C.text2}" font-size="9"
         font-family="Segoe UI,system-ui,sans-serif"
-        transform="rotate(-40,${cx.toFixed(1)},${base + 8})">${_svgEsc(d.sprint)}</text>`;
+        transform="rotate(-40,${cx.toFixed(1)},${base + 7})">${_svgEsc(d.sprint)}</text>`;
     } else {
-      bars += `<text x="${cx.toFixed(1)}" y="${(base + 20).toFixed(1)}" text-anchor="middle" fill="${_C.text2}"
-        font-size="11" font-family="Segoe UI,system-ui,sans-serif">${_svgEsc(d.sprint)}</text>`;
+      bars += `<text x="${cx.toFixed(1)}" y="${(base + 17).toFixed(1)}" text-anchor="middle" fill="${_C.text2}"
+        font-size="10" font-family="Segoe UI,system-ui,sans-serif">${_svgEsc(d.sprint)}</text>`;
     }
   });
 
   // Legend
-  const LY = H - 10;
+  const LY = H - 9;
   let legend = '';
   let lx = ML;
   BARS.forEach(b => {
-    legend += `<rect x="${lx}" y="${LY - 9}" width="11" height="11" fill="${b.color}" rx="2"/>
-      <text x="${lx + 15}" y="${LY + 1}" fill="${_C.text2}" font-size="11" font-family="Segoe UI,system-ui,sans-serif">${b.label}</text>`;
-    lx += 92;
+    legend += `<rect x="${lx}" y="${LY - 8}" width="10" height="10" fill="${b.color}" rx="2"/>
+      <text x="${lx + 13}" y="${LY + 1}" fill="${_C.text2}" font-size="10" font-family="Segoe UI,system-ui,sans-serif">${b.label}</text>`;
+    lx += 88;
   });
 
   return `
     <div class="rpt-chart-card">
       <div class="rpt-chart-title">PRs by Sprint — Created vs Approved</div>
-      <div class="rpt-chart-subtitle">Created = PR Raised Date within sprint range &nbsp;·&nbsp; Approved = PR Approved Date within sprint range</div>
+      <div class="rpt-chart-subtitle">${subtitle}</div>
       <div class="rpt-chart-wrap">
         <svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMidYMid meet" style="width:100%;height:auto;display:block;overflow:visible">
           ${grid}
@@ -255,7 +285,7 @@ function _renderReportView() {
 
   const groups = {};
   modules.forEach(m => {
-    const d = m.Planned_Release_Date;
+    const d = m.Target_Release_Date;
     if (d) (groups[d] = groups[d] || []).push(m);
   });
   const allSortedDates = Object.keys(groups).sort((a, b) => (_parseDate(a) || 0) - (_parseDate(b) || 0));
@@ -326,10 +356,10 @@ function _renderReportView() {
 
   if (report === 'timeline') {
     const chart2Mods = scopedMods
-      .filter(m => m.Planned_Release_Date || m.Actual_Release_Date)
+      .filter(m => m.Target_Release_Date || m.Actual_Release_Date)
       .map(m => ({
-        name: m.Module, planned: _parseDate(m.Planned_Release_Date), actual: _parseDate(m.Actual_Release_Date),
-        plannedStr: m.Planned_Release_Date || '', actualStr: m.Actual_Release_Date || '',
+        name: m.Module, planned: _parseDate(m.Target_Release_Date), actual: _parseDate(m.Actual_Release_Date),
+        plannedStr: m.Target_Release_Date || '', actualStr: m.Actual_Release_Date || '',
         stats: _modStats(m), oos: !!m.IsOutOfScope,
       }))
       .sort((a, b) => {
@@ -350,8 +380,8 @@ function _buildBarChart(data, focusDate) {
     return `<div class="rpt-chart-card"><p style="color:${_C.text2};text-align:center;padding:40px 20px;font-size:13px">No release data — assign modules a Planned Release Date to see them here.</p></div>`;
   }
 
-  const W = 900, H = 340;
-  const ML = 46, MR = 24, MT = 28, MB = 72;
+  const W = 900, H = 300;
+  const ML = 40, MR = 20, MT = 24, MB = 60;
   const CW = W - ML - MR, CH = H - MT - MB;
 
   const maxMods  = Math.max(...data.map(d => d.total), 1);
@@ -368,11 +398,11 @@ function _buildBarChart(data, focusDate) {
   ticks.forEach(v => {
     const y = MT + yScale(v);
     grid += `<line x1="${ML}" y1="${y.toFixed(1)}" x2="${W - MR}" y2="${y.toFixed(1)}" stroke="${_C.border}" stroke-width="1"/>
-      <text x="${ML - 8}" y="${(y + 4).toFixed(1)}" text-anchor="end" fill="${_C.text2}" font-size="11" font-family="Segoe UI,system-ui,sans-serif">${v}</text>`;
+      <text x="${ML - 6}" y="${(y + 3.5).toFixed(1)}" text-anchor="end" fill="${_C.text2}" font-size="10" font-family="Segoe UI,system-ui,sans-serif">${v}</text>`;
   });
 
   // Y-axis label (rotated)
-  grid += `<text transform="rotate(-90)" x="${-(MT + CH / 2)}" y="13" text-anchor="middle" fill="${_C.text2}" font-size="11" font-family="Segoe UI,system-ui,sans-serif">Modules</text>`;
+  grid += `<text transform="rotate(-90)" x="${-(MT + CH / 2)}" y="11" text-anchor="middle" fill="${_C.text2}" font-size="10" font-family="Segoe UI,system-ui,sans-serif">Modules</text>`;
 
   // Bars
   let bars = '';
@@ -397,10 +427,10 @@ function _buildBarChart(data, focusDate) {
         fill="${seg.color}" rx="3" opacity="${dim ? '0.28' : '1'}">
         <title>${_svgEsc(d.label)} · ${seg.val} ${seg.label}</title>
       </rect>`;
-      if (segH > 20) {
+      if (segH > 18) {
         const textFill = seg.color === _C.s3 ? _C.text2 : '#fff';
-        bars += `<text x="${cx.toFixed(1)}" y="${(y + segH / 2 + 4.5).toFixed(1)}" text-anchor="middle"
-          fill="${textFill}" font-size="11" font-weight="600" font-family="Segoe UI,system-ui,sans-serif"
+        bars += `<text x="${cx.toFixed(1)}" y="${(y + segH / 2 + 4).toFixed(1)}" text-anchor="middle"
+          fill="${textFill}" font-size="10" font-weight="600" font-family="Segoe UI,system-ui,sans-serif"
           opacity="${dim ? '0.3' : '1'}" pointer-events="none">${seg.val}</text>`;
       }
       yOff += segH;
@@ -408,9 +438,9 @@ function _buildBarChart(data, focusDate) {
 
     // Total label on top of bar
     if (d.total > 0) {
-      const topY = base - yOff - 7;
+      const topY = base - yOff - 6;
       bars += `<text x="${cx.toFixed(1)}" y="${topY.toFixed(1)}" text-anchor="middle"
-        fill="${_C.text}" font-size="11" font-weight="700" font-family="Segoe UI,system-ui,sans-serif"
+        fill="${_C.text}" font-size="10" font-weight="700" font-family="Segoe UI,system-ui,sans-serif"
         opacity="${dim ? '0.3' : '1'}">${d.total}</text>`;
     }
 
@@ -423,17 +453,17 @@ function _buildBarChart(data, focusDate) {
     }
 
     // X-axis labels
-    const labelY = base + 20;
+    const labelY = base + 17;
     bars += `<text x="${cx.toFixed(1)}" y="${labelY}" text-anchor="middle"
-      fill="${dim ? _C.border : _C.text}" font-size="12" font-weight="600"
+      fill="${dim ? _C.border : _C.text}" font-size="10" font-weight="600"
       font-family="Segoe UI,system-ui,sans-serif">${_svgEsc(d.label)}</text>`;
-    bars += `<text x="${cx.toFixed(1)}" y="${labelY + 15}" text-anchor="middle"
-      fill="${dim ? _C.border : _C.text2}" font-size="10"
+    bars += `<text x="${cx.toFixed(1)}" y="${labelY + 13}" text-anchor="middle"
+      fill="${dim ? _C.border : _C.text2}" font-size="9"
       font-family="Segoe UI,system-ui,sans-serif">${_svgEsc(d.sublabel)}</text>`;
   });
 
   // Legend
-  const LY = H - 10;
+  const LY = H - 9;
   const legendItems = [
     { color: _C.green,  label: 'Complete'    },
     { color: _C.accent, label: 'In Progress' },
@@ -442,9 +472,9 @@ function _buildBarChart(data, focusDate) {
   let legend = '';
   let lx = ML;
   legendItems.forEach(li => {
-    legend += `<rect x="${lx}" y="${LY - 9}" width="11" height="11" fill="${li.color}" rx="2"/>
-      <text x="${lx + 15}" y="${LY + 1}" fill="${_C.text2}" font-size="11" font-family="Segoe UI,system-ui,sans-serif">${li.label}</text>`;
-    lx += 100;
+    legend += `<rect x="${lx}" y="${LY - 8}" width="10" height="10" fill="${li.color}" rx="2"/>
+      <text x="${lx + 13}" y="${LY + 1}" fill="${_C.text2}" font-size="10" font-family="Segoe UI,system-ui,sans-serif">${li.label}</text>`;
+    lx += 96;
   });
 
   return `
@@ -464,8 +494,8 @@ function _buildBarChart(data, focusDate) {
 
 // ── Chart 2: Planned vs Actual timeline ──────────────────
 function _buildTimelineChart(mods) {
-  const ROW_H = 40;
-  const ML    = 180, MR = 40, MT = 52, MB = 36;
+  const ROW_H = 26;
+  const ML    = 155, MR = 30, MT = 42, MB = 28;
   const W     = 900;
   const H     = MT + mods.length * ROW_H + MB;
   const CW    = W - ML - MR;
@@ -490,16 +520,16 @@ function _buildTimelineChart(mods) {
   let cur = new Date(minD.getFullYear(), minD.getMonth(), 1);
   while (cur < maxD) {
     const x = xForD(cur).toFixed(1);
-    grid += `<line x1="${x}" y1="${MT - 14}" x2="${x}" y2="${MT + mods.length * ROW_H}" stroke="${_C.border}" stroke-width="1" stroke-dasharray="4,4"/>`;
-    grid += `<text x="${x}" y="${MT - 20}" text-anchor="middle" fill="${_C.text2}" font-size="10" font-family="Segoe UI,system-ui,sans-serif">${cur.toLocaleDateString('en-US',{month:'short'})} '${String(cur.getFullYear()).slice(2)}</text>`;
+    grid += `<line x1="${x}" y1="${MT - 10}" x2="${x}" y2="${MT + mods.length * ROW_H}" stroke="${_C.border}" stroke-width="1" stroke-dasharray="4,4"/>`;
+    grid += `<text x="${x}" y="${MT - 15}" text-anchor="middle" fill="${_C.text2}" font-size="9" font-family="Segoe UI,system-ui,sans-serif">${cur.toLocaleDateString('en-US',{month:'short'})} '${String(cur.getFullYear()).slice(2)}</text>`;
     cur = new Date(cur.getFullYear(), cur.getMonth() + 1, 1);
   }
 
   // Today line
   if (today >= minD && today <= maxD) {
     const tx = xForD(today).toFixed(1);
-    grid += `<line x1="${tx}" y1="${MT - 28}" x2="${tx}" y2="${MT + mods.length * ROW_H}" stroke="${_C.red}" stroke-width="1.5" stroke-dasharray="5,3"/>`;
-    grid += `<text x="${tx}" y="${MT - 33}" text-anchor="middle" fill="${_C.red}" font-size="10" font-weight="700" font-family="Segoe UI,system-ui,sans-serif">Today</text>`;
+    grid += `<line x1="${tx}" y1="${MT - 20}" x2="${tx}" y2="${MT + mods.length * ROW_H}" stroke="${_C.red}" stroke-width="1.5" stroke-dasharray="5,3"/>`;
+    grid += `<text x="${tx}" y="${MT - 24}" text-anchor="middle" fill="${_C.red}" font-size="9" font-weight="700" font-family="Segoe UI,system-ui,sans-serif">Today</text>`;
   }
 
   // Rows
@@ -510,11 +540,11 @@ function _buildTimelineChart(mods) {
 
     rows += `<rect x="0" y="${MT + i * ROW_H}" width="${W}" height="${ROW_H}" fill="${bg}"/>`;
 
-    // Module name — truncate at ~24 chars
-    const label = m.name.length > 24 ? m.name.slice(0, 22) + '…' : m.name;
+    // Module name — truncate at ~22 chars
+    const label = m.name.length > 22 ? m.name.slice(0, 20) + '…' : m.name;
     const nameColor = m.oos ? _C.text2 : _C.text;
-    rows += `<text x="${ML - 12}" y="${cy + 4.5}" text-anchor="end" fill="${nameColor}"
-      font-size="12" font-family="Segoe UI,system-ui,sans-serif"><title>${_svgEsc(m.name)}</title>${_svgEsc(label)}</text>`;
+    rows += `<text x="${ML - 10}" y="${cy + 3.5}" text-anchor="end" fill="${nameColor}"
+      font-size="10" font-family="Segoe UI,system-ui,sans-serif"><title>${_svgEsc(m.name)}</title>${_svgEsc(label)}</text>`;
 
     if (m.planned && m.actual) {
       const px      = xForD(m.planned);
@@ -525,17 +555,17 @@ function _buildTimelineChart(mods) {
       const days    = Math.round(Math.abs(m.actual - m.planned) / 86400000);
       const offTxt  = onTime ? 'On time' : isLate ? `+${days}d` : `-${days}d`;
 
-      rows += `<line x1="${px.toFixed(1)}" y1="${cy}" x2="${ax.toFixed(1)}" y2="${cy}" stroke="${lColor}" stroke-width="2.5" opacity="0.45"/>`;
+      rows += `<line x1="${px.toFixed(1)}" y1="${cy}" x2="${ax.toFixed(1)}" y2="${cy}" stroke="${lColor}" stroke-width="2" opacity="0.45"/>`;
       // Planned dot (hollow circle)
-      rows += `<circle cx="${px.toFixed(1)}" cy="${cy}" r="8" fill="${_C.surface}" stroke="${_C.accent}" stroke-width="2.5">
+      rows += `<circle cx="${px.toFixed(1)}" cy="${cy}" r="6" fill="${_C.surface}" stroke="${_C.accent}" stroke-width="2">
         <title>Planned: ${_svgEsc(m.plannedStr)}</title></circle>`;
       // Actual dot (filled)
-      rows += `<circle cx="${ax.toFixed(1)}" cy="${cy}" r="8" fill="${lColor}" stroke="${lColor}" stroke-width="2">
+      rows += `<circle cx="${ax.toFixed(1)}" cy="${cy}" r="6" fill="${lColor}" stroke="${lColor}" stroke-width="1.5">
         <title>Actual: ${_svgEsc(m.actualStr)} (${offTxt})</title></circle>`;
       // Off-label centred between the two dots
       const midX = (px + ax) / 2;
-      rows += `<text x="${midX.toFixed(1)}" y="${(cy - 12).toFixed(1)}" text-anchor="middle" fill="${lColor}"
-        font-size="10" font-weight="700" font-family="Segoe UI,system-ui,sans-serif">${offTxt}</text>`;
+      rows += `<text x="${midX.toFixed(1)}" y="${(cy - 9).toFixed(1)}" text-anchor="middle" fill="${lColor}"
+        font-size="9" font-weight="700" font-family="Segoe UI,system-ui,sans-serif">${offTxt}</text>`;
 
     } else if (m.planned) {
       const px    = xForD(m.planned);
@@ -545,18 +575,18 @@ function _buildTimelineChart(mods) {
       if (todayX !== null && m.planned > today) {
         rows += `<line x1="${todayX.toFixed(1)}" y1="${cy}" x2="${px.toFixed(1)}" y2="${cy}" stroke="${color}" stroke-width="1.5" stroke-dasharray="5,4" opacity="0.3"/>`;
       }
-      rows += `<circle cx="${px.toFixed(1)}" cy="${cy}" r="8" fill="${_C.surface}" stroke="${color}" stroke-width="2.5">
+      rows += `<circle cx="${px.toFixed(1)}" cy="${cy}" r="6" fill="${_C.surface}" stroke="${color}" stroke-width="2">
         <title>Planned: ${_svgEsc(m.plannedStr)} — no actual date yet</title></circle>`;
 
     } else if (m.actual) {
       const ax = xForD(m.actual);
-      rows += `<circle cx="${ax.toFixed(1)}" cy="${cy}" r="8" fill="${_C.green}" stroke="${_C.green}" stroke-width="2">
+      rows += `<circle cx="${ax.toFixed(1)}" cy="${cy}" r="6" fill="${_C.green}" stroke="${_C.green}" stroke-width="1.5">
         <title>Actual: ${_svgEsc(m.actualStr)} (no planned date)</title></circle>`;
     }
   });
 
   // Legend
-  const LY = H - 8;
+  const LY = H - 7;
   const legendItems = [
     { type: 'hollow', color: _C.accent, label: 'Planned date'     },
     { type: 'filled', color: _C.green,  label: 'Actual — on time / early' },
@@ -566,12 +596,12 @@ function _buildTimelineChart(mods) {
   let lx = ML;
   legendItems.forEach(li => {
     if (li.type === 'hollow') {
-      legend += `<circle cx="${lx + 7}" cy="${LY - 3}" r="6" fill="${_C.surface}" stroke="${li.color}" stroke-width="2.5"/>`;
+      legend += `<circle cx="${lx + 5}" cy="${LY - 3}" r="5" fill="${_C.surface}" stroke="${li.color}" stroke-width="2"/>`;
     } else {
-      legend += `<circle cx="${lx + 7}" cy="${LY - 3}" r="6" fill="${li.color}"/>`;
+      legend += `<circle cx="${lx + 5}" cy="${LY - 3}" r="5" fill="${li.color}"/>`;
     }
-    legend += `<text x="${lx + 18}" y="${LY + 1}" fill="${_C.text2}" font-size="11" font-family="Segoe UI,system-ui,sans-serif">${li.label}</text>`;
-    lx += li.label.length * 7.4 + 32;
+    legend += `<text x="${lx + 14}" y="${LY + 1}" fill="${_C.text2}" font-size="10" font-family="Segoe UI,system-ui,sans-serif">${li.label}</text>`;
+    lx += li.label.length * 6.8 + 26;
   });
 
   return `
@@ -581,7 +611,7 @@ function _buildTimelineChart(mods) {
         <svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMidYMid meet" style="width:100%;height:auto;display:block;overflow:visible">
           ${grid}
           ${rows}
-          <line x1="${ML}" y1="${MT - 14}" x2="${ML}" y2="${MT + mods.length * ROW_H}" stroke="${_C.border}" stroke-width="1.5"/>
+          <line x1="${ML}" y1="${MT - 10}" x2="${ML}" y2="${MT + mods.length * ROW_H}" stroke="${_C.border}" stroke-width="1.5"/>
           ${legend}
         </svg>
       </div>

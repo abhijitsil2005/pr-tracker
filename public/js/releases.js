@@ -2,11 +2,15 @@
 // RELEASES
 // ═══════════════════════════════════════════════════════
 
-// Parse mm/dd/yyyy → Date (local midnight)
+// Parse YYYY-MM-DD or mm/dd/yyyy → Date (local midnight)
 function parseRelDate(str) {
   if (!str) return null;
-  const [m,d,y] = str.split('/').map(Number);
-  return new Date(y, m-1, d);
+  if (/^\d{4}-\d{2}-\d{2}$/.test(str)) {
+    const [y, m, d] = str.split('-').map(Number);
+    return new Date(y, m - 1, d);
+  }
+  const [m, d, y] = str.split('/').map(Number);
+  return new Date(y, m - 1, d);
 }
 
 // Classify a release relative to today
@@ -50,31 +54,62 @@ async function renderReleases() {
   });
   if (currentIdx === -1) currentIdx = sorted.length - 1; // all past → last is "current"
 
-  const current  = sorted[currentIdx]     || null;
+  const past     = sorted.slice(0, currentIdx);     // oldest → newest
+  const current  = sorted[currentIdx] || null;
   const nextUp   = sorted[currentIdx + 1] || null;
-  const future   = sorted.slice(currentIdx + 2);
-  const past     = sorted.slice(0, currentIdx).reverse(); // newest past first
+  const future   = sorted.slice(currentIdx + 2);    // beyond next release
 
   let html = '';
 
-  const buildSection = (label, items, cssClass) => {
-    const blocks = items
-      .map(r => buildReleaseBlock(r, search, cssClass))
-      .filter(Boolean)
-      .join('');
-    if (!blocks) return '';
-    return `<div class="rel-section-label">${label}</div>${blocks}`;
-  };
-
-  if (current)       html += buildSection('🔵 Current Release', [current], 'current');
-  if (nextUp)        html += buildSection('🟢 Next Release',    [nextUp],  'next-up');
-  if (past.length)   html += buildSection('🕘 Past Releases',   past,      'past');
-  if (future.length) html += buildSection('📅 Upcoming',        future,    '');
+  // Chronological: past group (collapsed) → current (open) → next (collapsed) → upcoming group (collapsed)
+  if (past.length) {
+    html += buildGroupAccordion('past-releases', '🕘 Past Releases', past, 'past', search);
+  }
+  if (current) {
+    html += buildReleaseBlock(current, search, 'current');
+  }
+  if (nextUp) {
+    html += `<div class="rel-section-label">🟢 Next Release</div>`;
+    html += buildReleaseBlock(nextUp, search, 'next-up');
+  }
+  if (future.length) {
+    html += buildGroupAccordion('upcoming-releases', '📅 Upcoming Releases', future, '', search);
+  }
 
   container.innerHTML = html || `<div class="empty"><div class="e-icon">🔍</div><p>No releases match your search.</p></div>`;
 }
 
 document.getElementById('relSearch').addEventListener('input', renderReleases);
+
+// ── Group accordion (Past / Upcoming) ─────────────────
+function buildGroupAccordion(groupId, label, items, cssClass, search) {
+  const blocks = items
+    .map(r => buildReleaseBlock(r, search, cssClass))
+    .filter(Boolean)
+    .join('');
+  if (!blocks) return '';
+  const count = items.length;
+  return `
+  <div class="rel-group">
+    <div class="rel-group-header" onclick="toggleGroup('${groupId}')">
+      <span class="chevron" id="chev-${groupId}">▼</span>
+      <span class="rel-group-title">${label}</span>
+      <span class="badge badge-gray">${count} release${count !== 1 ? 's' : ''}</span>
+    </div>
+    <div class="rel-group-body" id="body-${groupId}" style="display:none">
+      ${blocks}
+    </div>
+  </div>`;
+}
+
+function toggleGroup(groupId) {
+  const body = document.getElementById(`body-${groupId}`);
+  const chev = document.getElementById(`chev-${groupId}`);
+  if (!body) return;
+  const isOpen = body.style.display !== 'none';
+  body.style.display = isOpen ? 'none' : 'block';
+  chev.classList.toggle('open', !isOpen);
+}
 
 // ── Build one release block ────────────────────────────
 function buildReleaseBlock(rel, search, cssClass) {
