@@ -124,6 +124,16 @@ function statusBadge(s) {
   return `<span class="badge badge-gray">${s}</span>`;
 }
 
+function prPillClass(status) {
+  if (!status) return 'pr-pill-gray';
+  const l = status.toLowerCase();
+  if (l.includes('prod deployed')) return 'pr-pill-green';
+  if (l.includes('ready for prod')) return 'pr-pill-teal';
+  if (l.includes('tcr')) return 'pr-pill-yellow';
+  if (l.includes('review') || l.includes('inprogress') || l.includes('in progress')) return 'pr-pill-orange';
+  return 'pr-pill-gray';
+}
+
 function ffBadge(status) {
   const l = (status || '').toLowerCase();
   if (l === 'enabled') return '<span class="badge badge-green">Enabled</span>';
