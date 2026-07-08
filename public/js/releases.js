@@ -297,8 +297,10 @@ function buildModGroup(mod, rel) {
     const prStatusCombined = prs.length ? prs.map(prNum => {
       const detail = allPRs.find(pr => String(pr.PR) === String(prNum) && pr.Module === mod.Module)
                   || allPRs.find(pr => String(pr.PR) === String(prNum));
-      const statusText = detail && detail.Status ? ` - ${detail.Status}` : '';
-      return `<span class="pr-pill" onclick="showPRDetail(${prNum},'${mod.Module.replace(/'/g,"\\'")}')" style="margin:2px 4px 2px 0">#${prNum}${statusText}</span>`;
+      const status = detail && detail.Status ? detail.Status : '';
+      const statusText = status ? ` · ${status}` : '';
+      const colorClass = prPillClass(status);
+      return `<span class="pr-pill ${colorClass}" onclick="showPRDetail(${prNum},'${mod.Module.replace(/'/g,"\\'")}')" style="margin:2px 4px 2px 0">#${prNum}${statusText}</span>`;
     }).join('') : '<span style="color:var(--text2)">—</span>';
 
     rows += `<tr>

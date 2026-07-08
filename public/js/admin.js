@@ -236,7 +236,7 @@ async function selectSetupProject(projectId) {
   const area = document.getElementById('projectSetupArea');
   area.style.display = '';
   area.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-  ['setupTeamError','setupReleaseError','setupSprintError','setupAccessError']
+  ['setupReleaseError','setupSprintError','setupAccessError']
     .forEach(id => { const el = document.getElementById(id); if (el) el.textContent = ''; });
   await _setupLoadAll(projectId);
 }
@@ -260,36 +260,64 @@ async function renderUsersTab() {
 
   if (!adminUsers.length) {
     tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--text2);padding:32px">No users found</td></tr>';
-    return;
+  } else {
+    tbody.innerHTML = adminUsers.sort((a, b) => a.email.localeCompare(b.email)).map(u => {
+      const companyRoleBadge = u.company_role
+        ? `<span class="badge ${u.company_role === 'CompanyAdmin' ? 'badge-purple' : 'badge-orange'}">${u.company_role}</span>`
+        : '<span class="badge badge-gray">—</span>';
+
+      const projectBadges = (u.project_memberships || []).map(m => {
+        const proj = adminProjects.find(p => p.id === m.project_id);
+        const label = proj ? proj.name : m.project_id.slice(0, 8) + '…';
+        const cls   = m.role === 'Admin' ? 'badge-purple' : m.role === 'ReadWrite' ? 'badge-blue' : 'badge-gray';
+        return `<span class="badge ${cls}" style="font-size:10px">${label}: ${m.role}</span>`;
+      }).join(' ') || '<span style="color:var(--text2);font-size:12px">No project access</span>';
+
+      const isSelf = u.email === currentUser?.email;
+      return `<tr>
+        <td>${u.email}</td>
+        <td>${u.name}</td>
+        <td>${companyRoleBadge}</td>
+        <td style="max-width:260px;overflow:hidden">${projectBadges}</td>
+        <td><span class="badge ${u.active ? 'badge-green' : 'badge-red'}">${u.active ? 'Active' : 'Inactive'}</span></td>
+        <td style="white-space:nowrap">
+          <button class="btn btn-ghost btn-sm" onclick="openEditUserModal('${u.email}','${escAttr(u.name)}','${u.company_role || ''}',${u.active})">✏️ Edit</button>
+          <button class="btn btn-ghost btn-sm" onclick="openManageProjectsModal('${u.email}')">🔑 Projects</button>
+          <button class="btn btn-ghost btn-sm" onclick="toggleUserActive('${u.email}',${u.active})">${u.active ? 'Deactivate' : 'Activate'}</button>
+          ${!isSelf ? `<button class="btn btn-danger btn-sm" onclick="deleteUser('${u.email}')">🗑</button>` : ''}
+        </td>
+      </tr>`;
+    }).join('');
   }
 
-  tbody.innerHTML = adminUsers.sort((a, b) => a.email.localeCompare(b.email)).map(u => {
-    const companyRoleBadge = u.company_role
-      ? `<span class="badge ${u.company_role === 'CompanyAdmin' ? 'badge-purple' : 'badge-orange'}">${u.company_role}</span>`
-      : '<span class="badge badge-gray">—</span>';
+  // Populate the project selector for the team members section
+  const sel = document.getElementById('teamProjectSel');
+  if (sel) {
+    sel.innerHTML = '<option value="">— select a project —</option>';
+    adminProjects.forEach(p => sel.add(new Option(p.name, p.id)));
+    if (_teamMgmtProjectId && adminProjects.find(p => p.id === _teamMgmtProjectId)) {
+      sel.value = _teamMgmtProjectId;
+      document.getElementById('teamMembersArea').style.display = '';
+    }
+  }
+}
 
-    const projectBadges = (u.project_memberships || []).map(m => {
-      const proj = adminProjects.find(p => p.id === m.project_id);
-      const label = proj ? proj.name : m.project_id.slice(0, 8) + '…';
-      const cls   = m.role === 'Admin' ? 'badge-purple' : m.role === 'ReadWrite' ? 'badge-blue' : 'badge-gray';
-      return `<span class="badge ${cls}" style="font-size:10px">${label}: ${m.role}</span>`;
-    }).join(' ') || '<span style="color:var(--text2);font-size:12px">No project access</span>';
-
-    const isSelf = u.email === currentUser?.email;
-    return `<tr>
-      <td>${u.email}</td>
-      <td>${u.name}</td>
-      <td>${companyRoleBadge}</td>
-      <td style="max-width:260px;overflow:hidden">${projectBadges}</td>
-      <td><span class="badge ${u.active ? 'badge-green' : 'badge-red'}">${u.active ? 'Active' : 'Inactive'}</span></td>
-      <td style="white-space:nowrap">
-        <button class="btn btn-ghost btn-sm" onclick="openEditUserModal('${u.email}','${escAttr(u.name)}','${u.company_role || ''}',${u.active})">✏️ Edit</button>
-        <button class="btn btn-ghost btn-sm" onclick="openManageProjectsModal('${u.email}')">🔑 Projects</button>
-        <button class="btn btn-ghost btn-sm" onclick="toggleUserActive('${u.email}',${u.active})">${u.active ? 'Deactivate' : 'Activate'}</button>
-        ${!isSelf ? `<button class="btn btn-danger btn-sm" onclick="deleteUser('${u.email}')">🗑</button>` : ''}
-      </td>
-    </tr>`;
-  }).join('');
+// ── Team project selector ───────────────────────────────
+async function onTeamProjectChanged(projectId) {
+  _teamMgmtProjectId = projectId || null;
+  const area  = document.getElementById('teamMembersArea');
+  const badge = document.getElementById('teamBadge');
+  if (!area) return;
+  if (!_teamMgmtProjectId) {
+    area.style.display = 'none';
+    if (badge) badge.textContent = '0';
+    return;
+  }
+  area.style.display = '';
+  const errEl = document.getElementById('setupTeamError');
+  if (errEl) errEl.textContent = '';
+  const data = await authFetch(`${API}/onboard/${_teamMgmtProjectId}/team`).then(r => r?.ok ? r.json() : []);
+  _setupRenderTeam(Array.isArray(data) ? data : []);
 }
 
 // ── Add user ────────────────────────────────────────────
@@ -540,17 +568,16 @@ async function _saveExclusions() {
 // PROJECT SETUP (inline in Projects tab)
 // ══════════════════════════════════════════════════════
 
-let _setupProjectId = null;
+let _setupProjectId   = null;
+let _teamMgmtProjectId = null;
 
 async function _setupLoadAll(projectId) {
-  const [teamData, sprintData, releaseData, memberData, usersData] = await Promise.all([
-    authFetch(`${API}/onboard/${projectId}/team`).then(r => r?.ok ? r.json() : []),
+  const [sprintData, releaseData, memberData, usersData] = await Promise.all([
     authFetch(`${API}/onboard/${projectId}/sprints`).then(r => r?.ok ? r.json() : []),
     authFetch(`${API}/onboard/${projectId}/releases`).then(r => r?.ok ? r.json() : []),
     authFetch(`${API}/projects/${projectId}/members`).then(r => r?.ok ? r.json() : []),
     authFetch(`${API}/users`).then(r => r?.ok ? r.json() : []),
   ]);
-  _setupRenderTeam(Array.isArray(teamData) ? teamData : []);
   _setupRenderSprints(Array.isArray(sprintData) ? sprintData : []);
   _setupRenderReleases(Array.isArray(releaseData) ? releaseData : []);
   _setupRenderAccess(
@@ -594,7 +621,7 @@ async function addSetupTeamMember() {
   errEl.textContent = '';
   if (!name) { errEl.textContent = 'Enter a name'; return; }
 
-  const res  = await authFetch(`${API}/onboard/${_setupProjectId}/team`, {
+  const res  = await authFetch(`${API}/onboard/${_teamMgmtProjectId}/team`, {
     method: 'POST',
     body:   JSON.stringify({ role, name }),
   });
@@ -602,19 +629,19 @@ async function addSetupTeamMember() {
   if (!res.ok) { errEl.textContent = json.error; return; }
   document.getElementById('setupTeamName').value = '';
   showToast(`${name} added to team`, 'success');
-  const data = await authFetch(`${API}/onboard/${_setupProjectId}/team`).then(r => r.json());
+  const data = await authFetch(`${API}/onboard/${_teamMgmtProjectId}/team`).then(r => r.json());
   _setupRenderTeam(Array.isArray(data) ? data : []);
 }
 
 async function removeSetupTeamMember(name) {
   const res  = await authFetch(
-    `${API}/onboard/${_setupProjectId}/team/${encodeURIComponent(name)}`,
+    `${API}/onboard/${_teamMgmtProjectId}/team/${encodeURIComponent(name)}`,
     { method: 'DELETE' }
   );
   const json = await res.json();
   if (!res.ok) { showToast(json.error, 'error'); return; }
   showToast(`${name} removed`, 'success');
-  const data = await authFetch(`${API}/onboard/${_setupProjectId}/team`).then(r => r.json());
+  const data = await authFetch(`${API}/onboard/${_teamMgmtProjectId}/team`).then(r => r.json());
   _setupRenderTeam(Array.isArray(data) ? data : []);
 }
 

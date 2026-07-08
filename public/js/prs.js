@@ -5,6 +5,9 @@
 // mm/dd/yyyy ↔ yyyy-mm-dd conversions for <input type="date">
 function toInputDate(s) {
   if (!s) return '';
+  // DB returns YYYY-MM-DD (type parser OID 1082 returns raw string)
+  if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return s;
+  // Legacy mm/dd/yyyy fallback
   const [m, d, y] = s.split('/');
   if (!y) return '';
   return `${y}-${(m||'').padStart(2,'0')}-${(d||'').padStart(2,'0')}`;

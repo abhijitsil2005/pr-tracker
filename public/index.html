@@ -194,7 +194,7 @@
       <!-- Tab switcher -->
       <div class="admin-tabs">
         <button class="admin-tab active" data-tab="projects"   onclick="switchAdminTab('projects')">Projects</button>
-        <button class="admin-tab"        data-tab="users"      onclick="switchAdminTab('users')">Users</button>
+        <button class="admin-tab"        data-tab="users"      onclick="switchAdminTab('users')">User Management</button>
         <button class="admin-tab"        data-tab="exclusions" onclick="switchAdminTab('exclusions')">Calc Exclusions</button>
       </div>
 
@@ -215,34 +215,7 @@
             <button class="btn btn-ghost btn-sm" onclick="closeProjectSetup()">✕ Close</button>
           </div>
 
-          <!-- 1. Team Members -->
-          <div class="setup-section">
-            <div class="setup-section-hdr">
-              <span class="setup-section-icon">👥</span>
-              <span class="setup-section-title">Team Members</span>
-              <span class="badge badge-gray" id="teamBadge">0</span>
-              <span class="setup-section-hint">Developers, reviewers, QA, etc. Used in PR assignment dropdowns.</span>
-            </div>
-            <div class="setup-section-body">
-              <div id="setupTeamList" class="setup-list"></div>
-              <div class="setup-add-row">
-                <select id="setupTeamRole" class="setup-role-sel">
-                  <option value="Developer">Developer</option>
-                  <option value="PR Reviewer">PR Reviewer</option>
-                  <option value="Tech Lead">Tech Lead</option>
-                  <option value="QA">QA</option>
-                  <option value="BA">BA</option>
-                  <option value="Scrum Master">Scrum Master</option>
-                  <option value="DevOps">DevOps</option>
-                </select>
-                <input type="text" id="setupTeamName" placeholder="Full name" class="setup-input-name">
-                <button class="btn btn-primary btn-sm" onclick="addSetupTeamMember()">＋ Add</button>
-              </div>
-              <div id="setupTeamError" class="setup-error"></div>
-            </div>
-          </div>
-
-          <!-- 2. Release Calendar -->
+          <!-- 1. Release Calendar  (Team Members moved to User Management tab) -->
           <div class="setup-section">
             <div class="setup-section-hdr">
               <span class="setup-section-icon">🚀</span>
@@ -267,7 +240,7 @@
             </div>
           </div>
 
-          <!-- 3. Sprint Dates -->
+          <!-- 2. Sprint Dates -->
           <div class="setup-section">
             <div class="setup-section-hdr">
               <span class="setup-section-icon">📅</span>
@@ -288,7 +261,7 @@
             </div>
           </div>
 
-          <!-- 4. User Access -->
+          <!-- 3. User Access -->
           <div class="setup-section">
             <div class="setup-section-hdr">
               <span class="setup-section-icon">🔑</span>
@@ -316,9 +289,15 @@
         </div><!-- /projectSetupArea -->
       </div>
 
-      <!-- ── Users panel ──────────────────────────────── -->
+      <!-- ── User Management panel ──────────────────────────────── -->
       <div class="admin-panel" data-panel="users" style="display:none">
-        <div class="toolbar" style="justify-content:flex-end;margin-bottom:20px">
+
+        <!-- Company Users -->
+        <div class="um-section-hdr">
+          <div>
+            <div class="um-section-title">Company Users</div>
+            <div class="um-section-sub">Login accounts, company roles, and project access.</div>
+          </div>
           <button class="btn btn-primary" onclick="openAddUserModal()">＋ Add User</button>
         </div>
         <div class="table-wrap">
@@ -336,6 +315,40 @@
             <tbody></tbody>
           </table>
         </div>
+
+        <!-- Divider -->
+        <div class="um-section-divider"></div>
+
+        <!-- Project Team Members -->
+        <div class="um-section-hdr" style="margin-bottom:12px">
+          <div>
+            <div class="um-section-title">Project Team Members <span class="badge badge-gray" id="teamBadge">0</span></div>
+            <div class="um-section-sub">Developers and reviewers listed in PR assignment dropdowns — configured per project.</div>
+          </div>
+        </div>
+        <div style="margin-bottom:16px">
+          <select id="teamProjectSel" onchange="onTeamProjectChanged(this.value)" style="max-width:320px;width:100%">
+            <option value="">— select a project —</option>
+          </select>
+        </div>
+        <div id="teamMembersArea" style="display:none">
+          <div id="setupTeamList" class="setup-list"></div>
+          <div class="setup-add-row">
+            <select id="setupTeamRole" class="setup-role-sel">
+              <option value="Developer">Developer</option>
+              <option value="PR Reviewer">PR Reviewer</option>
+              <option value="Tech Lead">Tech Lead</option>
+              <option value="QA">QA</option>
+              <option value="BA">BA</option>
+              <option value="Scrum Master">Scrum Master</option>
+              <option value="DevOps">DevOps</option>
+            </select>
+            <input type="text" id="setupTeamName" placeholder="Full name" class="setup-input-name">
+            <button class="btn btn-primary btn-sm" onclick="addSetupTeamMember()">＋ Add</button>
+          </div>
+          <div id="setupTeamError" class="setup-error"></div>
+        </div>
+
       </div>
 
       <!-- ── Exclusions panel ────────────────────────── -->
