@@ -1,30 +1,36 @@
 const express = require('express');
 const router  = express.Router();
-const ds      = require('../services/dynamoService');
+const { pool } = require('../services/pgClient');
 const { authenticate, requireCompanyAdmin } = require('../middleware/auth');
 
-// All company routes require authentication
 router.use(authenticate);
 
-// GET /api/companies/my — current user's company info
+// GET /api/companies/my
 router.get('/my', async (req, res) => {
   try {
     if (!req.user.company_id) return res.status(404).json({ error: 'No company assigned to your account' });
-    const company = await ds.getCompany(req.user.company_id);
-    if (!company) return res.status(404).json({ error: 'Company not found' });
-    res.json(company);
+    const { rows } = await pool.query(
+      'SELECT * FROM companies WHERE id = $1',
+      [req.user.company_id]
+    );
+    if (!rows.length) return res.status(404).json({ error: 'Company not found' });
+    res.json(rows[0]);
   } catch (e) {
     res.status(500).json({ error: e.message });
   }
 });
 
-// PUT /api/companies/my — update company (CompanyAdmin only)
+// PUT /api/companies/my
 router.put('/my', requireCompanyAdmin, async (req, res) => {
   try {
     const { name } = req.body;
     if (!name) return res.status(400).json({ error: 'name required' });
-    const updated = await ds.updateCompany(req.user.company_id, { name: name.trim() });
-    res.json({ message: 'Company updated', data: updated });
+    const { rows } = await pool.query(
+      'UPDATE companies SET name = $1 WHERE id = $2 RETURNING *',
+      [name.trim(), req.user.company_id]
+    );
+    if (!rows.length) return res.status(404).json({ error: 'Company not found' });
+    res.json({ message: 'Company updated', data: rows[0] });
   } catch (e) {
     res.status(500).json({ error: e.message });
   }

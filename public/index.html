@@ -204,6 +204,116 @@
           <button class="btn btn-primary" onclick="openAddProjectModal()">＋ Add Project</button>
         </div>
         <div id="projectsGrid" class="projects-grid"></div>
+
+        <!-- Inline setup panel — shown when a project's "Set Up" is clicked -->
+        <div id="projectSetupArea" style="display:none;margin-top:28px">
+          <div class="setup-area-hdr">
+            <div class="setup-area-title-row">
+              <span class="setup-area-label">Setting up</span>
+              <strong id="setupAreaProjectName"></strong>
+            </div>
+            <button class="btn btn-ghost btn-sm" onclick="closeProjectSetup()">✕ Close</button>
+          </div>
+
+          <!-- 1. Team Members -->
+          <div class="setup-section">
+            <div class="setup-section-hdr">
+              <span class="setup-section-icon">👥</span>
+              <span class="setup-section-title">Team Members</span>
+              <span class="badge badge-gray" id="teamBadge">0</span>
+              <span class="setup-section-hint">Developers, reviewers, QA, etc. Used in PR assignment dropdowns.</span>
+            </div>
+            <div class="setup-section-body">
+              <div id="setupTeamList" class="setup-list"></div>
+              <div class="setup-add-row">
+                <select id="setupTeamRole" class="setup-role-sel">
+                  <option value="Developer">Developer</option>
+                  <option value="PR Reviewer">PR Reviewer</option>
+                  <option value="Tech Lead">Tech Lead</option>
+                  <option value="QA">QA</option>
+                  <option value="BA">BA</option>
+                  <option value="Scrum Master">Scrum Master</option>
+                  <option value="DevOps">DevOps</option>
+                </select>
+                <input type="text" id="setupTeamName" placeholder="Full name" class="setup-input-name">
+                <button class="btn btn-primary btn-sm" onclick="addSetupTeamMember()">＋ Add</button>
+              </div>
+              <div id="setupTeamError" class="setup-error"></div>
+            </div>
+          </div>
+
+          <!-- 2. Release Calendar -->
+          <div class="setup-section">
+            <div class="setup-section-hdr">
+              <span class="setup-section-icon">🚀</span>
+              <span class="setup-section-title">Release Calendar</span>
+              <span class="badge badge-gray" id="releaseBadge">0</span>
+              <span class="setup-section-hint">Release dates drive module planning and report charts.</span>
+            </div>
+            <div class="setup-section-body">
+              <div id="setupReleaseHeader" class="setup-rel-header" style="display:none">
+                <span>Release #</span><span>Release Date</span><span>Code Freeze</span><span>Regression Start</span><span>Status</span><span></span>
+              </div>
+              <div id="setupReleaseList" class="setup-list"></div>
+              <div class="setup-add-row setup-rel-add">
+                <input type="text"  id="setupRelNum"        placeholder="Release #"    title="Release number" style="width:96px;flex:0 0 auto">
+                <input type="date"  id="setupRelDate"       title="Release Date">
+                <input type="date"  id="setupRelFreeze"     title="Code Freeze Date">
+                <input type="date"  id="setupRelRegression" title="Regression Start Date">
+                <button class="btn btn-primary btn-sm" onclick="addSetupRelease()">＋ Add</button>
+              </div>
+              <div class="setup-field-hints">Release # &nbsp;·&nbsp; Release Date &nbsp;·&nbsp; Code Freeze &nbsp;·&nbsp; Regression Start</div>
+              <div id="setupReleaseError" class="setup-error"></div>
+            </div>
+          </div>
+
+          <!-- 3. Sprint Dates -->
+          <div class="setup-section">
+            <div class="setup-section-hdr">
+              <span class="setup-section-icon">📅</span>
+              <span class="setup-section-title">Sprint Dates</span>
+              <span class="badge badge-gray" id="sprintBadge">0</span>
+              <span class="setup-section-hint">Used to auto-assign Dev Sprint to PRs based on raised date.</span>
+            </div>
+            <div class="setup-section-body">
+              <div id="setupSprintList" class="setup-list"></div>
+              <div class="setup-add-row">
+                <input type="text" id="setupSprintName"  placeholder="Sprint (e.g. 3.1)" style="width:130px;flex:0 0 auto">
+                <input type="date" id="setupSprintStart" title="Start Date">
+                <input type="date" id="setupSprintEnd"   title="End Date">
+                <button class="btn btn-primary btn-sm" onclick="addSetupSprint()">＋ Add</button>
+              </div>
+              <div class="setup-field-hints">Sprint Name &nbsp;·&nbsp; Start Date &nbsp;·&nbsp; End Date</div>
+              <div id="setupSprintError" class="setup-error"></div>
+            </div>
+          </div>
+
+          <!-- 4. User Access -->
+          <div class="setup-section">
+            <div class="setup-section-hdr">
+              <span class="setup-section-icon">🔑</span>
+              <span class="setup-section-title">User Access</span>
+              <span class="badge badge-gray" id="accessBadge">0</span>
+              <span class="setup-section-hint">Assign company users to this project with a role.</span>
+            </div>
+            <div class="setup-section-body">
+              <div id="setupAccessList" class="setup-list"></div>
+              <div class="setup-add-row">
+                <select id="setupAccessEmail" style="flex:1;min-width:200px">
+                  <option value="">— select user to add —</option>
+                </select>
+                <select id="setupAccessRole" style="width:130px;flex:0 0 auto">
+                  <option value="ReadOnly">ReadOnly</option>
+                  <option value="ReadWrite" selected>ReadWrite</option>
+                  <option value="Admin">Admin</option>
+                </select>
+                <button class="btn btn-primary btn-sm" onclick="addSetupAccess()">＋ Add</button>
+              </div>
+              <div id="setupAccessError" class="setup-error"></div>
+            </div>
+          </div>
+
+        </div><!-- /projectSetupArea -->
       </div>
 
       <!-- ── Users panel ──────────────────────────────── -->
@@ -232,6 +342,7 @@
       <div class="admin-panel" data-panel="exclusions" style="display:none">
         <div id="exclusionsPanel"></div>
       </div>
+
 
     </div>
 
@@ -660,34 +771,6 @@
   </div>
 </div>
 
-<!-- ── Project Members Modal ───────────────────────────── -->
-<div class="modal-overlay" id="projectMembersModal">
-  <div class="modal" style="max-width:560px">
-    <h2 id="projMembTitle">Members</h2>
-    <button class="modal-close" onclick="closeModal('projectMembersModal')">✕</button>
-
-    <!-- Add member row -->
-    <div class="proj-add-member-bar">
-      <select id="pmAddEmail" style="flex:1;min-width:0">
-        <option value="">— select user to add —</option>
-      </select>
-      <select id="pmAddRole" style="width:130px">
-        <option value="ReadOnly">ReadOnly</option>
-        <option value="ReadWrite" selected>ReadWrite</option>
-        <option value="Admin">Admin</option>
-      </select>
-      <button class="btn btn-primary btn-sm" onclick="addProjectMember()">Add</button>
-    </div>
-
-    <!-- Current members list -->
-    <div style="font-size:12px;color:var(--text2);margin-bottom:8px;text-transform:uppercase;letter-spacing:.5px">Current Members</div>
-    <div id="projMembList" style="max-height:320px;overflow-y:auto"></div>
-    <div id="projMembError" style="color:var(--red);font-size:13px;margin-top:4px"></div>
-    <div class="modal-footer">
-      <button class="btn btn-ghost" onclick="closeModal('projectMembersModal')">Close</button>
-    </div>
-  </div>
-</div>
 
 <!-- ── Change Password Modal ───────────────────────────── -->
 <div class="modal-overlay" id="changePasswordModal">

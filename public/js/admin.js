@@ -13,8 +13,9 @@ async function renderAdminPage() {
   _loadAdminCompanyName();
   const active = document.querySelector('.admin-tab.active')?.dataset.tab || 'projects';
   await Promise.all([_fetchProjects(), _fetchUsers()]);
-  if (active === 'projects') renderProjectsTab();
-  else                       renderUsersTab();
+  if (active === 'projects')        renderProjectsTab();
+  else if (active === 'users')      renderUsersTab();
+  else if (active === 'exclusions') renderExclusionsTab();
 }
 
 async function _fetchProjects() {
@@ -88,8 +89,8 @@ function switchAdminTab(tab) {
   document.querySelectorAll('.admin-panel').forEach(p => {
     p.style.display = p.dataset.panel === tab ? '' : 'none';
   });
-  if (tab === 'projects')   renderProjectsTab();
-  else if (tab === 'users') renderUsersTab();
+  if (tab === 'projects')        renderProjectsTab();
+  else if (tab === 'users')      renderUsersTab();
   else if (tab === 'exclusions') renderExclusionsTab();
 }
 
@@ -122,10 +123,11 @@ async function renderProjectsTab() {
 }
 
 function buildProjectCard(project, memberCount) {
-  const isActive = project.active !== false;
-  const canAdmin = isAdmin() || isCompanyAdmin();
+  const isActive  = project.active !== false;
+  const canAdmin  = isAdmin() || isCompanyAdmin();
+  const isSetup   = project.id === _setupProjectId;
   return `
-    <div class="project-admin-card">
+    <div class="project-admin-card${isSetup ? ' setup-selected' : ''}" data-project-id="${project.id}">
       <div class="project-admin-card-top">
         <div style="flex:1;min-width:0">
           <div class="project-admin-card-name">${project.name}</div>
@@ -139,7 +141,7 @@ function buildProjectCard(project, memberCount) {
       ${canAdmin ? `
       <div class="project-admin-card-actions">
         <button class="btn btn-ghost btn-sm" onclick="openEditProjectModal('${project.id}')">✏️ Edit</button>
-        <button class="btn btn-ghost btn-sm" onclick="openProjectMembersModal('${project.id}')">👥 Members</button>
+        <button class="btn btn-primary btn-sm" onclick="selectSetupProject('${project.id}')">⚙ Set Up</button>
         <button class="btn btn-danger btn-sm" onclick="confirmDeleteProject('${project.id}')">🗑 Delete</button>
       </div>` : ''}
     </div>`;
@@ -170,7 +172,8 @@ async function saveNewProject() {
   if (!res.ok) { errEl.textContent = json.error; return; }
   closeModal('projectModal');
   showToast(`Project "${name}" created`, 'success');
-  renderProjectsTab();
+  await renderProjectsTab();
+  selectSetupProject(json.data.id);
 }
 
 // ── Edit project ────────────────────────────────────────
@@ -199,118 +202,49 @@ async function saveEditProject(projectId) {
   const json = await res.json();
   if (!res.ok) { errEl.textContent = json.error; return; }
   closeModal('projectModal');
-  showToast(`Project updated`, 'success');
-  renderProjectsTab();
+  showToast('Project updated', 'success');
+  await renderProjectsTab();
+  // Keep the setup area title in sync if this project is selected
+  if (_setupProjectId === projectId) {
+    const nameEl = document.getElementById('setupAreaProjectName');
+    if (nameEl) nameEl.textContent = _projMap[projectId]?.name || '';
+  }
 }
 
 // ── Delete project ──────────────────────────────────────
 async function confirmDeleteProject(projectId) {
   const project = _projMap[projectId];
   if (!project) return;
-  if (!confirm(`Delete project "${project.name}"?\n\nThis will NOT delete the project's data in DynamoDB but will remove the project record. This cannot be undone.`)) return;
+  if (!confirm(`Delete project "${project.name}"?\n\nThis will remove the project record but will NOT delete the project's PR and release data. This cannot be undone.`)) return;
 
   const res  = await authFetch(`${API}/projects/${projectId}`, { method: 'DELETE' });
   const json = await res.json();
   if (!res.ok) { showToast(json.error, 'error'); return; }
   showToast(`Project "${project.name}" deleted`, 'success');
+  if (_setupProjectId === projectId) closeProjectSetup();
   renderProjectsTab();
 }
 
-// ── Project Members modal ──────────────────────────────
-let _membersProjectId = null;
-
-async function openProjectMembersModal(projectId) {
-  _membersProjectId = projectId;
+// ── Select project for setup (inline below grid) ───────
+async function selectSetupProject(projectId) {
+  _setupProjectId = projectId;
+  document.querySelectorAll('.project-admin-card').forEach(card => {
+    card.classList.toggle('setup-selected', card.dataset.projectId === projectId);
+  });
   const project = _projMap[projectId];
-  document.getElementById('projMembTitle').textContent = `Members — ${project?.name || ''}`;
-  document.getElementById('projMembError').textContent = '';
-
-  // Populate add-user dropdown with company users who don't already have full company access
-  await _refreshProjectMembersModal(projectId);
-  document.getElementById('projectMembersModal').classList.add('open');
+  document.getElementById('setupAreaProjectName').textContent = project?.name || '';
+  const area = document.getElementById('projectSetupArea');
+  area.style.display = '';
+  area.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  ['setupTeamError','setupReleaseError','setupSprintError','setupAccessError']
+    .forEach(id => { const el = document.getElementById(id); if (el) el.textContent = ''; });
+  await _setupLoadAll(projectId);
 }
 
-async function _refreshProjectMembersModal(projectId) {
-  const [membersRes, usersRes] = await Promise.all([
-    authFetch(`${API}/projects/${projectId}/members`).then(r => r?.ok ? r.json() : []),
-    authFetch(`${API}/users`).then(r => r?.ok ? r.json() : []),
-  ]);
-
-  // Render current members
-  const membEl = document.getElementById('projMembList');
-  if (!membersRes.length) {
-    membEl.innerHTML = '<div style="color:var(--text2);font-size:13px;padding:8px 0">No members yet. Add someone below.</div>';
-  } else {
-    membEl.innerHTML = membersRes.map(m => {
-      const isCompanyLevel = m.company_role === 'CompanyAdmin' || m.company_role === 'CompanyReadOnly';
-      return `
-        <div class="proj-member-row">
-          <div class="proj-member-info">
-            <span class="proj-member-name">${m.name || m.email}</span>
-            <span class="proj-member-email">${m.email}</span>
-          </div>
-          ${isCompanyLevel
-            ? `<span class="badge badge-orange" style="font-size:11px">${m.company_role}</span>`
-            : `<select class="proj-member-role-sel" onchange="updateProjectMemberRole('${m.email}',this.value)">
-                 <option value="ReadOnly"  ${m.role === 'ReadOnly'  ? 'selected' : ''}>ReadOnly</option>
-                 <option value="ReadWrite" ${m.role === 'ReadWrite' ? 'selected' : ''}>ReadWrite</option>
-                 <option value="Admin"     ${m.role === 'Admin'     ? 'selected' : ''}>Admin</option>
-               </select>`}
-          ${!isCompanyLevel
-            ? `<button class="btn btn-danger btn-sm" onclick="removeProjectMember('${m.email}')">✕</button>`
-            : ''}
-        </div>`;
-    }).join('');
-  }
-
-  // Populate the add-member dropdown with users not already in the project at project level
-  const memberEmails  = new Set(membersRes.filter(m => !m.company_role).map(m => m.email));
-  const addSel = document.getElementById('pmAddEmail');
-  addSel.innerHTML = '<option value="">— select user —</option>';
-  usersRes
-    .filter(u => u.active && !memberEmails.has(u.email) && !u.company_role)
-    .sort((a, b) => a.name.localeCompare(b.name))
-    .forEach(u => addSel.add(new Option(`${u.name} (${u.email})`, u.email)));
-}
-
-async function updateProjectMemberRole(email, role) {
-  const res = await authFetch(`${API}/projects/${_membersProjectId}/members`, {
-    method: 'POST',
-    body:   JSON.stringify({ email, role }),
-  });
-  if (!res.ok) {
-    const json = await res.json();
-    showToast(json.error || 'Failed to update role', 'error');
-    await _refreshProjectMembersModal(_membersProjectId);
-  }
-}
-
-async function removeProjectMember(email) {
-  const res = await authFetch(
-    `${API}/projects/${_membersProjectId}/members/${encodeURIComponent(email)}`,
-    { method: 'DELETE' }
-  );
-  const json = await res.json();
-  if (!res.ok) { showToast(json.error, 'error'); return; }
-  showToast(`${email} removed from project`, 'success');
-  await _refreshProjectMembersModal(_membersProjectId);
-}
-
-async function addProjectMember() {
-  const email = document.getElementById('pmAddEmail').value;
-  const role  = document.getElementById('pmAddRole').value;
-  const errEl = document.getElementById('projMembError');
-  errEl.textContent = '';
-  if (!email) { errEl.textContent = 'Select a user to add'; return; }
-
-  const res  = await authFetch(`${API}/projects/${_membersProjectId}/members`, {
-    method: 'POST',
-    body:   JSON.stringify({ email, role }),
-  });
-  const json = await res.json();
-  if (!res.ok) { errEl.textContent = json.error; return; }
-  showToast(`${email} added to project`, 'success');
-  await _refreshProjectMembersModal(_membersProjectId);
+function closeProjectSetup() {
+  _setupProjectId = null;
+  document.getElementById('projectSetupArea').style.display = 'none';
+  document.querySelectorAll('.project-admin-card.setup-selected').forEach(c => c.classList.remove('setup-selected'));
 }
 
 // ══════════════════════════════════════════════════════
@@ -601,3 +535,298 @@ async function _saveExclusions() {
   _applyProjectExclusions({ excluded_pages: _exclPages, excluded_modules: _exclModules });
   showToast('Exclusions saved', 'success');
 }
+
+// ══════════════════════════════════════════════════════
+// PROJECT SETUP (inline in Projects tab)
+// ══════════════════════════════════════════════════════
+
+let _setupProjectId = null;
+
+async function _setupLoadAll(projectId) {
+  const [teamData, sprintData, releaseData, memberData, usersData] = await Promise.all([
+    authFetch(`${API}/onboard/${projectId}/team`).then(r => r?.ok ? r.json() : []),
+    authFetch(`${API}/onboard/${projectId}/sprints`).then(r => r?.ok ? r.json() : []),
+    authFetch(`${API}/onboard/${projectId}/releases`).then(r => r?.ok ? r.json() : []),
+    authFetch(`${API}/projects/${projectId}/members`).then(r => r?.ok ? r.json() : []),
+    authFetch(`${API}/users`).then(r => r?.ok ? r.json() : []),
+  ]);
+  _setupRenderTeam(Array.isArray(teamData) ? teamData : []);
+  _setupRenderSprints(Array.isArray(sprintData) ? sprintData : []);
+  _setupRenderReleases(Array.isArray(releaseData) ? releaseData : []);
+  _setupRenderAccess(
+    Array.isArray(memberData) ? memberData : [],
+    Array.isArray(usersData)  ? usersData  : []
+  );
+}
+
+// ── Team Members ───────────────────────────────────────
+function _setupRenderTeam(members) {
+  const list  = document.getElementById('setupTeamList');
+  const badge = document.getElementById('teamBadge');
+  if (!list) return;
+  badge.textContent = members.length;
+
+  if (!members.length) {
+    list.innerHTML = '<div class="setup-empty">No team members yet. Add names below.</div>';
+    return;
+  }
+  // Group by role for display
+  const byRole = {};
+  members.forEach(m => (byRole[m.role] = byRole[m.role] || []).push(m));
+  list.innerHTML = Object.entries(byRole).map(([role, people]) =>
+    `<div class="setup-role-group">
+      <div class="setup-role-label">${role}</div>
+      <div class="setup-role-members">
+        ${people.map(m => `
+          <div class="setup-member-chip">
+            <span>${m.name}</span>
+            <button class="setup-chip-del" onclick="removeSetupTeamMember('${escAttr(m.name)}')" title="Remove">✕</button>
+          </div>`).join('')}
+      </div>
+    </div>`
+  ).join('');
+}
+
+async function addSetupTeamMember() {
+  const role  = document.getElementById('setupTeamRole').value;
+  const name  = document.getElementById('setupTeamName').value.trim();
+  const errEl = document.getElementById('setupTeamError');
+  errEl.textContent = '';
+  if (!name) { errEl.textContent = 'Enter a name'; return; }
+
+  const res  = await authFetch(`${API}/onboard/${_setupProjectId}/team`, {
+    method: 'POST',
+    body:   JSON.stringify({ role, name }),
+  });
+  const json = await res.json();
+  if (!res.ok) { errEl.textContent = json.error; return; }
+  document.getElementById('setupTeamName').value = '';
+  showToast(`${name} added to team`, 'success');
+  const data = await authFetch(`${API}/onboard/${_setupProjectId}/team`).then(r => r.json());
+  _setupRenderTeam(Array.isArray(data) ? data : []);
+}
+
+async function removeSetupTeamMember(name) {
+  const res  = await authFetch(
+    `${API}/onboard/${_setupProjectId}/team/${encodeURIComponent(name)}`,
+    { method: 'DELETE' }
+  );
+  const json = await res.json();
+  if (!res.ok) { showToast(json.error, 'error'); return; }
+  showToast(`${name} removed`, 'success');
+  const data = await authFetch(`${API}/onboard/${_setupProjectId}/team`).then(r => r.json());
+  _setupRenderTeam(Array.isArray(data) ? data : []);
+}
+
+// ── Release Calendar ───────────────────────────────────
+function _setupRenderReleases(releases) {
+  const list   = document.getElementById('setupReleaseList');
+  const header = document.getElementById('setupReleaseHeader');
+  const badge  = document.getElementById('releaseBadge');
+  if (!list) return;
+  badge.textContent = releases.length;
+  header.style.display = releases.length ? '' : 'none';
+
+  if (!releases.length) {
+    list.innerHTML = '<div class="setup-empty">No releases yet. Add the first release below.</div>';
+    return;
+  }
+  list.innerHTML = releases.map(r => {
+    const completed = r.Completed
+      ? '<span class="badge badge-green" style="font-size:10px">Done</span>'
+      : '<span class="badge badge-gray"  style="font-size:10px">Upcoming</span>';
+    return `
+      <div class="setup-rel-item">
+        <span class="setup-rel-num">R${r.Release_Number}</span>
+        <span>${r.Release_Date  || '—'}</span>
+        <span>${r.Code_Freeze   || '—'}</span>
+        <span>${r.Regression_Start || '—'}</span>
+        <span>${completed}</span>
+        <button class="btn btn-danger btn-sm" onclick="removeSetupRelease('${r.Release_Number}')">✕</button>
+      </div>`;
+  }).join('');
+}
+
+async function addSetupRelease() {
+  const num        = document.getElementById('setupRelNum').value.trim();
+  const date       = document.getElementById('setupRelDate').value;
+  const freeze     = document.getElementById('setupRelFreeze').value;
+  const regression = document.getElementById('setupRelRegression').value;
+  const errEl      = document.getElementById('setupReleaseError');
+  errEl.textContent = '';
+  if (!num || !date) { errEl.textContent = 'Release number and date are required'; return; }
+
+  const res  = await authFetch(`${API}/onboard/${_setupProjectId}/releases`, {
+    method: 'POST',
+    body:   JSON.stringify({
+      Release_Number: num, Release_Date: date,
+      Code_Freeze: freeze || null, Regression_Start: regression || null,
+    }),
+  });
+  const json = await res.json();
+  if (!res.ok) { errEl.textContent = json.error; return; }
+  ['setupRelNum','setupRelDate','setupRelFreeze','setupRelRegression']
+    .forEach(id => { document.getElementById(id).value = ''; });
+  showToast(`Release ${num} added`, 'success');
+  const data = await authFetch(`${API}/onboard/${_setupProjectId}/releases`).then(r => r.json());
+  _setupRenderReleases(Array.isArray(data) ? data : []);
+}
+
+async function removeSetupRelease(number) {
+  if (!confirm(`Remove release ${number} from this project?`)) return;
+  const res  = await authFetch(
+    `${API}/onboard/${_setupProjectId}/releases/${encodeURIComponent(number)}`,
+    { method: 'DELETE' }
+  );
+  const json = await res.json();
+  if (!res.ok) { showToast(json.error, 'error'); return; }
+  showToast(`Release ${number} removed`, 'success');
+  const data = await authFetch(`${API}/onboard/${_setupProjectId}/releases`).then(r => r.json());
+  _setupRenderReleases(Array.isArray(data) ? data : []);
+}
+
+// ── Sprint Dates ───────────────────────────────────────
+function _setupRenderSprints(sprints) {
+  const list  = document.getElementById('setupSprintList');
+  const badge = document.getElementById('sprintBadge');
+  if (!list) return;
+  badge.textContent = sprints.length;
+
+  if (!sprints.length) {
+    list.innerHTML = '<div class="setup-empty">No sprint date ranges yet.</div>';
+    return;
+  }
+  list.innerHTML = sprints.map(s => `
+    <div class="setup-list-row">
+      <span class="setup-sprint-name">${s.Sprint}</span>
+      <span class="setup-sprint-dates">${s.StartDate} → ${s.EndDate}</span>
+      <button class="btn btn-danger btn-sm" onclick="removeSetupSprint('${escAttr(s.Sprint)}')">✕</button>
+    </div>`).join('');
+}
+
+async function addSetupSprint() {
+  const name  = document.getElementById('setupSprintName').value.trim();
+  const start = document.getElementById('setupSprintStart').value;
+  const end   = document.getElementById('setupSprintEnd').value;
+  const errEl = document.getElementById('setupSprintError');
+  errEl.textContent = '';
+  if (!name || !start || !end) { errEl.textContent = 'Sprint name, start and end dates are required'; return; }
+  if (start > end) { errEl.textContent = 'Start date must be before end date'; return; }
+
+  const res  = await authFetch(`${API}/onboard/${_setupProjectId}/sprints`, {
+    method: 'POST',
+    body:   JSON.stringify({ sprint_name: name, start_date: start, end_date: end }),
+  });
+  const json = await res.json();
+  if (!res.ok) { errEl.textContent = json.error; return; }
+  ['setupSprintName','setupSprintStart','setupSprintEnd']
+    .forEach(id => { document.getElementById(id).value = ''; });
+  showToast(`Sprint ${name} added`, 'success');
+  const data = await authFetch(`${API}/onboard/${_setupProjectId}/sprints`).then(r => r.json());
+  _setupRenderSprints(Array.isArray(data) ? data : []);
+}
+
+async function removeSetupSprint(name) {
+  const res  = await authFetch(
+    `${API}/onboard/${_setupProjectId}/sprints/${encodeURIComponent(name)}`,
+    { method: 'DELETE' }
+  );
+  const json = await res.json();
+  if (!res.ok) { showToast(json.error, 'error'); return; }
+  showToast(`Sprint ${name} removed`, 'success');
+  const data = await authFetch(`${API}/onboard/${_setupProjectId}/sprints`).then(r => r.json());
+  _setupRenderSprints(Array.isArray(data) ? data : []);
+}
+
+// ── User Access ────────────────────────────────────────
+function _setupRenderAccess(members, allUsers) {
+  const list  = document.getElementById('setupAccessList');
+  const badge = document.getElementById('accessBadge');
+  if (!list) return;
+  badge.textContent = members.length;
+
+  if (!members.length) {
+    list.innerHTML = '<div class="setup-empty">No users assigned yet.</div>';
+  } else {
+    list.innerHTML = members.map(m => {
+      const isCompany = !!m.company_role;
+      return `
+        <div class="setup-list-row">
+          <div class="setup-access-info">
+            <span class="setup-item-name">${m.name || m.email}</span>
+            <span class="setup-email">${m.email}</span>
+          </div>
+          ${isCompany
+            ? `<span class="badge badge-orange" style="font-size:11px">${m.company_role}</span>`
+            : `<select class="proj-member-role-sel" onchange="updateSetupAccess('${escAttr(m.email)}',this.value)">
+                 <option value="ReadOnly"  ${m.role === 'ReadOnly'  ? 'selected':''}>ReadOnly</option>
+                 <option value="ReadWrite" ${m.role === 'ReadWrite' ? 'selected':''}>ReadWrite</option>
+                 <option value="Admin"     ${m.role === 'Admin'     ? 'selected':''}>Admin</option>
+               </select>
+               <button class="btn btn-danger btn-sm" onclick="removeSetupAccess('${escAttr(m.email)}')">✕</button>`
+          }
+        </div>`;
+    }).join('');
+  }
+
+  // Populate add-user dropdown (exclude already-added and company-level users)
+  const memberEmails = new Set(members.filter(m => !m.company_role).map(m => m.email));
+  const sel = document.getElementById('setupAccessEmail');
+  sel.innerHTML = '<option value="">— select user to add —</option>';
+  allUsers
+    .filter(u => u.active && !memberEmails.has(u.email) && !u.company_role)
+    .sort((a, b) => a.name.localeCompare(b.name))
+    .forEach(u => sel.add(new Option(`${u.name} (${u.email})`, u.email)));
+}
+
+async function addSetupAccess() {
+  const email = document.getElementById('setupAccessEmail').value;
+  const role  = document.getElementById('setupAccessRole').value;
+  const errEl = document.getElementById('setupAccessError');
+  errEl.textContent = '';
+  if (!email) { errEl.textContent = 'Select a user'; return; }
+
+  const res  = await authFetch(`${API}/projects/${_setupProjectId}/members`, {
+    method: 'POST',
+    body:   JSON.stringify({ email, role }),
+  });
+  const json = await res.json();
+  if (!res.ok) { errEl.textContent = json.error; return; }
+  showToast(`${email} added to project`, 'success');
+  await _refreshSetupAccess();
+}
+
+async function updateSetupAccess(email, role) {
+  const res = await authFetch(`${API}/projects/${_setupProjectId}/members`, {
+    method: 'POST',
+    body:   JSON.stringify({ email, role }),
+  });
+  if (!res.ok) {
+    const json = await res.json();
+    showToast(json.error || 'Failed to update role', 'error');
+    await _refreshSetupAccess();
+  }
+}
+
+async function removeSetupAccess(email) {
+  const res  = await authFetch(
+    `${API}/projects/${_setupProjectId}/members/${encodeURIComponent(email)}`,
+    { method: 'DELETE' }
+  );
+  const json = await res.json();
+  if (!res.ok) { showToast(json.error, 'error'); return; }
+  showToast(`${email} removed from project`, 'success');
+  await _refreshSetupAccess();
+}
+
+async function _refreshSetupAccess() {
+  const [memberData, usersData] = await Promise.all([
+    authFetch(`${API}/projects/${_setupProjectId}/members`).then(r => r?.ok ? r.json() : []),
+    authFetch(`${API}/users`).then(r => r?.ok ? r.json() : []),
+  ]);
+  _setupRenderAccess(
+    Array.isArray(memberData) ? memberData : [],
+    Array.isArray(usersData)  ? usersData  : []
+  );
+}
+
