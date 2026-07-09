@@ -5,6 +5,8 @@ const cors    = require('cors');
 const path    = require('path');
 const { authenticate } = require('./middleware/auth');
 const { apiLimiter }   = require('./middleware/rateLimit');
+const { requestId }    = require('./middleware/requestId');
+const logger            = require('./services/logger');
 
 const prRoutes      = require('./routes/prRoutes');
 const releaseRoutes = require('./routes/releaseRoutes');
@@ -61,6 +63,25 @@ app.use(helmet({
   crossOriginEmbedderPolicy: false,
 }));
 
+// Assign/propagate a correlation id before anything else logs, then log one
+// line per completed request (method, path, status, duration) tagged with
+// it — this is what makes CloudWatch Logs Insights useful for tracing a
+// single request through the app and across concurrent traffic.
+app.use(requestId);
+app.use((req, res, next) => {
+  const startedAt = Date.now();
+  res.on('finish', () => {
+    logger.info('http_request', {
+      correlationId: req.id,
+      method: req.method,
+      path: req.originalUrl,
+      status: res.statusCode,
+      durationMs: Date.now() - startedAt,
+    });
+  });
+  next();
+});
+
 app.use(cors());
 // Every request body here is a plain JSON object (PR/module/release fields,
 // arrays of pages) — no file uploads go through this parser. 1mb is generous
@@ -98,16 +119,23 @@ app.get('/', (req, res) => res.sendFile(path.join(__dirname, 'public', 'index.ht
 // "Unexpected token '<'" instead of a clean error message.
 app.use((err, req, res, next) => {
   if (err.type === 'entity.too.large') {
-    return res.status(413).json({ error: 'Request body too large' });
+    return res.status(413).json({ error: 'Request body too large', correlationId: req.id });
   }
   if (err.type === 'entity.parse.failed' || err instanceof SyntaxError) {
-    return res.status(400).json({ error: 'Malformed JSON in request body' });
+    return res.status(400).json({ error: 'Malformed JSON in request body', correlationId: req.id });
   }
-  res.status(500).json({ error: err.message || 'Internal server error' });
+  logger.error('unhandled_error', {
+    correlationId: req.id,
+    method: req.method,
+    path: req.originalUrl,
+    message: err.message,
+    stack: err.stack,
+  });
+  res.status(500).json({ error: err.message || 'Internal server error', correlationId: req.id });
 });
 
 app.listen(PORT, () => {
-  console.log(`ProjectPulse running on http://localhost:${PORT}`);
+  logger.info('server_started', { port: PORT });
 });
 
 module.exports = app;
