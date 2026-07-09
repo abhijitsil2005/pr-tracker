@@ -108,6 +108,15 @@ router.put('/:email', async (req, res) => {
     if (typeof req.body.active === 'boolean') push('active',      req.body.active);
     if (req.body.password) push('password_hash', await bcrypt.hash(req.body.password, 10));
 
+    // Any of these change what an existing session is allowed to do — bump
+    // token_version so already-issued JWTs are rejected on their next request
+    // instead of staying valid until the 12h expiry (instant deprovisioning).
+    const revokesSessions =
+      req.body.company_role !== undefined ||
+      typeof req.body.active === 'boolean' ||
+      !!req.body.password;
+    if (revokesSessions) sets.push('token_version = token_version + 1');
+
     if (sets.length) {
       await client.query(
         `UPDATE users SET ${sets.join(', ')} WHERE email = $1`,

@@ -51,6 +51,10 @@ CREATE TABLE users (
   company_id      UUID        REFERENCES companies(id) ON DELETE SET NULL,
   company_role    TEXT        CHECK (company_role IN ('CompanyAdmin', 'CompanyReadOnly')),
   active          BOOLEAN     NOT NULL DEFAULT true,
+  -- Bumped whenever active/company_role/password changes; embedded in every JWT
+  -- and checked on every request so revocation (deactivation, role change,
+  -- password change) takes effect immediately instead of waiting for token expiry.
+  token_version   INT         NOT NULL DEFAULT 1,
   created_at      TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 

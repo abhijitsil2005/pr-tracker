@@ -1,5 +1,6 @@
 require('dotenv').config();
 const express = require('express');
+const helmet  = require('helmet');
 const cors    = require('cors');
 const path    = require('path');
 const { authenticate } = require('./middleware/auth');
@@ -23,6 +24,33 @@ const PORT = process.env.PORT || 3000;
 // Elastic Beanstalk's Nginx sits in front of the app as a single reverse-proxy
 // hop — trust its X-Forwarded-For so rate limiting keys on the real client IP.
 app.set('trust proxy', 1);
+
+// Security headers (HSTS, X-Frame-Options, X-Content-Type-Options, etc.).
+// CSP allows 'unsafe-inline' for script/style because the frontend is built
+// with inline onclick=/onchange= handlers and inline style= attributes
+// throughout public/index.html — a strict default-src would break the whole
+// UI. Everything else (fonts, connect, objects, framing) stays locked to
+// same-origin, which still blocks injected remote-script/clickjacking attacks.
+app.use(helmet({
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc:    ["'self'"],
+      scriptSrc:     ["'self'", "'unsafe-inline'"],
+      scriptSrcAttr: ["'unsafe-inline'"],  // needed: onclick=/onchange= handlers throughout the UI
+      styleSrc:      ["'self'", "'unsafe-inline'"],
+      imgSrc:        ["'self'", 'data:'],
+      fontSrc:       ["'self'"],
+      connectSrc:    ["'self'"],
+      objectSrc:     ["'none'"],
+      baseUri:       ["'self'"],
+      formAction:    ["'self'"],
+      frameAncestors:["'none'"],
+    },
+  },
+  // No cross-origin embedding of images/fonts today; avoid COEP's stricter
+  // resource-loading requirements until/unless that's actually needed.
+  crossOriginEmbedderPolicy: false,
+}));
 
 app.use(cors());
 app.use(express.json());
