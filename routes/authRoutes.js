@@ -4,9 +4,10 @@ const jwt      = require('jsonwebtoken');
 const router   = express.Router();
 const { pool } = require('../services/pgClient');
 const { authenticate, JWT_SECRET } = require('../middleware/auth');
+const { loginLimiter, passwordChangeLimiter } = require('../middleware/rateLimit');
 
 // POST /api/auth/login
-router.post('/login', async (req, res) => {
+router.post('/login', loginLimiter, async (req, res) => {
   try {
     const { email, password } = req.body;
     if (!email || !password) return res.status(400).json({ error: 'Email and password required' });
@@ -128,7 +129,7 @@ router.get('/me', authenticate, (req, res) => {
 });
 
 // POST /api/auth/change-password
-router.post('/change-password', authenticate, async (req, res) => {
+router.post('/change-password', authenticate, passwordChangeLimiter, async (req, res) => {
   try {
     const { current_password, new_password } = req.body;
     if (!current_password || !new_password) return res.status(400).json({ error: 'Both passwords required' });

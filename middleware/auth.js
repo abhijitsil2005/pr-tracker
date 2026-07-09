@@ -1,5 +1,12 @@
 const jwt = require('jsonwebtoken');
-const JWT_SECRET = process.env.JWT_SECRET || 'pr-tracker-jwt-secret';
+
+if (!process.env.JWT_SECRET) {
+  throw new Error(
+    'JWT_SECRET environment variable is not set. Refusing to start with an insecure default — ' +
+    'set JWT_SECRET to a long random value (e.g. `node -e "console.log(require(\'crypto\').randomBytes(48).toString(\'base64\'))"`).'
+  );
+}
+const JWT_SECRET = process.env.JWT_SECRET;
 
 // Verify JWT and attach req.user
 function authenticate(req, res, next) {

@@ -3,6 +3,7 @@ const express = require('express');
 const cors    = require('cors');
 const path    = require('path');
 const { authenticate } = require('./middleware/auth');
+const { apiLimiter }   = require('./middleware/rateLimit');
 
 const prRoutes      = require('./routes/prRoutes');
 const releaseRoutes = require('./routes/releaseRoutes');
@@ -19,9 +20,14 @@ const onboardRoutes = require('./routes/onboardRoutes');
 const app  = express();
 const PORT = process.env.PORT || 3000;
 
+// Elastic Beanstalk's Nginx sits in front of the app as a single reverse-proxy
+// hop — trust its X-Forwarded-For so rate limiting keys on the real client IP.
+app.set('trust proxy', 1);
+
 app.use(cors());
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
+app.use('/api', apiLimiter);
 
 // Public routes
 app.use('/api/auth', authRoutes);
