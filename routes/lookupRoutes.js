@@ -97,14 +97,18 @@ router.get('/reviewers', async (req, res) => {
 });
 
 // GET /api/lookup/timeline
+// Reads from `releases` (not the legacy `release_timeline` table, which is only
+// ever populated by the one-off DynamoDB migration and has no create/edit route
+// in the app) so every date this offers actually corresponds to a real release —
+// otherwise picking one of the stale dates silently fails to sync release pages.
 router.get('/timeline', async (req, res) => {
   try {
     const { rows } = await query(
       `SELECT release_number   AS "Release_Number",
               release_date     AS "Release_Date",
-              code_freeze_date AS "Code Freeze",
+              code_freeze      AS "Code Freeze",
               regression_start AS "Regression Start Date"
-       FROM release_timeline
+       FROM releases
        WHERE project_id = $1
        ORDER BY release_number`,
       [pid(req)],
