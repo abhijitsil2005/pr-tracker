@@ -195,6 +195,7 @@
       <div class="admin-tabs">
         <button class="admin-tab active" data-tab="projects"   onclick="switchAdminTab('projects')">Projects</button>
         <button class="admin-tab"        data-tab="users"      onclick="switchAdminTab('users')">User Management</button>
+        <button class="admin-tab"        data-tab="releases"   onclick="switchAdminTab('releases')">Release Planning</button>
         <button class="admin-tab"        data-tab="exclusions" onclick="switchAdminTab('exclusions')">Calc Exclusions</button>
       </div>
 
@@ -204,117 +205,37 @@
           <button class="btn btn-primary" onclick="openAddProjectModal()">＋ Add Project</button>
         </div>
         <div id="projectsGrid" class="projects-grid"></div>
-
-        <!-- Inline setup panel — shown when a project's "Set Up" is clicked -->
-        <div id="projectSetupArea" style="display:none;margin-top:28px">
-          <div class="setup-area-hdr">
-            <div class="setup-area-title-row">
-              <span class="setup-area-label">Setting up</span>
-              <strong id="setupAreaProjectName"></strong>
-            </div>
-            <button class="btn btn-ghost btn-sm" onclick="closeProjectSetup()">✕ Close</button>
-          </div>
-
-          <!-- 1. Release Calendar  (Team Members moved to User Management tab) -->
-          <div class="setup-section">
-            <div class="setup-section-hdr">
-              <span class="setup-section-icon">🚀</span>
-              <span class="setup-section-title">Release Calendar</span>
-              <span class="badge badge-gray" id="releaseBadge">0</span>
-              <span class="setup-section-hint">Release dates drive module planning and report charts.</span>
-            </div>
-            <div class="setup-section-body">
-              <div id="setupReleaseHeader" class="setup-rel-header" style="display:none">
-                <span>Release #</span><span>Release Date</span><span>Code Freeze</span><span>Regression Start</span><span>Status</span><span></span>
-              </div>
-              <div id="setupReleaseList" class="setup-list"></div>
-              <div class="setup-add-row setup-rel-add">
-                <input type="text"  id="setupRelNum"        placeholder="Release #"    title="Release number" style="width:96px;flex:0 0 auto">
-                <input type="date"  id="setupRelDate"       title="Release Date">
-                <input type="date"  id="setupRelFreeze"     title="Code Freeze Date">
-                <input type="date"  id="setupRelRegression" title="Regression Start Date">
-                <button class="btn btn-primary btn-sm" onclick="addSetupRelease()">＋ Add</button>
-              </div>
-              <div class="setup-field-hints">Release # &nbsp;·&nbsp; Release Date &nbsp;·&nbsp; Code Freeze &nbsp;·&nbsp; Regression Start</div>
-              <div id="setupReleaseError" class="setup-error"></div>
-            </div>
-          </div>
-
-          <!-- 2. Sprint Dates -->
-          <div class="setup-section">
-            <div class="setup-section-hdr">
-              <span class="setup-section-icon">📅</span>
-              <span class="setup-section-title">Sprint Dates</span>
-              <span class="badge badge-gray" id="sprintBadge">0</span>
-              <span class="setup-section-hint">Used to auto-assign Dev Sprint to PRs based on raised date.</span>
-            </div>
-            <div class="setup-section-body">
-              <div id="setupSprintList" class="setup-list"></div>
-              <div class="setup-add-row">
-                <input type="text" id="setupSprintName"  placeholder="Sprint (e.g. 3.1)" style="width:130px;flex:0 0 auto">
-                <input type="date" id="setupSprintStart" title="Start Date">
-                <input type="date" id="setupSprintEnd"   title="End Date">
-                <button class="btn btn-primary btn-sm" onclick="addSetupSprint()">＋ Add</button>
-              </div>
-              <div class="setup-field-hints">Sprint Name &nbsp;·&nbsp; Start Date &nbsp;·&nbsp; End Date</div>
-              <div id="setupSprintError" class="setup-error"></div>
-            </div>
-          </div>
-
-          <!-- 3. User Access -->
-          <div class="setup-section">
-            <div class="setup-section-hdr">
-              <span class="setup-section-icon">🔑</span>
-              <span class="setup-section-title">User Access</span>
-              <span class="badge badge-gray" id="accessBadge">0</span>
-              <span class="setup-section-hint">Assign company users to this project with a role.</span>
-            </div>
-            <div class="setup-section-body">
-              <div id="setupAccessList" class="setup-list"></div>
-              <div class="setup-add-row">
-                <select id="setupAccessEmail" style="flex:1;min-width:200px">
-                  <option value="">— select user to add —</option>
-                </select>
-                <select id="setupAccessRole" style="width:130px;flex:0 0 auto">
-                  <option value="ReadOnly">ReadOnly</option>
-                  <option value="ReadWrite" selected>ReadWrite</option>
-                  <option value="Admin">Admin</option>
-                </select>
-                <button class="btn btn-primary btn-sm" onclick="addSetupAccess()">＋ Add</button>
-              </div>
-              <div id="setupAccessError" class="setup-error"></div>
-            </div>
-          </div>
-
-        </div><!-- /projectSetupArea -->
       </div>
 
       <!-- ── User Management panel ──────────────────────────────── -->
       <div class="admin-panel" data-panel="users" style="display:none">
 
-        <!-- Company Users -->
-        <div class="um-section-hdr">
-          <div>
-            <div class="um-section-title">Company Users</div>
-            <div class="um-section-sub">Login accounts, company roles, and project access.</div>
+        <!-- Company Users (Company Admin only) -->
+        <div id="companyUsersArea">
+          <div class="um-section-hdr">
+            <div>
+              <div class="um-section-title">Company Users</div>
+              <div class="um-section-sub">Login accounts, company roles, and project access.</div>
+            </div>
+            <button class="btn btn-primary" onclick="openAddUserModal()">＋ Add User</button>
           </div>
-          <button class="btn btn-primary" onclick="openAddUserModal()">＋ Add User</button>
+          <div class="table-wrap">
+            <table id="userTable" class="data-table">
+              <thead>
+                <tr>
+                  <th>Email</th>
+                  <th>Name</th>
+                  <th>Company Role</th>
+                  <th>Project Access</th>
+                  <th>Status</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
         </div>
-        <div class="table-wrap">
-          <table id="userTable" class="data-table">
-            <thead>
-              <tr>
-                <th>Email</th>
-                <th>Name</th>
-                <th>Company Role</th>
-                <th>Project Access</th>
-                <th>Status</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody></tbody>
-          </table>
-        </div>
+        <div id="companyUsersDenied" class="empty-state" style="display:none">Only a Company Admin can view or manage company users.</div>
 
         <!-- Divider -->
         <div class="um-section-divider"></div>
@@ -351,6 +272,71 @@
 
       </div>
 
+      <!-- ── Release Planning panel ──────────────────────────────── -->
+      <div class="admin-panel" data-panel="releases" style="display:none">
+        <div class="um-section-hdr" style="margin-bottom:12px">
+          <div>
+            <div class="um-section-title">Release Planning</div>
+            <div class="um-section-sub">Release calendar and sprint dates — configured per project.</div>
+          </div>
+        </div>
+        <div style="margin-bottom:16px">
+          <select id="relPlanProjectSel" onchange="onRelPlanProjectChanged(this.value)" style="max-width:320px;width:100%">
+            <option value="">— select a project —</option>
+          </select>
+        </div>
+
+        <div id="relPlanArea" style="display:none">
+
+          <!-- Release Calendar -->
+          <div class="setup-section">
+            <div class="setup-section-hdr">
+              <span class="setup-section-icon">🚀</span>
+              <span class="setup-section-title">Release Calendar</span>
+              <span class="badge badge-gray" id="releaseBadge">0</span>
+              <span class="setup-section-hint">Release dates drive module planning and report charts.</span>
+            </div>
+            <div class="setup-section-body">
+              <div id="setupReleaseHeader" class="setup-rel-header" style="display:none">
+                <span>Release #</span><span>Release Date</span><span>Code Freeze</span><span>Regression Start</span><span>Status</span><span></span>
+              </div>
+              <div id="setupReleaseList" class="setup-list"></div>
+              <div class="setup-add-row setup-rel-add">
+                <input type="text"  id="setupRelNum"        placeholder="Release #"    title="Release number" style="width:96px;flex:0 0 auto">
+                <input type="date"  id="setupRelDate"       title="Release Date">
+                <input type="date"  id="setupRelFreeze"     title="Code Freeze Date">
+                <input type="date"  id="setupRelRegression" title="Regression Start Date">
+                <button class="btn btn-primary btn-sm" onclick="addSetupRelease()">＋ Add</button>
+              </div>
+              <div class="setup-field-hints">Release # &nbsp;·&nbsp; Release Date &nbsp;·&nbsp; Code Freeze &nbsp;·&nbsp; Regression Start</div>
+              <div id="setupReleaseError" class="setup-error"></div>
+            </div>
+          </div>
+
+          <!-- Sprint Dates -->
+          <div class="setup-section">
+            <div class="setup-section-hdr">
+              <span class="setup-section-icon">📅</span>
+              <span class="setup-section-title">Sprint Dates</span>
+              <span class="badge badge-gray" id="sprintBadge">0</span>
+              <span class="setup-section-hint">Used to auto-assign Dev Sprint to PRs based on raised date.</span>
+            </div>
+            <div class="setup-section-body">
+              <div id="setupSprintList" class="setup-list"></div>
+              <div class="setup-add-row">
+                <input type="text" id="setupSprintName"  placeholder="Sprint (e.g. 3.1)" style="width:130px;flex:0 0 auto">
+                <input type="date" id="setupSprintStart" title="Start Date">
+                <input type="date" id="setupSprintEnd"   title="End Date">
+                <button class="btn btn-primary btn-sm" onclick="addSetupSprint()">＋ Add</button>
+              </div>
+              <div class="setup-field-hints">Sprint Name &nbsp;·&nbsp; Start Date &nbsp;·&nbsp; End Date</div>
+              <div id="setupSprintError" class="setup-error"></div>
+            </div>
+          </div>
+
+        </div><!-- /relPlanArea -->
+      </div>
+
       <!-- ── Exclusions panel ────────────────────────── -->
       <div class="admin-panel" data-panel="exclusions" style="display:none">
         <div id="exclusionsPanel"></div>
@@ -385,20 +371,22 @@
 
 <!-- ── PR Modal ────────────────────────────────────────── -->
 <div class="modal-overlay" id="prModal">
-  <div class="modal">
+  <div class="modal modal-lg">
     <h2 id="prModalTitle">Add PR</h2>
     <button class="modal-close" onclick="closePRModal()">✕</button>
     <div class="form-grid">
       <div class="form-group"><label>PR Number *</label><input type="text" id="f_pr"></div>
+      <div class="form-group"><label>Developer</label><select id="f_developer"><option value="">— select —</option></select></div>
+      <div class="form-group full"><label>Title</label><input type="text" id="f_title" placeholder="Short summary of the change"></div>
       <div class="form-group"><label>Type</label><select id="f_type"><option>Development</option><option>QA Bug Fix</option><option>Hotfix</option><option>Remove FF</option><option>Prod Bug Fix</option></select></div>
       <div class="form-group"><label>Module</label><select id="f_module" onchange="loadPageOptions()"><option value="">— select —</option></select></div>
-      <div class="form-group"><label>Developer</label><select id="f_developer"><option value="">— select —</option></select></div>
       <div class="form-group full">
         <label>Pages <span style="color:var(--text2);font-weight:400">— click to select, click again to deselect</span></label>
         <div id="f_pages" class="page-chips">
           <span class="page-chip-hint">— select a module first —</span>
         </div>
       </div>
+      <div class="form-group full"><label>Description</label><textarea id="f_description" placeholder="What does this PR change and why?"></textarea></div>
       <div class="form-group"><label>Status</label>
         <select id="f_status">
           <option value="">— select —</option>
@@ -414,14 +402,15 @@
       </div>
       <div class="form-group"><label>Reviewer</label><select id="f_reviewer"><option value="">— select —</option></select></div>
       <div class="form-group"><label>PR Raised Date</label><input type="date" id="f_raised"></div>
-      <div class="form-group"><label>First Response Date</label><input type="text" id="f_firstResponse" placeholder="05/28/2026"></div>
+      <div class="form-group" id="f_firstResponseGroup"><label>First Response Date</label><input type="text" id="f_firstResponse" placeholder="05/28/2026"></div>
       <div class="form-group"><label>PR Approved Date</label><input type="date" id="f_approved"></div>
       <div class="form-group"><label>PR Merged Date</label><input type="date" id="f_merged"></div>
       <div class="form-group"><label>Dev Sprint</label><input type="text" id="f_devSprint" placeholder="2.5"></div>
-      <div class="form-group"><label>Testing Sprint</label><input type="text" id="f_testSprint" placeholder="2.6"></div>
       <div class="form-group"><label>Target Release Date</label><select id="f_target"><option value="">— select —</option></select></div>
+      <div class="form-group"><label>Testing Sprint</label><input type="text" id="f_testSprint" placeholder="2.6"></div>
       <div class="form-group"><label>Task #</label><input type="text" id="f_task" placeholder="e.g. 12345"></div>
       <div class="form-group"><label>Dependent PRs (comma-separated)</label><input type="text" id="f_deps" placeholder="8846, 8872"></div>
+      <div class="form-group full"><label>Additional Details</label><textarea id="f_additionalDetails" placeholder="Notes, links, edge cases, rollout considerations…"></textarea></div>
     </div>
     <div class="modal-footer">
       <button class="btn btn-ghost" onclick="closePRModal()">Cancel</button>
