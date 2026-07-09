@@ -4,6 +4,7 @@ const path    = require('path');
 const fs      = require('fs');
 const { pool } = require('../services/pgClient');
 const { requireProject, requireWrite } = require('../middleware/auth');
+const logger = require('../services/logger');
 
 router.use(requireProject, requireWrite);
 
@@ -265,8 +266,8 @@ router.post('/tracker', async (req, res) => {
       throw e;
     } finally { client.release(); }
   } catch (e) {
-    console.error('Import error:', e);
-    res.status(500).json({ error: e.message });
+    logger.error('import_error', { correlationId: req.id, message: e.message, stack: e.stack });
+    res.status(500).json({ error: e.message, correlationId: req.id });
   }
 });
 
@@ -395,8 +396,8 @@ router.post('/sprints', async (req, res) => {
       throw e;
     } finally { client.release(); }
   } catch (e) {
-    console.error('Sprint sync error:', e);
-    res.status(500).json({ error: e.message });
+    logger.error('sprint_sync_error', { correlationId: req.id, message: e.message, stack: e.stack });
+    res.status(500).json({ error: e.message, correlationId: req.id });
   }
 });
 

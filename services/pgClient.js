@@ -1,4 +1,5 @@
 const { Pool, types } = require('pg');
+const logger = require('./logger');
 
 // Return DATE columns as plain YYYY-MM-DD strings (OID 1082), not Date objects.
 // node-postgres default converts them to JS Date → ISO timestamp with timezone offset,
@@ -17,8 +18,10 @@ const pool = new Pool({
   connectionTimeoutMillis: 30000,
 });
 
+// Fires on idle-client errors (e.g. connection dropped by the server), not
+// per-query — there's no single request to attach a correlation id to here.
 pool.on('error', (err) => {
-  console.error('PG pool error:', err.message);
+  logger.error('pg_pool_error', { message: err.message });
 });
 
 // Run a query with optional RLS context (project_id / company_id)
