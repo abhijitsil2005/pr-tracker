@@ -199,14 +199,16 @@ router.get('/', async (req, res) => {
 });
 
 // GET /api/releases/timeline/all
+// Same source as GET /api/lookup/timeline — see comment there on why this
+// reads `releases` rather than the legacy `release_timeline` table.
 router.get('/timeline/all', async (req, res) => {
   try {
     const { rows } = await query(
       `SELECT release_number   AS "Release_Number",
               release_date     AS "Release_Date",
-              code_freeze_date AS "Code Freeze",
+              code_freeze      AS "Code Freeze",
               regression_start AS "Regression Start Date"
-       FROM release_timeline
+       FROM releases
        WHERE project_id = $1
        ORDER BY release_number`,
       [pid(req)],

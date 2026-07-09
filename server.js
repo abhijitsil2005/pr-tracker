@@ -62,7 +62,11 @@ app.use(helmet({
 }));
 
 app.use(cors());
-app.use(express.json());
+// Every request body here is a plain JSON object (PR/module/release fields,
+// arrays of pages) — no file uploads go through this parser. 1mb is generous
+// for that and rejects oversized payloads before they're fully buffered into
+// memory, instead of relying on body-parser's implicit 100kb default.
+app.use(express.json({ limit: '1mb' }));
 app.use(express.static(path.join(__dirname, 'public')));
 app.use('/api', apiLimiter);
 
@@ -87,6 +91,20 @@ app.use('/api/users', userRoutes);
 
 app.get('/api/health', (req, res) => res.json({ status: 'ok', timestamp: new Date().toISOString() }));
 app.get('/', (req, res) => res.sendFile(path.join(__dirname, 'public', 'index.html')));
+
+// Every frontend call does res.json() on the response — without this, a
+// request over the 1mb body limit (or malformed JSON) would fall through to
+// Express's default HTML error page and break that parsing with a confusing
+// "Unexpected token '<'" instead of a clean error message.
+app.use((err, req, res, next) => {
+  if (err.type === 'entity.too.large') {
+    return res.status(413).json({ error: 'Request body too large' });
+  }
+  if (err.type === 'entity.parse.failed' || err instanceof SyntaxError) {
+    return res.status(400).json({ error: 'Malformed JSON in request body' });
+  }
+  res.status(500).json({ error: err.message || 'Internal server error' });
+});
 
 app.listen(PORT, () => {
   console.log(`ProjectPulse running on http://localhost:${PORT}`);

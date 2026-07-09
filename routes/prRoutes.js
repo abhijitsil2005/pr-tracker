@@ -65,6 +65,63 @@ async function insertPRRelations(client, projectId, prId, pages, deps) {
   }
 }
 
+// Keep a PR's entry in the Releases page's Modules→Pages tree (release_modules/
+// release_pages) in step with its Target_Release: drop it from whichever release
+// it used to point to, and add it to the release matching the new date.
+// release_pages.pr_number is a separate, manually-set value from prs.target_release —
+// nothing else keeps them in sync, so without this the PR keeps showing under its
+// old release forever and never appears under the new one.
+async function syncPRReleasePages(client, projectId, {
+  prNumber, oldModule, oldPages, newModule, newPages, oldTargetRelease, newTargetRelease,
+}) {
+  if (oldTargetRelease && oldModule) {
+    await client.query(
+      `DELETE FROM release_pages
+       WHERE pr_number = $1
+         AND release_module_id IN (
+           SELECT rm.id FROM release_modules rm
+           JOIN releases r ON r.id = rm.release_id
+           WHERE r.project_id = $2 AND r.release_date = $3 AND rm.module_name = $4
+         )`,
+      [prNumber, projectId, oldTargetRelease, oldModule]
+    );
+  }
+
+  if (!newTargetRelease) return { synced: false };
+  if (!newModule || !newPages.length) {
+    return { synced: false, reason: 'PR has no module/pages to sync to a release' };
+  }
+
+  const { rows: relRows } = await client.query(
+    'SELECT id, release_number FROM releases WHERE project_id = $1 AND release_date = $2',
+    [projectId, newTargetRelease]
+  );
+  if (!relRows.length) {
+    return { synced: false, reason: `No release found with date ${newTargetRelease}` };
+  }
+  const { id: releaseId, release_number: releaseNumber } = relRows[0];
+
+  const { rows: rmRows } = await client.query(
+    `INSERT INTO release_modules (project_id, release_id, module_name)
+     VALUES ($1, $2, $3)
+     ON CONFLICT (release_id, module_name) DO UPDATE SET module_name = EXCLUDED.module_name
+     RETURNING id`,
+    [projectId, releaseId, newModule]
+  );
+  const releaseModuleId = rmRows[0].id;
+
+  for (const pageName of newPages) {
+    await client.query(
+      `INSERT INTO release_pages (project_id, release_module_id, page_name, pr_number)
+       VALUES ($1, $2, $3, $4)
+       ON CONFLICT (release_module_id, page_name) DO UPDATE SET pr_number = EXCLUDED.pr_number`,
+      [projectId, releaseModuleId, pageName, prNumber]
+    );
+  }
+
+  return { synced: true, releaseNumber };
+}
+
 // Build a dynamic SET clause from a body object; returns { sets, vals }
 // Caller appends WHERE params after vals.
 async function buildPRSets(client, projectId, body) {
@@ -275,14 +332,12 @@ router.put('/:id', requireWrite, async (req, res) => {
   try {
     await client.query('BEGIN');
 
-    const check = await client.query(
-      'SELECT id FROM prs WHERE id = $1 AND project_id = $2',
-      [req.params.id, pid(req)]
-    );
+    const check = await client.query(`${PR_SELECT} WHERE p.id = $1 AND p.project_id = $2`, [req.params.id, pid(req)]);
     if (!check.rows.length) {
       await client.query('ROLLBACK');
       return res.status(404).json({ error: `PR record ${req.params.id} not found` });
     }
+    const before = check.rows[0];
 
     const body = { ...req.body };
     if (body.PR)            body.PR = Number(body.PR);
@@ -308,9 +363,22 @@ router.put('/:id', requireWrite, async (req, res) => {
       await insertPRRelations(client, pid(req), req.params.id, null, body.Dependent_PRs);
     }
 
+    let sync = { synced: false };
+    if (body.Target_Release !== undefined && body.Target_Release !== before.Target_Release) {
+      sync = await syncPRReleasePages(client, pid(req), {
+        prNumber:         before.PR,
+        oldModule:         before.Module,
+        oldPages:          before.Page || [],
+        newModule:         body.Module !== undefined ? body.Module : before.Module,
+        newPages:          body.Page   !== undefined ? body.Page   : (before.Page || []),
+        oldTargetRelease:  before.Target_Release,
+        newTargetRelease:  body.Target_Release,
+      });
+    }
+
     const { rows: updated } = await client.query(`${PR_SELECT} WHERE p.id = $1`, [req.params.id]);
     await client.query('COMMIT');
-    res.json({ message: 'PR updated', data: updated[0], sync: { synced: false } });
+    res.json({ message: 'PR updated', data: updated[0], sync });
   } catch (e) {
     await client.query('ROLLBACK').catch(() => {});
     res.status(e.message.includes('not found') ? 404 : 400).json({ error: e.message });

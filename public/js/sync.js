@@ -1,22 +1,6 @@
 // ═══════════════════════════════════════════════════════
 // SYNC
 // ═══════════════════════════════════════════════════════
-async function syncExcel() {
-  const btn = document.getElementById('syncBtn');
-  btn.textContent = '⏳ Syncing…'; btn.disabled = true;
-  const res = await fetch(`${API}/sync/excel`,{method:'POST'});
-  const json = await res.json();
-  btn.textContent = '🔄 Run Sync'; btn.disabled = false;
-  const el = document.getElementById('syncResult');
-  if (!res.ok) { el.innerHTML=`<span style="color:var(--red)">Error: ${json.error}</span>`; el.classList.add('show'); return; }
-  el.innerHTML = `
-    <div class="row"><span>PRs synced</span><span>${json.prs_synced}</span></div>
-    <div class="row"><span>Releases built</span><span>${json.releases_built}</span></div>
-    <div class="row"><span>Modules</span><span>${(json.summary?.modules||[]).join(', ')}</span></div>`;
-  el.classList.add('show');
-  showToast(`Sync complete: ${json.prs_synced} PRs`,'success');
-}
-
 async function uploadSync(input) {
   if (!input.files[0]) return;
   const formData = new FormData();
