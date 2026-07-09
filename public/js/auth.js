@@ -280,6 +280,9 @@ async function submitChangePassword() {
   });
   const json = await res.json();
   if (!res.ok) { errEl.textContent = json.error; return; }
+  // Changing the password revokes every existing session (incl. this one) —
+  // the server issues a fresh token so we don't just log ourselves out.
+  if (json.token) { setToken(json.token); currentUser = decodeToken(json.token); }
   closeModal('changePasswordModal');
   showToast('Password changed successfully', 'success');
 }

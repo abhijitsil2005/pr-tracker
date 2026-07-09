@@ -13,7 +13,7 @@ router.post('/login', loginLimiter, async (req, res) => {
     if (!email || !password) return res.status(400).json({ error: 'Email and password required' });
 
     const { rows } = await pool.query(
-      'SELECT email, name, password_hash, company_id, company_role, active FROM users WHERE email = $1',
+      'SELECT email, name, password_hash, company_id, company_role, active, token_version FROM users WHERE email = $1',
       [email.toLowerCase().trim()]
     );
     const user = rows[0];
@@ -50,7 +50,13 @@ router.post('/login', loginLimiter, async (req, res) => {
     }
 
     const token = jwt.sign(
-      { email: user.email, name: user.name, company_id: user.company_id || null, company_role: user.company_role || null },
+      {
+        email:         user.email,
+        name:          user.name,
+        company_id:    user.company_id || null,
+        company_role:  user.company_role || null,
+        token_version: user.token_version,
+      },
       JWT_SECRET,
       { expiresIn: '12h' }
     );
@@ -72,7 +78,7 @@ router.post('/select-project', authenticate, async (req, res) => {
     if (!project_id) return res.status(400).json({ error: 'project_id required' });
 
     const { rows: userRows } = await pool.query(
-      'SELECT email, name, company_id, company_role FROM users WHERE email = $1',
+      'SELECT email, name, company_id, company_role, token_version FROM users WHERE email = $1',
       [req.user.email]
     );
     if (!userRows.length) return res.status(404).json({ error: 'User not found' });
@@ -105,13 +111,14 @@ router.post('/select-project', authenticate, async (req, res) => {
 
     const token = jwt.sign(
       {
-        email:        user.email,
-        name:         user.name,
-        company_id:   user.company_id,
-        company_role: user.company_role || null,
-        project_id:   project.id,
-        project_name: project.name,
-        role:         effectiveRole,
+        email:         user.email,
+        name:          user.name,
+        company_id:    user.company_id,
+        company_role:  user.company_role || null,
+        project_id:    project.id,
+        project_name:  project.name,
+        role:          effectiveRole,
+        token_version: user.token_version,
       },
       JWT_SECRET,
       { expiresIn: '12h' }
@@ -145,8 +152,22 @@ router.post('/change-password', authenticate, passwordChangeLimiter, async (req,
     if (!match) return res.status(401).json({ error: 'Current password is incorrect' });
 
     const password_hash = await bcrypt.hash(new_password, 10);
-    await pool.query('UPDATE users SET password_hash = $1 WHERE email = $2', [password_hash, req.user.email]);
-    res.json({ message: 'Password changed successfully' });
+    const { rows: updated } = await pool.query(
+      `UPDATE users SET password_hash = $1, token_version = token_version + 1
+       WHERE email = $2 RETURNING token_version`,
+      [password_hash, req.user.email]
+    );
+
+    // Bumping token_version invalidates every session (including this one) to
+    // kick out anyone else logged in as this user — reissue a fresh token so
+    // the caller who just proved they know the password isn't logged out too.
+    const { iat, exp, ...claims } = req.user;
+    const token = jwt.sign(
+      { ...claims, token_version: updated[0].token_version },
+      JWT_SECRET,
+      { expiresIn: '12h' }
+    );
+    res.json({ message: 'Password changed successfully', token });
   } catch (e) {
     res.status(500).json({ error: e.message });
   }
