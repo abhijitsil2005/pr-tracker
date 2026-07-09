@@ -14,6 +14,9 @@ const PR_SELECT = `
     p.id,
     p.project_id,
     p.pr_number                AS "PR",
+    p.title                    AS "Title",
+    p.description              AS "Description",
+    p.additional_details       AS "Additional_Details",
     m.name                     AS "Module",
     p.developer                AS "Developer",
     p.reviewer                 AS "Reviewer",
@@ -70,6 +73,9 @@ async function buildPRSets(client, projectId, body) {
   const push = (col, val) => { vals.push(val); sets.push(`${col} = $${vals.length}`); };
 
   if (body.PR              !== undefined) push('pr_number',           Number(body.PR));
+  if (body.Title           !== undefined) push('title',               body.Title           || null);
+  if (body.Description     !== undefined) push('description',         body.Description     || null);
+  if (body.Additional_Details !== undefined) push('additional_details', body.Additional_Details || null);
   if (body.Developer       !== undefined) push('developer',           body.Developer       || null);
   if (body.Reviewer        !== undefined) push('reviewer',            body.Reviewer        || null);
   if (body.Type            !== undefined) push('type',                body.Type            || 'Development');
@@ -180,8 +186,9 @@ router.post('/', requireWrite, async (req, res) => {
       `INSERT INTO prs
          (project_id, pr_number, module_id, developer, reviewer, type, status, user_story,
           raised_date, first_response_date, approved_date, merged_date,
-          dev_sprint, testing_sprint, target_release, task)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16)
+          dev_sprint, testing_sprint, target_release, task,
+          title, description, additional_details)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19)
        RETURNING id`,
       [
         pid(req), Number(body.PR), moduleId,
@@ -194,6 +201,7 @@ router.post('/', requireWrite, async (req, res) => {
         body['PR Merged Date']         || null,
         body.Dev_Sprint     || null, body.Testing_Sprint || null,
         body.Target_Release || null, body.Task           || null,
+        body.Title || null, body.Description || null, body.Additional_Details || null,
       ]
     );
     const prId = rows[0].id;

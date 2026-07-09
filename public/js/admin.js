@@ -15,6 +15,7 @@ async function renderAdminPage() {
   await Promise.all([_fetchProjects(), _fetchUsers()]);
   if (active === 'projects')        renderProjectsTab();
   else if (active === 'users')      renderUsersTab();
+  else if (active === 'releases')   renderReleasesTab();
   else if (active === 'exclusions') renderExclusionsTab();
 }
 
@@ -91,6 +92,7 @@ function switchAdminTab(tab) {
   });
   if (tab === 'projects')        renderProjectsTab();
   else if (tab === 'users')      renderUsersTab();
+  else if (tab === 'releases')   renderReleasesTab();
   else if (tab === 'exclusions') renderExclusionsTab();
 }
 
@@ -125,9 +127,8 @@ async function renderProjectsTab() {
 function buildProjectCard(project, memberCount) {
   const isActive  = project.active !== false;
   const canAdmin  = isAdmin() || isCompanyAdmin();
-  const isSetup   = project.id === _setupProjectId;
   return `
-    <div class="project-admin-card${isSetup ? ' setup-selected' : ''}" data-project-id="${project.id}">
+    <div class="project-admin-card" data-project-id="${project.id}">
       <div class="project-admin-card-top">
         <div style="flex:1;min-width:0">
           <div class="project-admin-card-name">${project.name}</div>
@@ -141,7 +142,6 @@ function buildProjectCard(project, memberCount) {
       ${canAdmin ? `
       <div class="project-admin-card-actions">
         <button class="btn btn-ghost btn-sm" onclick="openEditProjectModal('${project.id}')">✏️ Edit</button>
-        <button class="btn btn-primary btn-sm" onclick="selectSetupProject('${project.id}')">⚙ Set Up</button>
         <button class="btn btn-danger btn-sm" onclick="confirmDeleteProject('${project.id}')">🗑 Delete</button>
       </div>` : ''}
     </div>`;
@@ -173,7 +173,6 @@ async function saveNewProject() {
   closeModal('projectModal');
   showToast(`Project "${name}" created`, 'success');
   await renderProjectsTab();
-  selectSetupProject(json.data.id);
 }
 
 // ── Edit project ────────────────────────────────────────
@@ -204,11 +203,6 @@ async function saveEditProject(projectId) {
   closeModal('projectModal');
   showToast('Project updated', 'success');
   await renderProjectsTab();
-  // Keep the setup area title in sync if this project is selected
-  if (_setupProjectId === projectId) {
-    const nameEl = document.getElementById('setupAreaProjectName');
-    if (nameEl) nameEl.textContent = _projMap[projectId]?.name || '';
-  }
 }
 
 // ── Delete project ──────────────────────────────────────
@@ -221,30 +215,8 @@ async function confirmDeleteProject(projectId) {
   const json = await res.json();
   if (!res.ok) { showToast(json.error, 'error'); return; }
   showToast(`Project "${project.name}" deleted`, 'success');
-  if (_setupProjectId === projectId) closeProjectSetup();
+  if (_relPlanProjectId === projectId) _relPlanProjectId = null;
   renderProjectsTab();
-}
-
-// ── Select project for setup (inline below grid) ───────
-async function selectSetupProject(projectId) {
-  _setupProjectId = projectId;
-  document.querySelectorAll('.project-admin-card').forEach(card => {
-    card.classList.toggle('setup-selected', card.dataset.projectId === projectId);
-  });
-  const project = _projMap[projectId];
-  document.getElementById('setupAreaProjectName').textContent = project?.name || '';
-  const area = document.getElementById('projectSetupArea');
-  area.style.display = '';
-  area.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-  ['setupReleaseError','setupSprintError','setupAccessError']
-    .forEach(id => { const el = document.getElementById(id); if (el) el.textContent = ''; });
-  await _setupLoadAll(projectId);
-}
-
-function closeProjectSetup() {
-  _setupProjectId = null;
-  document.getElementById('projectSetupArea').style.display = 'none';
-  document.querySelectorAll('.project-admin-card.setup-selected').forEach(c => c.classList.remove('setup-selected'));
 }
 
 // ══════════════════════════════════════════════════════
@@ -252,11 +224,18 @@ function closeProjectSetup() {
 // ══════════════════════════════════════════════════════
 
 async function renderUsersTab() {
-  await _fetchUsers();
+  const canSeeCompanyUsers = isCompanyAdmin();
+  const usersArea = document.getElementById('companyUsersArea');
+  const denied    = document.getElementById('companyUsersDenied');
+  if (usersArea) usersArea.style.display = canSeeCompanyUsers ? '' : 'none';
+  if (denied)    denied.style.display    = canSeeCompanyUsers ? 'none' : '';
+
+  if (canSeeCompanyUsers) await _fetchUsers();
   await _fetchProjects();
+  _populateTeamProjectSel();
 
   const tbody = document.querySelector('#userTable tbody');
-  if (!tbody) return;
+  if (!canSeeCompanyUsers || !tbody) return;
 
   if (!adminUsers.length) {
     tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--text2);padding:32px">No users found</td></tr>';
@@ -266,14 +245,17 @@ async function renderUsersTab() {
         ? `<span class="badge ${u.company_role === 'CompanyAdmin' ? 'badge-purple' : 'badge-orange'}">${u.company_role}</span>`
         : '<span class="badge badge-gray">—</span>';
 
-      const projectBadges = (u.project_memberships || []).map(m => {
-        const proj = adminProjects.find(p => p.id === m.project_id);
-        const label = proj ? proj.name : m.project_id.slice(0, 8) + '…';
-        const cls   = m.role === 'Admin' ? 'badge-purple' : m.role === 'ReadWrite' ? 'badge-blue' : 'badge-gray';
-        return `<span class="badge ${cls}" style="font-size:10px">${label}: ${m.role}</span>`;
-      }).join(' ') || '<span style="color:var(--text2);font-size:12px">No project access</span>';
+      const projectBadges = u.company_role === 'CompanyAdmin'
+        ? '<span class="badge badge-purple" style="font-size:10px">All projects</span>'
+        : (u.project_memberships || []).map(m => {
+            const proj = adminProjects.find(p => p.id === m.project_id);
+            const label = proj ? proj.name : m.project_id.slice(0, 8) + '…';
+            const cls   = m.role === 'Admin' ? 'badge-purple' : m.role === 'ReadWrite' ? 'badge-blue' : 'badge-gray';
+            return `<span class="badge ${cls}" style="font-size:10px">${label}: ${m.role}</span>`;
+          }).join(' ') || '<span style="color:var(--text2);font-size:12px">No project access</span>';
 
-      const isSelf = u.email === currentUser?.email;
+      const isSelf       = u.email === currentUser?.email;
+      const isCoAdmin     = u.company_role === 'CompanyAdmin';
       return `<tr>
         <td>${u.email}</td>
         <td>${u.name}</td>
@@ -282,7 +264,7 @@ async function renderUsersTab() {
         <td><span class="badge ${u.active ? 'badge-green' : 'badge-red'}">${u.active ? 'Active' : 'Inactive'}</span></td>
         <td style="white-space:nowrap">
           <button class="btn btn-ghost btn-sm" onclick="openEditUserModal('${u.email}','${escAttr(u.name)}','${u.company_role || ''}',${u.active})">✏️ Edit</button>
-          <button class="btn btn-ghost btn-sm" onclick="openManageProjectsModal('${u.email}')">🔑 Projects</button>
+          ${!isCoAdmin ? `<button class="btn btn-ghost btn-sm" onclick="openManageProjectsModal('${u.email}')">🔑 Projects</button>` : ''}
           <button class="btn btn-ghost btn-sm" onclick="toggleUserActive('${u.email}',${u.active})">${u.active ? 'Deactivate' : 'Activate'}</button>
           ${!isSelf ? `<button class="btn btn-danger btn-sm" onclick="deleteUser('${u.email}')">🗑</button>` : ''}
         </td>
@@ -290,19 +272,20 @@ async function renderUsersTab() {
     }).join('');
   }
 
-  // Populate the project selector for the team members section
-  const sel = document.getElementById('teamProjectSel');
-  if (sel) {
-    sel.innerHTML = '<option value="">— select a project —</option>';
-    adminProjects.forEach(p => sel.add(new Option(p.name, p.id)));
-    if (_teamMgmtProjectId && adminProjects.find(p => p.id === _teamMgmtProjectId)) {
-      sel.value = _teamMgmtProjectId;
-      document.getElementById('teamMembersArea').style.display = '';
-    }
-  }
 }
 
 // ── Team project selector ───────────────────────────────
+function _populateTeamProjectSel() {
+  const sel = document.getElementById('teamProjectSel');
+  if (!sel) return;
+  sel.innerHTML = '<option value="">— select a project —</option>';
+  adminProjects.forEach(p => sel.add(new Option(p.name, p.id)));
+  if (_teamMgmtProjectId && adminProjects.find(p => p.id === _teamMgmtProjectId)) {
+    sel.value = _teamMgmtProjectId;
+    document.getElementById('teamMembersArea').style.display = '';
+  }
+}
+
 async function onTeamProjectChanged(projectId) {
   _teamMgmtProjectId = projectId || null;
   const area  = document.getElementById('teamMembersArea');
@@ -565,26 +548,11 @@ async function _saveExclusions() {
 }
 
 // ══════════════════════════════════════════════════════
-// PROJECT SETUP (inline in Projects tab)
+// PROJECT SETUP
 // ══════════════════════════════════════════════════════
 
-let _setupProjectId   = null;
 let _teamMgmtProjectId = null;
-
-async function _setupLoadAll(projectId) {
-  const [sprintData, releaseData, memberData, usersData] = await Promise.all([
-    authFetch(`${API}/onboard/${projectId}/sprints`).then(r => r?.ok ? r.json() : []),
-    authFetch(`${API}/onboard/${projectId}/releases`).then(r => r?.ok ? r.json() : []),
-    authFetch(`${API}/projects/${projectId}/members`).then(r => r?.ok ? r.json() : []),
-    authFetch(`${API}/users`).then(r => r?.ok ? r.json() : []),
-  ]);
-  _setupRenderSprints(Array.isArray(sprintData) ? sprintData : []);
-  _setupRenderReleases(Array.isArray(releaseData) ? releaseData : []);
-  _setupRenderAccess(
-    Array.isArray(memberData) ? memberData : [],
-    Array.isArray(usersData)  ? usersData  : []
-  );
-}
+let _relPlanProjectId  = null;
 
 // ── Team Members ───────────────────────────────────────
 function _setupRenderTeam(members) {
@@ -645,6 +613,43 @@ async function removeSetupTeamMember(name) {
   _setupRenderTeam(Array.isArray(data) ? data : []);
 }
 
+// ══════════════════════════════════════════════════════
+// RELEASE PLANNING TAB
+// ══════════════════════════════════════════════════════
+
+async function renderReleasesTab() {
+  await _fetchProjects();
+  const sel = document.getElementById('relPlanProjectSel');
+  if (!sel) return;
+  sel.innerHTML = '<option value="">— select a project —</option>';
+  adminProjects.forEach(p => sel.add(new Option(p.name, p.id)));
+  if (_relPlanProjectId && adminProjects.find(p => p.id === _relPlanProjectId)) {
+    sel.value = _relPlanProjectId;
+    document.getElementById('relPlanArea').style.display = '';
+  } else {
+    _relPlanProjectId = null;
+  }
+}
+
+async function onRelPlanProjectChanged(projectId) {
+  _relPlanProjectId = projectId || null;
+  const area = document.getElementById('relPlanArea');
+  if (!area) return;
+  if (!_relPlanProjectId) {
+    area.style.display = 'none';
+    return;
+  }
+  area.style.display = '';
+  ['setupReleaseError','setupSprintError']
+    .forEach(id => { const el = document.getElementById(id); if (el) el.textContent = ''; });
+  const [sprintData, releaseData] = await Promise.all([
+    authFetch(`${API}/onboard/${_relPlanProjectId}/sprints`).then(r => r?.ok ? r.json() : []),
+    authFetch(`${API}/onboard/${_relPlanProjectId}/releases`).then(r => r?.ok ? r.json() : []),
+  ]);
+  _setupRenderSprints(Array.isArray(sprintData) ? sprintData : []);
+  _setupRenderReleases(Array.isArray(releaseData) ? releaseData : []);
+}
+
 // ── Release Calendar ───────────────────────────────────
 function _setupRenderReleases(releases) {
   const list   = document.getElementById('setupReleaseList');
@@ -683,7 +688,7 @@ async function addSetupRelease() {
   errEl.textContent = '';
   if (!num || !date) { errEl.textContent = 'Release number and date are required'; return; }
 
-  const res  = await authFetch(`${API}/onboard/${_setupProjectId}/releases`, {
+  const res  = await authFetch(`${API}/onboard/${_relPlanProjectId}/releases`, {
     method: 'POST',
     body:   JSON.stringify({
       Release_Number: num, Release_Date: date,
@@ -695,20 +700,20 @@ async function addSetupRelease() {
   ['setupRelNum','setupRelDate','setupRelFreeze','setupRelRegression']
     .forEach(id => { document.getElementById(id).value = ''; });
   showToast(`Release ${num} added`, 'success');
-  const data = await authFetch(`${API}/onboard/${_setupProjectId}/releases`).then(r => r.json());
+  const data = await authFetch(`${API}/onboard/${_relPlanProjectId}/releases`).then(r => r.json());
   _setupRenderReleases(Array.isArray(data) ? data : []);
 }
 
 async function removeSetupRelease(number) {
   if (!confirm(`Remove release ${number} from this project?`)) return;
   const res  = await authFetch(
-    `${API}/onboard/${_setupProjectId}/releases/${encodeURIComponent(number)}`,
+    `${API}/onboard/${_relPlanProjectId}/releases/${encodeURIComponent(number)}`,
     { method: 'DELETE' }
   );
   const json = await res.json();
   if (!res.ok) { showToast(json.error, 'error'); return; }
   showToast(`Release ${number} removed`, 'success');
-  const data = await authFetch(`${API}/onboard/${_setupProjectId}/releases`).then(r => r.json());
+  const data = await authFetch(`${API}/onboard/${_relPlanProjectId}/releases`).then(r => r.json());
   _setupRenderReleases(Array.isArray(data) ? data : []);
 }
 
@@ -740,7 +745,7 @@ async function addSetupSprint() {
   if (!name || !start || !end) { errEl.textContent = 'Sprint name, start and end dates are required'; return; }
   if (start > end) { errEl.textContent = 'Start date must be before end date'; return; }
 
-  const res  = await authFetch(`${API}/onboard/${_setupProjectId}/sprints`, {
+  const res  = await authFetch(`${API}/onboard/${_relPlanProjectId}/sprints`, {
     method: 'POST',
     body:   JSON.stringify({ sprint_name: name, start_date: start, end_date: end }),
   });
@@ -749,111 +754,19 @@ async function addSetupSprint() {
   ['setupSprintName','setupSprintStart','setupSprintEnd']
     .forEach(id => { document.getElementById(id).value = ''; });
   showToast(`Sprint ${name} added`, 'success');
-  const data = await authFetch(`${API}/onboard/${_setupProjectId}/sprints`).then(r => r.json());
+  const data = await authFetch(`${API}/onboard/${_relPlanProjectId}/sprints`).then(r => r.json());
   _setupRenderSprints(Array.isArray(data) ? data : []);
 }
 
 async function removeSetupSprint(name) {
   const res  = await authFetch(
-    `${API}/onboard/${_setupProjectId}/sprints/${encodeURIComponent(name)}`,
+    `${API}/onboard/${_relPlanProjectId}/sprints/${encodeURIComponent(name)}`,
     { method: 'DELETE' }
   );
   const json = await res.json();
   if (!res.ok) { showToast(json.error, 'error'); return; }
   showToast(`Sprint ${name} removed`, 'success');
-  const data = await authFetch(`${API}/onboard/${_setupProjectId}/sprints`).then(r => r.json());
+  const data = await authFetch(`${API}/onboard/${_relPlanProjectId}/sprints`).then(r => r.json());
   _setupRenderSprints(Array.isArray(data) ? data : []);
-}
-
-// ── User Access ────────────────────────────────────────
-function _setupRenderAccess(members, allUsers) {
-  const list  = document.getElementById('setupAccessList');
-  const badge = document.getElementById('accessBadge');
-  if (!list) return;
-  badge.textContent = members.length;
-
-  if (!members.length) {
-    list.innerHTML = '<div class="setup-empty">No users assigned yet.</div>';
-  } else {
-    list.innerHTML = members.map(m => {
-      const isCompany = !!m.company_role;
-      return `
-        <div class="setup-list-row">
-          <div class="setup-access-info">
-            <span class="setup-item-name">${m.name || m.email}</span>
-            <span class="setup-email">${m.email}</span>
-          </div>
-          ${isCompany
-            ? `<span class="badge badge-orange" style="font-size:11px">${m.company_role}</span>`
-            : `<select class="proj-member-role-sel" onchange="updateSetupAccess('${escAttr(m.email)}',this.value)">
-                 <option value="ReadOnly"  ${m.role === 'ReadOnly'  ? 'selected':''}>ReadOnly</option>
-                 <option value="ReadWrite" ${m.role === 'ReadWrite' ? 'selected':''}>ReadWrite</option>
-                 <option value="Admin"     ${m.role === 'Admin'     ? 'selected':''}>Admin</option>
-               </select>
-               <button class="btn btn-danger btn-sm" onclick="removeSetupAccess('${escAttr(m.email)}')">✕</button>`
-          }
-        </div>`;
-    }).join('');
-  }
-
-  // Populate add-user dropdown (exclude already-added and company-level users)
-  const memberEmails = new Set(members.filter(m => !m.company_role).map(m => m.email));
-  const sel = document.getElementById('setupAccessEmail');
-  sel.innerHTML = '<option value="">— select user to add —</option>';
-  allUsers
-    .filter(u => u.active && !memberEmails.has(u.email) && !u.company_role)
-    .sort((a, b) => a.name.localeCompare(b.name))
-    .forEach(u => sel.add(new Option(`${u.name} (${u.email})`, u.email)));
-}
-
-async function addSetupAccess() {
-  const email = document.getElementById('setupAccessEmail').value;
-  const role  = document.getElementById('setupAccessRole').value;
-  const errEl = document.getElementById('setupAccessError');
-  errEl.textContent = '';
-  if (!email) { errEl.textContent = 'Select a user'; return; }
-
-  const res  = await authFetch(`${API}/projects/${_setupProjectId}/members`, {
-    method: 'POST',
-    body:   JSON.stringify({ email, role }),
-  });
-  const json = await res.json();
-  if (!res.ok) { errEl.textContent = json.error; return; }
-  showToast(`${email} added to project`, 'success');
-  await _refreshSetupAccess();
-}
-
-async function updateSetupAccess(email, role) {
-  const res = await authFetch(`${API}/projects/${_setupProjectId}/members`, {
-    method: 'POST',
-    body:   JSON.stringify({ email, role }),
-  });
-  if (!res.ok) {
-    const json = await res.json();
-    showToast(json.error || 'Failed to update role', 'error');
-    await _refreshSetupAccess();
-  }
-}
-
-async function removeSetupAccess(email) {
-  const res  = await authFetch(
-    `${API}/projects/${_setupProjectId}/members/${encodeURIComponent(email)}`,
-    { method: 'DELETE' }
-  );
-  const json = await res.json();
-  if (!res.ok) { showToast(json.error, 'error'); return; }
-  showToast(`${email} removed from project`, 'success');
-  await _refreshSetupAccess();
-}
-
-async function _refreshSetupAccess() {
-  const [memberData, usersData] = await Promise.all([
-    authFetch(`${API}/projects/${_setupProjectId}/members`).then(r => r?.ok ? r.json() : []),
-    authFetch(`${API}/users`).then(r => r?.ok ? r.json() : []),
-  ]);
-  _setupRenderAccess(
-    Array.isArray(memberData) ? memberData : [],
-    Array.isArray(usersData)  ? usersData  : []
-  );
 }
 

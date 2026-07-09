@@ -65,6 +65,7 @@ function _filteredSortedPRs() {
   let rows = allPRs;
   if (search) rows = rows.filter(p =>
     String(p.PR).includes(search) ||
+    (p.Title||'').toLowerCase().includes(search) ||
     (p.Developer||'').toLowerCase().includes(search) ||
     (p.Module||'').toLowerCase().includes(search) ||
     (p.Status||'').toLowerCase().includes(search));
@@ -239,6 +240,10 @@ async function openEditPRModal(id) {
   document.getElementById('savePRBtn').textContent = 'Update PR';
   document.getElementById('f_pr').value = pr.PR;
   document.getElementById('f_pr').disabled = true;
+  document.getElementById('f_firstResponseGroup').style.display = 'none';
+  document.getElementById('f_title').value = pr.Title||'';
+  document.getElementById('f_description').value = pr.Description||'';
+  document.getElementById('f_additionalDetails').value = pr.Additional_Details||'';
   document.getElementById('f_type').value = pr.Type||'Development';
   populatePRModuleSelect(pr.Module||'');
   document.getElementById('f_developer').value = pr.Developer||'';
@@ -274,7 +279,8 @@ function closePRModal() {
 }
 
 function clearPRForm() {
-  ['f_pr','f_raised','f_firstResponse','f_approved','f_merged','f_devSprint','f_testSprint','f_task','f_deps'].forEach(id=>{ document.getElementById(id).value=''; });
+  document.getElementById('f_firstResponseGroup').style.display = '';
+  ['f_pr','f_title','f_description','f_additionalDetails','f_raised','f_firstResponse','f_approved','f_merged','f_devSprint','f_testSprint','f_task','f_deps'].forEach(id=>{ document.getElementById(id).value=''; });
   ['f_type','f_module','f_developer','f_status','f_reviewer','f_target'].forEach(id=>{ document.getElementById(id).selectedIndex=0; });
   document.getElementById('f_pages').innerHTML = '<span class="page-chip-hint">— select a module first —</span>';
 }
@@ -319,7 +325,11 @@ async function savePR() {
   const pr = Number(document.getElementById('f_pr').value);
   if (!pr) return showToast('PR number is required','error');
   const body = {
-    PR:pr, Type:document.getElementById('f_type').value,
+    PR:pr,
+    Title:document.getElementById('f_title').value.trim()||null,
+    Description:document.getElementById('f_description').value.trim()||null,
+    Additional_Details:document.getElementById('f_additionalDetails').value.trim()||null,
+    Type:document.getElementById('f_type').value,
     Module:document.getElementById('f_module').value||null,
     Developer:document.getElementById('f_developer').value||null,
     Page:[...document.getElementById('f_pages').querySelectorAll('.page-chip.selected')].map(c=>c.dataset.value),
