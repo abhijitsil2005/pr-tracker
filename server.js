@@ -31,22 +31,31 @@ app.set('trust proxy', 1);
 // throughout public/index.html — a strict default-src would break the whole
 // UI. Everything else (fonts, connect, objects, framing) stays locked to
 // same-origin, which still blocks injected remote-script/clickjacking attacks.
+// This environment is served over plain HTTP (no TLS listener) — Helmet's
+// `upgrade-insecure-requests` default silently rewrites every http:// asset
+// request to https://, which then hangs forever against a port nothing is
+// listening on (net::ERR_CONNECTION_TIMED_OUT on every script/stylesheet).
+// Same reasoning for HSTS: it's meaningless (browsers ignore it over plain
+// HTTP) and misleading to send on a site with no HTTPS. Re-enable both once
+// this environment sits behind real TLS (ACM cert + ALB/CloudFront).
 app.use(helmet({
   contentSecurityPolicy: {
     directives: {
-      defaultSrc:    ["'self'"],
-      scriptSrc:     ["'self'", "'unsafe-inline'"],
-      scriptSrcAttr: ["'unsafe-inline'"],  // needed: onclick=/onchange= handlers throughout the UI
-      styleSrc:      ["'self'", "'unsafe-inline'"],
-      imgSrc:        ["'self'", 'data:'],
-      fontSrc:       ["'self'"],
-      connectSrc:    ["'self'"],
-      objectSrc:     ["'none'"],
-      baseUri:       ["'self'"],
-      formAction:    ["'self'"],
-      frameAncestors:["'none'"],
+      defaultSrc:            ["'self'"],
+      scriptSrc:             ["'self'", "'unsafe-inline'"],
+      scriptSrcAttr:         ["'unsafe-inline'"],  // needed: onclick=/onchange= handlers throughout the UI
+      styleSrc:              ["'self'", "'unsafe-inline'"],
+      imgSrc:                ["'self'", 'data:'],
+      fontSrc:               ["'self'"],
+      connectSrc:            ["'self'"],
+      objectSrc:             ["'none'"],
+      baseUri:               ["'self'"],
+      formAction:            ["'self'"],
+      frameAncestors:        ["'none'"],
+      upgradeInsecureRequests: null,
     },
   },
+  hsts: false,
   // No cross-origin embedding of images/fonts today; avoid COEP's stricter
   // resource-loading requirements until/unless that's actually needed.
   crossOriginEmbedderPolicy: false,
