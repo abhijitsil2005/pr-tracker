@@ -355,15 +355,6 @@ function toggleRelease(id) {
 }
 
 // ── PR Detail popup ────────────────────────────────────
-const PR_STATUSES = [
-  'Development Inprogress',
-  'Dev PR in Review',
-  'TCR Testing In Progress',
-  'Ready for Prod Deploy',
-  'Prod Deployed FF OFF',
-  'Prod Deployed',
-];
-
 function showPRDetail(prNum, module) {
   // Prefer the record that matches both PR number and module; fall back to first match
   const pr = (module ? allPRs.find(p => p.PR === Number(prNum) && p.Module === module) : null)
@@ -382,8 +373,8 @@ function showPRDetail(prNum, module) {
     ['Pages',          (pr.Page||[]).map(p=>`<code style="font-size:11px;background:var(--surface3);padding:2px 6px;border-radius:4px">${p}</code>`).join('<br>')],
   ];
 
-  const statusOptions = PR_STATUSES.map(s =>
-    `<option value="${s}" ${pr.Status === s ? 'selected' : ''}>${s}</option>`
+  const statusOptions = lookupPRStatuses.map(s =>
+    `<option value="${s.Name}" ${pr.Status === s.Name ? 'selected' : ''}>${s.Name}</option>`
   ).join('');
 
   const sortedTL = [...lookupTimeline].sort((a, b) => Number(a.Release_Number) - Number(b.Release_Number));

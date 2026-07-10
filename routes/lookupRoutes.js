@@ -120,6 +120,23 @@ router.get('/timeline', async (req, res) => {
   }
 });
 
+// GET /api/lookup/pr-statuses
+router.get('/pr-statuses', async (req, res) => {
+  try {
+    const { rows } = await query(
+      `SELECT name AS "Name", is_deployed AS "IsDeployed"
+       FROM pr_statuses
+       WHERE project_id = $1
+       ORDER BY sort_order, name`,
+      [pid(req)],
+      ctx(req)
+    );
+    res.json(rows);
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
 // GET /api/lookup/module-pages
 router.get('/module-pages', async (req, res) => {
   try {

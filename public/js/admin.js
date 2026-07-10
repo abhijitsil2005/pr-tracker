@@ -553,6 +553,7 @@ async function _saveExclusions() {
 
 let _teamMgmtProjectId = null;
 let _relPlanProjectId  = null;
+let _prStatusList      = [];  // current project's PR statuses, for reorder
 
 // ── Team Members ───────────────────────────────────────
 function _setupRenderTeam(members) {
@@ -617,6 +618,17 @@ async function removeSetupTeamMember(name) {
 // RELEASE PLANNING TAB
 // ══════════════════════════════════════════════════════
 
+// Collapsible Project Setup sections (Release Calendar / Sprint Dates / PR
+// Status) — expanded by default; click a header to toggle its body.
+function toggleSetupSection(id) {
+  const body = document.getElementById(`body-${id}`);
+  const chev = document.getElementById(`chev-${id}`);
+  if (!body) return;
+  const isOpen = body.style.display !== 'none';
+  body.style.display = isOpen ? 'none' : '';
+  chev.classList.toggle('open', !isOpen);
+}
+
 async function renderReleasesTab() {
   await _fetchProjects();
   const sel = document.getElementById('relPlanProjectSel');
@@ -640,14 +652,16 @@ async function onRelPlanProjectChanged(projectId) {
     return;
   }
   area.style.display = '';
-  ['setupReleaseError','setupSprintError']
+  ['setupReleaseError','setupSprintError','setupPRStatusError']
     .forEach(id => { const el = document.getElementById(id); if (el) el.textContent = ''; });
-  const [sprintData, releaseData] = await Promise.all([
+  const [sprintData, releaseData, statusData] = await Promise.all([
     authFetch(`${API}/onboard/${_relPlanProjectId}/sprints`).then(r => r?.ok ? r.json() : []),
     authFetch(`${API}/onboard/${_relPlanProjectId}/releases`).then(r => r?.ok ? r.json() : []),
+    authFetch(`${API}/onboard/${_relPlanProjectId}/pr-statuses`).then(r => r?.ok ? r.json() : []),
   ]);
   _setupRenderSprints(Array.isArray(sprintData) ? sprintData : []);
   _setupRenderReleases(Array.isArray(releaseData) ? releaseData : []);
+  _setupRenderPRStatus(Array.isArray(statusData) ? statusData : []);
 }
 
 // ── Release Calendar ───────────────────────────────────
@@ -768,5 +782,79 @@ async function removeSetupSprint(name) {
   showToast(`Sprint ${name} removed`, 'success');
   const data = await authFetch(`${API}/onboard/${_relPlanProjectId}/sprints`).then(r => r.json());
   _setupRenderSprints(Array.isArray(data) ? data : []);
+}
+
+// ── PR Status ────────────────────────────────────────────
+function _setupRenderPRStatus(statuses) {
+  const list  = document.getElementById('setupPRStatusList');
+  const badge = document.getElementById('prStatusBadge');
+  if (!list) return;
+  badge.textContent = statuses.length;
+
+  if (!statuses.length) {
+    list.innerHTML = '<div class="setup-empty">No PR statuses yet. Add the first one below.</div>';
+    return;
+  }
+  list.innerHTML = statuses.map((s, i) => `
+    <div class="setup-list-row">
+      <span>${s.name}</span>
+      <button class="btn btn-ghost btn-sm" ${i === 0 ? 'disabled' : ''} onclick="movePRStatus(${i},-1)" title="Move up">↑</button>
+      <button class="btn btn-ghost btn-sm" ${i === statuses.length - 1 ? 'disabled' : ''} onclick="movePRStatus(${i},1)" title="Move down">↓</button>
+      <button class="btn btn-danger btn-sm" onclick="removeSetupPRStatus('${escAttr(s.name)}')">✕</button>
+    </div>`).join('');
+  _prStatusList = statuses;
+}
+
+async function addSetupPRStatus() {
+  const name      = document.getElementById('setupPRStatusName').value.trim();
+  const isDeployed = document.getElementById('setupPRStatusDeployed').checked;
+  const errEl     = document.getElementById('setupPRStatusError');
+  errEl.textContent = '';
+  if (!name) { errEl.textContent = 'Enter a status name'; return; }
+
+  const res  = await authFetch(`${API}/onboard/${_relPlanProjectId}/pr-statuses`, {
+    method: 'POST',
+    body:   JSON.stringify({ name, is_deployed: isDeployed }),
+  });
+  const json = await res.json();
+  if (!res.ok) { errEl.textContent = json.error; return; }
+  document.getElementById('setupPRStatusName').value = '';
+  document.getElementById('setupPRStatusDeployed').checked = false;
+  showToast(`Status "${name}" added`, 'success');
+  const data = await authFetch(`${API}/onboard/${_relPlanProjectId}/pr-statuses`).then(r => r.json());
+  _setupRenderPRStatus(Array.isArray(data) ? data : []);
+  await loadLookups(); // refresh the project-wide status dropdowns
+  refreshPRStatusSelects();
+}
+
+async function removeSetupPRStatus(name) {
+  const res  = await authFetch(
+    `${API}/onboard/${_relPlanProjectId}/pr-statuses/${encodeURIComponent(name)}`,
+    { method: 'DELETE' }
+  );
+  const json = await res.json();
+  if (!res.ok) { showToast(json.error, 'error'); return; }
+  showToast(`Status "${name}" removed`, 'success');
+  const data = await authFetch(`${API}/onboard/${_relPlanProjectId}/pr-statuses`).then(r => r.json());
+  _setupRenderPRStatus(Array.isArray(data) ? data : []);
+  await loadLookups();
+  refreshPRStatusSelects();
+}
+
+async function movePRStatus(index, dir) {
+  const names = _prStatusList.map(s => s.name);
+  const j = index + dir;
+  if (j < 0 || j >= names.length) return;
+  [names[index], names[j]] = [names[j], names[index]];
+
+  const res = await authFetch(`${API}/onboard/${_relPlanProjectId}/pr-statuses/reorder`, {
+    method: 'PUT',
+    body:   JSON.stringify({ names }),
+  });
+  if (!res.ok) { const json = await res.json(); showToast(json.error, 'error'); return; }
+  const data = await authFetch(`${API}/onboard/${_relPlanProjectId}/pr-statuses`).then(r => r.json());
+  _setupRenderPRStatus(Array.isArray(data) ? data : []);
+  await loadLookups();
+  refreshPRStatusSelects();
 }
 

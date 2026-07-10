@@ -160,6 +160,26 @@ CREATE TABLE release_timeline (
 
 
 -- ═══════════════════════════════════════════════════════════════════════════
+-- PR STATUSES
+-- Admin-configurable, per-project list of valid PR status values (Project
+-- Setup > PR Status). Single source of truth for every PR-status dropdown in
+-- the app and for sort/"counts as deployed" semantics — replaces the several
+-- hardcoded, drifted-apart status lists that used to live in the frontend.
+-- prs.status itself stays a free TEXT column (no FK) so existing/imported
+-- data is never blocked by this list.
+-- ═══════════════════════════════════════════════════════════════════════════
+
+CREATE TABLE IF NOT EXISTS pr_statuses (
+  id          UUID    PRIMARY KEY DEFAULT gen_random_uuid(),
+  project_id  UUID    NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+  name        TEXT    NOT NULL,
+  sort_order  INT     NOT NULL DEFAULT 0,
+  is_deployed BOOLEAN NOT NULL DEFAULT false,  -- counts toward "Approved/Deployed" in reports
+  UNIQUE (project_id, name)
+);
+
+
+-- ═══════════════════════════════════════════════════════════════════════════
 -- PULL REQUESTS
 -- A PR record = one PR number + one module. The same PR number can cover
 -- multiple modules, so multiple rows can share pr_number within a project.
@@ -316,6 +336,7 @@ CREATE INDEX idx_pages_module_id             ON pages(module_id);
 CREATE INDEX idx_oos_project_id              ON out_of_scope_pages(project_id);
 CREATE INDEX idx_oos_module_id               ON out_of_scope_pages(module_id);
 CREATE INDEX idx_team_members_project_id     ON team_members(project_id);
+CREATE INDEX idx_pr_statuses_project_id      ON pr_statuses(project_id);
 
 -- Sprint & timeline
 CREATE INDEX idx_sprints_project_id          ON sprints(project_id);
@@ -376,6 +397,7 @@ ALTER TABLE modules            ENABLE ROW LEVEL SECURITY;
 ALTER TABLE pages              ENABLE ROW LEVEL SECURITY;
 ALTER TABLE out_of_scope_pages ENABLE ROW LEVEL SECURITY;
 ALTER TABLE team_members       ENABLE ROW LEVEL SECURITY;
+ALTER TABLE pr_statuses        ENABLE ROW LEVEL SECURITY;
 ALTER TABLE sprints            ENABLE ROW LEVEL SECURITY;
 ALTER TABLE release_timeline   ENABLE ROW LEVEL SECURITY;
 ALTER TABLE prs                ENABLE ROW LEVEL SECURITY;
@@ -409,6 +431,7 @@ CREATE POLICY rls_modules            ON modules            USING (project_id = c
 CREATE POLICY rls_pages              ON pages              USING (project_id = current_project_id());
 CREATE POLICY rls_oos                ON out_of_scope_pages USING (project_id = current_project_id());
 CREATE POLICY rls_team_members       ON team_members       USING (project_id = current_project_id());
+CREATE POLICY rls_pr_statuses        ON pr_statuses        USING (project_id = current_project_id());
 CREATE POLICY rls_sprints            ON sprints            USING (project_id = current_project_id());
 CREATE POLICY rls_release_timeline   ON release_timeline   USING (project_id = current_project_id());
 CREATE POLICY rls_prs                ON prs                USING (project_id = current_project_id());

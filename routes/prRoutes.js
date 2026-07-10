@@ -72,7 +72,7 @@ async function insertPRRelations(client, projectId, prId, pages, deps) {
 // nothing else keeps them in sync, so without this the PR keeps showing under its
 // old release forever and never appears under the new one.
 async function syncPRReleasePages(client, projectId, {
-  prNumber, oldModule, oldPages, newModule, newPages, oldTargetRelease, newTargetRelease,
+  prNumber, oldModule, oldPages, newModule, newPages, oldTargetRelease, newTargetRelease, task,
 }) {
   if (oldTargetRelease && oldModule) {
     await client.query(
@@ -112,14 +112,43 @@ async function syncPRReleasePages(client, projectId, {
 
   for (const pageName of newPages) {
     await client.query(
-      `INSERT INTO release_pages (project_id, release_module_id, page_name, pr_number)
-       VALUES ($1, $2, $3, $4)
-       ON CONFLICT (release_module_id, page_name) DO UPDATE SET pr_number = EXCLUDED.pr_number`,
-      [projectId, releaseModuleId, pageName, prNumber]
+      `INSERT INTO release_pages (project_id, release_module_id, page_name, pr_number, task)
+       VALUES ($1, $2, $3, $4, $5)
+       ON CONFLICT (release_module_id, page_name) DO UPDATE
+         SET pr_number = EXCLUDED.pr_number, task = EXCLUDED.task`,
+      [projectId, releaseModuleId, pageName, prNumber, task || null]
     );
   }
 
   return { synced: true, releaseNumber };
+}
+
+// Only Target_Release/Module/Page/Task affect what shows on the Releases page,
+// and only when the PR is (or was) actually attached to a release — skip the
+// sync entirely for unrelated edits (Reviewer, Status, dates, ...) so those
+// don't pay for extra release_modules/release_pages round-trips.
+async function maybeSyncPRReleasePages(client, projectId, before, body) {
+  const releaseRelevantChange =
+    body.Target_Release !== undefined ||
+    body.Module         !== undefined ||
+    body.Page            !== undefined ||
+    body.Task            !== undefined;
+  const effectiveTargetRelease = body.Target_Release !== undefined ? body.Target_Release : before.Target_Release;
+
+  if (!releaseRelevantChange || !(before.Target_Release || effectiveTargetRelease)) {
+    return { synced: false };
+  }
+
+  return syncPRReleasePages(client, projectId, {
+    prNumber:         before.PR,
+    oldModule:        before.Module,
+    oldPages:         before.Page || [],
+    newModule:        body.Module !== undefined ? body.Module : before.Module,
+    newPages:         body.Page   !== undefined ? body.Page   : (before.Page || []),
+    oldTargetRelease: before.Target_Release,
+    newTargetRelease: effectiveTargetRelease,
+    task:             body.Task !== undefined ? body.Task : before.Task,
+  });
 }
 
 // Build a dynamic SET clause from a body object; returns { sets, vals }
@@ -266,8 +295,14 @@ router.post('/', requireWrite, async (req, res) => {
     await insertPRRelations(client, pid(req), prId, pages, deps);
 
     const { rows: created } = await client.query(`${PR_SELECT} WHERE p.id = $1`, [prId]);
+    const sync = await maybeSyncPRReleasePages(
+      client, pid(req),
+      { PR: created[0].PR, Target_Release: null, Module: null, Page: [], Task: null },
+      body
+    );
+
     await client.query('COMMIT');
-    res.status(201).json({ message: 'PR created', data: created[0], sync: { synced: false } });
+    res.status(201).json({ message: 'PR created', data: created[0], sync });
   } catch (e) {
     await client.query('ROLLBACK').catch(() => {});
     res.status(400).json({ error: e.message });
@@ -294,8 +329,12 @@ router.put('/by-pr/:prNumber', requireWrite, async (req, res) => {
 
     const { sets, vals } = await buildPRSets(client, pid(req), body);
     const results = [];
+    const syncs = [];
 
     for (const { id } of prRows) {
+      const { rows: beforeRows } = await client.query(`${PR_SELECT} WHERE p.id = $1`, [id]);
+      const before = beforeRows[0];
+
       if (sets.length) {
         await client.query(
           `UPDATE prs SET ${sets.join(', ')} WHERE id = $${vals.length + 1}`,
@@ -314,12 +353,14 @@ router.put('/by-pr/:prNumber', requireWrite, async (req, res) => {
         await insertPRRelations(client, pid(req), id, null, body.Dependent_PRs);
       }
 
+      syncs.push(await maybeSyncPRReleasePages(client, pid(req), before, body));
+
       const { rows: updated } = await client.query(`${PR_SELECT} WHERE p.id = $1`, [id]);
       if (updated.length) results.push(updated[0]);
     }
 
     await client.query('COMMIT');
-    res.json({ message: 'PR updated', data: results });
+    res.json({ message: 'PR updated', data: results, sync: syncs.length === 1 ? syncs[0] : syncs });
   } catch (e) {
     await client.query('ROLLBACK').catch(() => {});
     res.status(e.message.includes('not found') ? 404 : 400).json({ error: e.message });
@@ -363,18 +404,7 @@ router.put('/:id', requireWrite, async (req, res) => {
       await insertPRRelations(client, pid(req), req.params.id, null, body.Dependent_PRs);
     }
 
-    let sync = { synced: false };
-    if (body.Target_Release !== undefined && body.Target_Release !== before.Target_Release) {
-      sync = await syncPRReleasePages(client, pid(req), {
-        prNumber:         before.PR,
-        oldModule:         before.Module,
-        oldPages:          before.Page || [],
-        newModule:         body.Module !== undefined ? body.Module : before.Module,
-        newPages:          body.Page   !== undefined ? body.Page   : (before.Page || []),
-        oldTargetRelease:  before.Target_Release,
-        newTargetRelease:  body.Target_Release,
-      });
-    }
+    const sync = await maybeSyncPRReleasePages(client, pid(req), before, body);
 
     const { rows: updated } = await client.query(`${PR_SELECT} WHERE p.id = $1`, [req.params.id]);
     await client.query('COMMIT');

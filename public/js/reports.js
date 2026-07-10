@@ -86,13 +86,10 @@ function _normDate(s) {
 
 // ── Chart 3: PRs Created vs Approved/Deployed per Sprint ──
 function _buildPRSprintChart(prs, sprints) {
-  const EXCL = new Set([...EXCLUDED_FROM_PAGES].map(s => s.toLowerCase()));
-  const filtered = prs.filter(pr => {
-    const pages = pr.Page || [];
-    if (!pages.length) return true;
-    return !pages.every(p => EXCL.has(p.split('/').pop().toLowerCase()));
-  });
-
+  // Deliberately NOT filtering out infra/API/Shared-Controls-only PRs here
+  // (unlike the module/page completion charts) — this chart counts PR
+  // throughput per sprint, and a PR that only touches those placeholder
+  // "pages" was still raised/approved like any other and should still count.
   let BARS, chartData, subtitle;
 
   if (sprints && sprints.length) {
@@ -104,21 +101,22 @@ function _buildPRSprintChart(prs, sprints) {
     subtitle = 'Created = PR Raised Date within sprint range · Approved = PR Approved Date within sprint range';
     chartData = sprints.map(s => {
       const start = s.StartDate, end = s.EndDate;
-      const created  = filtered.filter(pr => { const d = _normDate(pr['PR Raised Date']);   return d && d >= start && d <= end; }).length;
-      const approved = filtered.filter(pr => { const d = _normDate(pr['PR Approved Date']); return d && d >= start && d <= end; }).length;
+      const created  = prs.filter(pr => { const d = _normDate(pr['PR Raised Date']);   return d && d >= start && d <= end; }).length;
+      const approved = prs.filter(pr => { const d = _normDate(pr['PR Approved Date']); return d && d >= start && d <= end; }).length;
       return { sprint: String(s.Sprint), start, end, created, approved };
     }).filter(d => d.created > 0 || d.approved > 0);
   } else {
-    // No sprint date ranges — group directly by Dev_Sprint field on PRs
-    const DEPLOYED = new Set(['Ready for Prod Deploy', 'Prod Deployed FF OFF', 'Prod Deployed']);
+    // No sprint date ranges — group directly by Dev_Sprint field on PRs.
+    // "Deployed" = status is flagged as such in Project Setup > PR Status.
+    const DEPLOYED = new Set(lookupPRStatuses.filter(s => s.IsDeployed).map(s => s.Name));
     BARS = [
       { key: 'created',  color: _C.orange, label: 'Created'  },
       { key: 'approved', color: _C.green,  label: 'Deployed' },
     ];
-    subtitle = 'Grouped by Dev Sprint field · Deployed = status is Ready for Prod Deploy or Prod Deployed';
+    subtitle = 'Grouped by Dev Sprint field · Deployed = status is flagged Deployed in PR Status setup';
 
     const sprintMap = new Map();
-    filtered.forEach(pr => {
+    prs.forEach(pr => {
       const sprint = pr.Dev_Sprint;
       if (!sprint) return;
       if (!sprintMap.has(sprint)) sprintMap.set(sprint, { created: 0, approved: 0 });

@@ -195,7 +195,7 @@
       <div class="admin-tabs">
         <button class="admin-tab active" data-tab="projects"   onclick="switchAdminTab('projects')">Projects</button>
         <button class="admin-tab"        data-tab="users"      onclick="switchAdminTab('users')">User Management</button>
-        <button class="admin-tab"        data-tab="releases"   onclick="switchAdminTab('releases')">Release Planning</button>
+        <button class="admin-tab"        data-tab="releases"   onclick="switchAdminTab('releases')">Project Setup</button>
         <button class="admin-tab"        data-tab="exclusions" onclick="switchAdminTab('exclusions')">Calc Exclusions</button>
       </div>
 
@@ -272,12 +272,12 @@
 
       </div>
 
-      <!-- ── Release Planning panel ──────────────────────────────── -->
+      <!-- ── Project Setup panel ──────────────────────────────── -->
       <div class="admin-panel" data-panel="releases" style="display:none">
         <div class="um-section-hdr" style="margin-bottom:12px">
           <div>
-            <div class="um-section-title">Release Planning</div>
-            <div class="um-section-sub">Release calendar and sprint dates — configured per project.</div>
+            <div class="um-section-title">Project Setup</div>
+            <div class="um-section-sub">Release calendar, sprint dates, and PR status values — configured per project.</div>
           </div>
         </div>
         <div style="margin-bottom:16px">
@@ -290,13 +290,14 @@
 
           <!-- Release Calendar -->
           <div class="setup-section">
-            <div class="setup-section-hdr">
+            <div class="setup-section-hdr" onclick="toggleSetupSection('releaseCalendar')" style="cursor:pointer">
               <span class="setup-section-icon">🚀</span>
               <span class="setup-section-title">Release Calendar</span>
               <span class="badge badge-gray" id="releaseBadge">0</span>
               <span class="setup-section-hint">Release dates drive module planning and report charts.</span>
+              <span class="chevron" id="chev-releaseCalendar">▼</span>
             </div>
-            <div class="setup-section-body">
+            <div class="setup-section-body" id="body-releaseCalendar" style="display:none">
               <div id="setupReleaseHeader" class="setup-rel-header" style="display:none">
                 <span>Release #</span><span>Release Date</span><span>Code Freeze</span><span>Regression Start</span><span>Status</span><span></span>
               </div>
@@ -315,13 +316,14 @@
 
           <!-- Sprint Dates -->
           <div class="setup-section">
-            <div class="setup-section-hdr">
+            <div class="setup-section-hdr" onclick="toggleSetupSection('sprintDates')" style="cursor:pointer">
               <span class="setup-section-icon">📅</span>
               <span class="setup-section-title">Sprint Dates</span>
               <span class="badge badge-gray" id="sprintBadge">0</span>
               <span class="setup-section-hint">Used to auto-assign Dev Sprint to PRs based on raised date.</span>
+              <span class="chevron" id="chev-sprintDates">▼</span>
             </div>
-            <div class="setup-section-body">
+            <div class="setup-section-body" id="body-sprintDates" style="display:none">
               <div id="setupSprintList" class="setup-list"></div>
               <div class="setup-add-row">
                 <input type="text" id="setupSprintName"  placeholder="Sprint (e.g. 3.1)" style="width:130px;flex:0 0 auto">
@@ -331,6 +333,29 @@
               </div>
               <div class="setup-field-hints">Sprint Name &nbsp;·&nbsp; Start Date &nbsp;·&nbsp; End Date</div>
               <div id="setupSprintError" class="setup-error"></div>
+            </div>
+          </div>
+
+          <!-- PR Status -->
+          <div class="setup-section">
+            <div class="setup-section-hdr" onclick="toggleSetupSection('prStatus')" style="cursor:pointer">
+              <span class="setup-section-icon">🏷️</span>
+              <span class="setup-section-title">PR Status</span>
+              <span class="badge badge-gray" id="prStatusBadge">0</span>
+              <span class="setup-section-hint">Order sets sort order across PR tables/dropdowns; "Deployed" drives report charts.</span>
+              <span class="chevron" id="chev-prStatus">▼</span>
+            </div>
+            <div class="setup-section-body" id="body-prStatus" style="display:none">
+              <div id="setupPRStatusList" class="setup-list"></div>
+              <div class="setup-add-row">
+                <input type="text" id="setupPRStatusName" placeholder="Status name (e.g. Code Review)" class="setup-input-name">
+                <label style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text2);white-space:nowrap">
+                  <input type="checkbox" id="setupPRStatusDeployed"> Counts as Deployed
+                </label>
+                <button class="btn btn-primary btn-sm" onclick="addSetupPRStatus()">＋ Add</button>
+              </div>
+              <div class="setup-field-hints">Use the ↑ ↓ buttons to reorder — this order is used everywhere PR Status is shown.</div>
+              <div id="setupPRStatusError" class="setup-error"></div>
             </div>
           </div>
 
@@ -384,14 +409,6 @@
       <div class="form-group"><label>Status</label>
         <select id="f_status">
           <option value="">— select —</option>
-          <option>Development Inprogress</option>
-          <option>Dev PR in Review</option>
-          <option>TCR Testing In Progress</option>
-          <option>Ready for Prod Deploy</option>
-          <option>Prod Deployed FF OFF</option>
-          <option>Prod Deployed</option>
-          <option>Reverted</option>
-          <option>Closed</option>
         </select>
       </div>
       <div class="form-group"><label>Reviewer</label><select id="f_reviewer"><option value="">— select —</option></select></div>
@@ -616,16 +633,7 @@
             </div>
             <div>
               <label style="font-size:11px;color:var(--text2);margin-bottom:4px;display:block">Status</label>
-              <select id="am_qpr_status" style="background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:8px 12px;border-radius:8px;font-size:13px;outline:none;width:100%">
-                <option>Development Inprogress</option>
-                <option>Dev PR in Review</option>
-                <option>TCR Testing In Progress</option>
-                <option>Ready for Prod Deploy</option>
-                <option>Prod Deployed FF OFF</option>
-                <option>Reverted</option>
-                <option>Prod Deployed</option>
-                <option>Closed</option>
-              </select>
+              <select id="am_qpr_status" style="background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:8px 12px;border-radius:8px;font-size:13px;outline:none;width:100%"></select>
             </div>
             <div>
               <label style="font-size:11px;color:var(--text2);margin-bottom:4px;display:block">PR Raised Date</label>
@@ -706,16 +714,7 @@
           </div>
           <div>
             <label style="font-size:11px;color:var(--text2);margin-bottom:4px;display:block">Status</label>
-            <select id="qpr_status" style="background:var(--surface);border:1px solid var(--border);color:var(--text);padding:8px 12px;border-radius:8px;font-size:13px;outline:none;width:100%">
-              <option>Development Inprogress</option>
-              <option>Dev PR in Review</option>
-              <option>TCR Testing In Progress</option>
-              <option>Ready for Prod Deploy</option>
-              <option>Prod Deployed FF OFF</option>
-              <option>Reverted</option>
-              <option>Prod Deployed</option>
-              <option>Closed</option>
-            </select>
+            <select id="qpr_status" style="background:var(--surface);border:1px solid var(--border);color:var(--text);padding:8px 12px;border-radius:8px;font-size:13px;outline:none;width:100%"></select>
           </div>
           <div>
             <label style="font-size:11px;color:var(--text2);margin-bottom:4px;display:block">PR Raised Date</label>

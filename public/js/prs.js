@@ -50,15 +50,12 @@ let _prPage     = 1;
 let _prPageSize = 25;
 let _prTotal    = 0;
 
-const _PR_STATUS_ORDER = {
-  'development inprogress': 1,
-  'dev pr in review':       2,
-  'tcr testing in progress':3,
-  'ready for prod deploy':  4,
-  'prod deployed ff off':   5,
-  'prod deployed':          6,
+// Rank = position in the project's configured PR Status list (Project Setup
+// > PR Status); unrecognized/legacy status values sort last.
+const _prStatusRank = s => {
+  const i = lookupPRStatuses.findIndex(st => st.Name.toLowerCase() === (s || '').toLowerCase());
+  return i === -1 ? 99 : i;
 };
-const _prStatusRank = s => _PR_STATUS_ORDER[(s||'').toLowerCase()] ?? 99;
 
 function _filteredSortedPRs() {
   const search = (document.getElementById('searchInput').value || '').toLowerCase();
@@ -258,7 +255,7 @@ async function openEditPRModal(id) {
     const v = chip.dataset.value || '';
     if (savedPages.some(s => pageMatches(v, s))) chip.classList.add('selected');
   });
-  document.getElementById('f_status').value = pr.Status||'';
+  populatePRStatusSelect(document.getElementById('f_status'), pr.Status||'');
   document.getElementById('f_reviewer').value = pr.Reviewer||'';
   document.getElementById('f_raised').value = toInputDate(pr['PR Raised Date']);
   document.getElementById('f_firstResponse').value = pr['PR First Response Date']||'';
