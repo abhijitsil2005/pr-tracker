@@ -66,6 +66,66 @@ router.delete('/:projectId/team/:name', canManage, async (req, res) => {
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
+// ── PR Statuses ───────────────────────────────────────────────────
+
+// GET /api/onboard/:projectId/pr-statuses
+router.get('/:projectId/pr-statuses', canManage, async (req, res) => {
+  try {
+    const { rows } = await pool.query(
+      'SELECT id, name, sort_order, is_deployed FROM pr_statuses WHERE project_id = $1 ORDER BY sort_order, name',
+      [req.params.projectId]
+    );
+    res.json(rows);
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// POST /api/onboard/:projectId/pr-statuses  — appended to the end of the list
+router.post('/:projectId/pr-statuses', canManage, async (req, res) => {
+  const { name, is_deployed } = req.body;
+  if (!name) return res.status(400).json({ error: 'name is required' });
+  try {
+    const { rows } = await pool.query(
+      `INSERT INTO pr_statuses (project_id, name, sort_order, is_deployed)
+       VALUES (
+         $1, $2,
+         COALESCE((SELECT max(sort_order) + 1 FROM pr_statuses WHERE project_id = $1), 1),
+         $3
+       )
+       ON CONFLICT (project_id, name) DO UPDATE SET is_deployed = EXCLUDED.is_deployed
+       RETURNING id, name, sort_order, is_deployed`,
+      [req.params.projectId, name.trim(), !!is_deployed]
+    );
+    res.status(201).json({ message: 'Status added', data: rows[0] });
+  } catch (e) { res.status(400).json({ error: e.message }); }
+});
+
+// PUT /api/onboard/:projectId/pr-statuses/reorder  — body: { names: ['A','B',...] } full ordered list
+router.put('/:projectId/pr-statuses/reorder', canManage, async (req, res) => {
+  const { names } = req.body;
+  if (!Array.isArray(names) || !names.length) return res.status(400).json({ error: 'names array is required' });
+  try {
+    await Promise.all(names.map((name, i) =>
+      pool.query(
+        'UPDATE pr_statuses SET sort_order = $1 WHERE project_id = $2 AND name = $3',
+        [i + 1, req.params.projectId, name]
+      )
+    ));
+    res.json({ message: 'Order updated' });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// DELETE /api/onboard/:projectId/pr-statuses/:name
+router.delete('/:projectId/pr-statuses/:name', canManage, async (req, res) => {
+  try {
+    const { rowCount } = await pool.query(
+      'DELETE FROM pr_statuses WHERE project_id = $1 AND name = $2',
+      [req.params.projectId, decodeURIComponent(req.params.name)]
+    );
+    if (!rowCount) return res.status(404).json({ error: 'Status not found' });
+    res.json({ message: 'Status removed' });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
 // ── Sprint Dates ──────────────────────────────────────────────────
 
 // GET /api/onboard/:projectId/sprints

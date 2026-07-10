@@ -8,7 +8,7 @@ let EXCLUDED_FROM_MODULE = new Set(_DEFAULT_EXCL_MODULES);
 
 // ── State ──────────────────────────────────────────────
 let allPRs = [], allReleases = [], allModulePages = [];
-let lookupModules = [], lookupDevelopers = [], lookupReviewers = [], lookupTimeline = [];
+let lookupModules = [], lookupDevelopers = [], lookupReviewers = [], lookupTimeline = [], lookupPRStatuses = [];
 let editingPR = null, editingRelease = null;
 let pageModalCtx = null; // { moduleName, pageName (for edit) }
 let pagePRCtx   = null; // { moduleName, pageName } for PR-page association modal
@@ -33,18 +33,45 @@ async function init() {
 }
 
 async function loadLookups() {
-  const [mods, devs, revs, tl, proj] = await Promise.all([
+  const [mods, devs, revs, tl, statuses, proj] = await Promise.all([
     api('lookup/modules'),
     api('lookup/developers'),
     api('lookup/reviewers'),
     api('lookup/timeline'),
+    api('lookup/pr-statuses'),
     currentUser?.project_id ? api(`projects/${currentUser.project_id}`) : Promise.resolve(null),
   ]);
   lookupModules = mods || [];
   lookupDevelopers = (devs || []).sort((a, b) => a.localeCompare(b));
   lookupReviewers  = (revs || []).sort((a, b) => a.localeCompare(b));
   lookupTimeline = tl || [];
+  lookupPRStatuses = statuses || [];
   _applyProjectExclusions(proj);
+}
+
+// Fill a PR-status <select> from the project's configured list (Project
+// Setup > PR Status), keeping a leading placeholder option if present.
+function populatePRStatusSelect(sel, selectedValue) {
+  const placeholder = sel.options.length && !sel.options[0].value ? sel.options[0] : null;
+  sel.innerHTML = '';
+  if (placeholder) sel.add(placeholder);
+  lookupPRStatuses.forEach(s => sel.add(new Option(s.Name, s.Name)));
+  if (selectedValue) {
+    if (![...sel.options].some(o => o.value === selectedValue)) {
+      sel.add(new Option(selectedValue, selectedValue));
+    }
+    sel.value = selectedValue;
+  }
+}
+
+// Re-populate every PR-status <select> from the current lookupPRStatuses —
+// call after an admin add/remove/reorder so open forms reflect it without a
+// full reload. (Unlike populateFilters(), safe to call repeatedly: each
+// populatePRStatusSelect() call clears its <select> first.)
+function refreshPRStatusSelects() {
+  populatePRStatusSelect(document.getElementById('f_status'));
+  populatePRStatusSelect(document.getElementById('am_qpr_status'));
+  populatePRStatusSelect(document.getElementById('qpr_status'));
 }
 
 function _applyProjectExclusions(proj) {
@@ -73,6 +100,10 @@ function populateFilters() {
   lookupDevelopers.forEach(d => stDev.add(new Option(d, d)));
   const filterDev = document.getElementById('filterDeveloper');
   lookupDevelopers.forEach(d => filterDev.add(new Option(d, d)));
+
+  populatePRStatusSelect(document.getElementById('f_status'));
+  populatePRStatusSelect(document.getElementById('am_qpr_status'));
+  populatePRStatusSelect(document.getElementById('qpr_status'));
 }
 
 // ── Navigation ─────────────────────────────────────────
