@@ -136,7 +136,7 @@ function showSection(name) {
   if (name === 'status'  && canWrite()) ha.innerHTML = `<button class="btn btn-primary" onclick="openAssignmentModal()">＋ Assign</button>`;
   if (name === 'modules' && canWrite()) ha.innerHTML = `<button class="btn btn-primary" onclick="openAddModuleModal()">＋ Add Module</button>`;
   if (name === 'dashboard') renderDashboard();
-  if (name === 'prs')       renderPRs();
+  if (name === 'prs')       applyFilters();
   if (name === 'releases')  renderReleases();
   if (name === 'modules')   renderModulePages();
   if (name === 'status')    renderStatusTracker();
