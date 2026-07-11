@@ -357,7 +357,7 @@ async function savePR() {
   }
 
   closePRModal();
-  renderPRs();
+  applyFilters();
   if (document.getElementById('section-modules').classList.contains('active')) renderModulePages();
   if (document.getElementById('section-releases').classList.contains('active')) renderReleases();
 }
@@ -368,5 +368,5 @@ async function deletePR(id) {
   const json = await res.json();
   if (!res.ok) return showToast(json.error,'error');
   showToast(json.message || 'PR deleted','success');
-  renderPRs();
+  applyFilters();
 }
