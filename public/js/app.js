@@ -64,6 +64,22 @@ function populatePRStatusSelect(sel, selectedValue) {
   }
 }
 
+// Re-fetch the release timeline and re-populate the Target Release <select>
+// in the Add/Edit PR modal from it — call after a release is added/edited/
+// deleted anywhere (Releases page, Admin > Project Setup) so that dropdown
+// (and the Release page's own "Update PR" popup, which reads lookupTimeline
+// live each time it opens) stop showing stale data without a page reload.
+async function refreshTimeline() {
+  lookupTimeline = (await api('lookup/timeline')) || [];
+  const fTarget = document.getElementById('f_target');
+  const selected = fTarget.value;
+  fTarget.innerHTML = '<option value="">— select —</option>';
+  [...lookupTimeline]
+    .sort((a, b) => Number(a.Release_Number) - Number(b.Release_Number))
+    .forEach(t => fTarget.add(new Option(`${t.Release_Date} (R${t.Release_Number})`, t.Release_Date)));
+  if (selected) fTarget.value = selected;
+}
+
 // Re-populate every PR-status <select> from the current lookupPRStatuses —
 // call after an admin add/remove/reorder so open forms reflect it without a
 // full reload. (Unlike populateFilters(), safe to call repeatedly: each

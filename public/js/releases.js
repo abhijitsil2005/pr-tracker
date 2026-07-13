@@ -684,6 +684,7 @@ async function saveRelease() {
   showToast(isEdit?`Release ${num} updated`:`Release ${num} created`,'success');
   closeReleaseModal();
   renderReleases();
+  refreshTimeline();
 }
 
 async function deleteRelease(releaseNumber) {
@@ -693,6 +694,7 @@ async function deleteRelease(releaseNumber) {
   if (!res.ok) return showToast(json.error,'error');
   showToast(`Release ${releaseNumber} deleted`,'success');
   renderReleases();
+  refreshTimeline();
 }
 
 async function completeRelease(releaseNumber) {
