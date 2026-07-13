@@ -1,5 +1,5 @@
 -- ═══════════════════════════════════════════════════════════════════════════
--- ProjectPulse — PostgreSQL Schema
+-- PR Tracker — PostgreSQL Schema
 -- Target: Aurora PostgreSQL Serverless v2 (compatible with PostgreSQL 16+)
 -- Multi-tenant: Company → Project hierarchy with Row-Level Security
 -- ═══════════════════════════════════════════════════════════════════════════
@@ -387,7 +387,7 @@ CREATE INDEX idx_modules_name_trgm    ON modules USING gin(name        gin_trgm_
 -- Create a non-superuser role for the application
 -- (run as superuser during setup; app connects as this role)
 -- CREATE ROLE app_user LOGIN PASSWORD 'changeme';
--- GRANT CONNECT ON DATABASE projectpulse TO app_user;
+-- GRANT CONNECT ON DATABASE PR Tracker TO app_user;
 -- GRANT USAGE ON SCHEMA public TO app_user;
 -- GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public TO app_user;
 -- GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA public TO app_user;
