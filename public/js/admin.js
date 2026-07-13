@@ -304,7 +304,7 @@ async function onTeamProjectChanged(projectId) {
 }
 
 // ── Add user ────────────────────────────────────────────
-function openAddUserModal() {
+async function openAddUserModal() {
   ['umEmail','umName','umPassword'].forEach(id => document.getElementById(id).value = '');
   document.getElementById('umCompanyRole').value = '';
   document.getElementById('umError').textContent = '';
@@ -314,7 +314,30 @@ function openAddUserModal() {
   pwRow.style.display = '';
   pwRow.querySelector('label').textContent = 'Password *';
   document.getElementById('umSaveBtn').onclick = saveNewUser;
+
+  document.getElementById('umProjectAccessRow').style.display = '';
+  await _renderAddUserProjectAccess();
+
   document.getElementById('userModal').classList.add('open');
+}
+
+async function _renderAddUserProjectAccess() {
+  await _fetchProjects();
+  const list = document.getElementById('umProjectAccessList');
+  if (!adminProjects.length) {
+    list.innerHTML = '<div style="color:var(--text2);font-size:13px">No projects in this company yet.</div>';
+    return;
+  }
+  list.innerHTML = adminProjects.map(p => `
+    <div class="form-group" style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
+      <span style="flex:1;font-size:13px">${p.name}</span>
+      <select id="umPmRole_${p.id}" style="width:150px">
+        <option value="">No Access</option>
+        <option value="ReadOnly">ReadOnly</option>
+        <option value="ReadWrite">ReadWrite</option>
+        <option value="Admin">Admin</option>
+      </select>
+    </div>`).join('');
 }
 
 async function saveNewUser() {
@@ -332,6 +355,26 @@ async function saveNewUser() {
   });
   const json = await res.json();
   if (!res.ok) { errEl.textContent = json.error; return; }
+
+  const memberships = adminProjects.map(p => {
+    const role = document.getElementById(`umPmRole_${p.id}`)?.value;
+    return role ? { project_id: p.id, role } : null;
+  }).filter(Boolean);
+
+  if (memberships.length) {
+    const pmRes = await authFetch(`${API}/users/${encodeURIComponent(email)}`, {
+      method: 'PUT',
+      body:   JSON.stringify({ project_memberships: memberships }),
+    });
+    if (!pmRes.ok) {
+      const pmJson = await pmRes.json();
+      closeModal('userModal');
+      showToast(`User ${email} created, but setting project access failed: ${pmJson.error}`, 'error');
+      renderUsersTab();
+      return;
+    }
+  }
+
   closeModal('userModal');
   showToast(`User ${email} created`, 'success');
   renderUsersTab();
@@ -350,6 +393,10 @@ function openEditUserModal(email, name, companyRole, active) {
   pwRow.style.display = '';
   pwRow.querySelector('label').textContent = 'New Password (leave blank to keep)';
   document.getElementById('umSaveBtn').onclick = () => saveEditUser(email);
+
+  // Editing already has a dedicated "🔑 Projects" button/modal for this.
+  document.getElementById('umProjectAccessRow').style.display = 'none';
+
   document.getElementById('userModal').classList.add('open');
 }
 

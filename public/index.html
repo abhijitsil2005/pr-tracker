@@ -801,6 +801,11 @@
         </select>
       </div>
       <div class="form-group full" id="umPasswordRow"><label>Password *</label><input type="password" id="umPassword"></div>
+      <div class="form-group full" id="umProjectAccessRow" style="display:none">
+        <label>Project Access</label>
+        <p style="color:var(--text2);font-size:12px;margin:-2px 0 8px">A Company Role above already grants access to every project — only set these for a project-scoped user.</p>
+        <div id="umProjectAccessList" style="max-height:220px;overflow-y:auto"></div>
+      </div>
     </div>
     <div id="umError" style="color:var(--red);font-size:13px;margin-top:4px"></div>
     <div class="modal-footer">
