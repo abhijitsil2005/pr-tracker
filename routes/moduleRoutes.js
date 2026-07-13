@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { pool, query } = require('../services/pgClient');
+const { pool, query, setContext } = require('../services/pgClient');
 const { requireProject, requireWrite } = require('../middleware/auth');
 
 router.use(requireProject);
@@ -83,6 +83,7 @@ router.post('/', requireWrite, async (req, res) => {
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
+    await setContext(client, ctx(req));
 
     const { rows } = await client.query(
       `INSERT INTO modules (project_id, name) VALUES ($1, $2) RETURNING id`,
@@ -125,6 +126,7 @@ router.put('/:name', requireWrite, async (req, res) => {
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
+    await setContext(client, ctx(req));
 
     const check = await client.query(
       'SELECT id FROM modules WHERE project_id = $1 AND name = $2',
@@ -217,6 +219,7 @@ router.post('/:name/pages', requireWrite, async (req, res) => {
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
+    await setContext(client, ctx(req));
 
     const mod = await client.query(
       'SELECT id FROM modules WHERE project_id = $1 AND name = $2',
@@ -254,6 +257,7 @@ router.put('/:name/pages/:pageName', requireWrite, async (req, res) => {
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
+    await setContext(client, ctx(req));
 
     const sets = [];
     const vals = [];
@@ -303,6 +307,7 @@ router.delete('/:name/pages/:pageName', requireWrite, async (req, res) => {
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
+    await setContext(client, ctx(req));
 
     const { rowCount } = await client.query(
       `DELETE FROM pages
@@ -335,6 +340,7 @@ router.post('/:name/out-of-scope', requireWrite, async (req, res) => {
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
+    await setContext(client, ctx(req));
 
     const mod = await client.query(
       'SELECT id FROM modules WHERE project_id = $1 AND name = $2',
@@ -367,6 +373,7 @@ router.delete('/:name/out-of-scope/:pageName', requireWrite, async (req, res) =>
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
+    await setContext(client, ctx(req));
 
     const { rowCount } = await client.query(
       `DELETE FROM out_of_scope_pages

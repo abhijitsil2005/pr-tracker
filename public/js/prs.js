@@ -45,6 +45,18 @@ document.getElementById('f_raised').addEventListener('change', function () {
   if (sprint) document.getElementById('f_devSprint').value = sprint;
 });
 
+// ── Dependent PRs (typeahead multi-select chips) ────────
+// Reuses the same chips widget as the Status page's PR-linking fields
+// (createPrChips, defined in status.js) — always in 'staged' mode since
+// this is just one more field on the PR form, submitted on Save like
+// Pages already is, not a live-saving control.
+const depPrTA = createPrChips({
+  name: 'depPrTA',
+  inputId: 'f_deps_input', listId: 'f_deps_list', chipsId: 'f_deps_chips',
+  getFilters: () => ({}),
+  getExcludePR: () => Number(document.getElementById('f_pr').value) || null,
+});
+
 // ── Pagination state ───────────────────────────────────
 let _prPage     = 1;
 let _prPageSize = 25;
@@ -265,7 +277,7 @@ async function openEditPRModal(id) {
   document.getElementById('f_testSprint').value = pr.Testing_Sprint||'';
   document.getElementById('f_target').value = pr.Target_Release||'';
   document.getElementById('f_task').value = pr.Task||'';
-  document.getElementById('f_deps').value = (pr.Dependent_PRs||[]).join(', ');
+  depPrTA.init({ mode: 'staged', prs: pr.Dependent_PRs || [] });
   document.getElementById('prModal').classList.add('open');
 }
 
@@ -277,9 +289,10 @@ function closePRModal() {
 
 function clearPRForm() {
   document.getElementById('f_firstResponseGroup').style.display = '';
-  ['f_pr','f_title','f_description','f_additionalDetails','f_raised','f_firstResponse','f_approved','f_merged','f_devSprint','f_testSprint','f_task','f_deps'].forEach(id=>{ document.getElementById(id).value=''; });
+  ['f_pr','f_title','f_description','f_additionalDetails','f_raised','f_firstResponse','f_approved','f_merged','f_devSprint','f_testSprint','f_task'].forEach(id=>{ document.getElementById(id).value=''; });
   ['f_type','f_module','f_developer','f_status','f_reviewer','f_target'].forEach(id=>{ document.getElementById(id).selectedIndex=0; });
   document.getElementById('f_pages').innerHTML = '<span class="page-chip-hint">— select a module first —</span>';
+  depPrTA.init({ mode: 'staged', prs: [] });
 }
 
 async function loadPageOptions() {
@@ -340,7 +353,7 @@ async function savePR() {
     Testing_Sprint:document.getElementById('f_testSprint').value||null,
     Target_Release:document.getElementById('f_target').value||null,
     Task:document.getElementById('f_task').value.trim()||null,
-    Dependent_PRs:document.getElementById('f_deps').value.split(',').map(s=>s.trim()).filter(Boolean).map(Number),
+    Dependent_PRs:depPrTA.getSelected(),
   };
   const isEdit = !!editingPR;
   const res = await authFetch(`${API}/prs${isEdit?'/'+editingPR:''}`, { method:isEdit?'PUT':'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body) });

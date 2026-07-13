@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { pool, query } = require('../services/pgClient');
+const { pool, query, setContext } = require('../services/pgClient');
 const { requireProject, requireWrite } = require('../middleware/auth');
 
 router.use(requireProject);
@@ -265,6 +265,7 @@ router.post('/', requireWrite, async (req, res) => {
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
+    await setContext(client, ctx(req));
 
     let moduleId = null;
     if (body.Module) {
@@ -273,6 +274,22 @@ router.post('/', requireWrite, async (req, res) => {
         [pid(req), body.Module]
       );
       moduleId = rows[0]?.id || null;
+    }
+
+    // A PR number can legitimately be raised against more than one module,
+    // but not twice against the *same* module — block that duplicate here so
+    // every creation path (Status page quick-create, main PR page) is covered.
+    const { rows: dupRows } = await client.query(
+      'SELECT id FROM prs WHERE project_id = $1 AND pr_number = $2 AND module_id IS NOT DISTINCT FROM $3',
+      [pid(req), Number(body.PR), moduleId]
+    );
+    if (dupRows.length) {
+      await client.query('ROLLBACK');
+      return res.status(409).json({
+        error: body.Module
+          ? `PR #${body.PR} already exists for module "${body.Module}"`
+          : `PR #${body.PR} already exists`,
+      });
     }
 
     const { rows } = await client.query(
@@ -321,6 +338,7 @@ router.put('/by-pr/:prNumber', requireWrite, async (req, res) => {
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
+    await setContext(client, ctx(req));
 
     const { rows: prRows } = await client.query(
       'SELECT id FROM prs WHERE project_id = $1 AND pr_number = $2',
@@ -379,6 +397,7 @@ router.put('/:id', requireWrite, async (req, res) => {
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
+    await setContext(client, ctx(req));
 
     const check = await client.query(`${PR_SELECT} WHERE p.id = $1 AND p.project_id = $2`, [req.params.id, pid(req)]);
     if (!check.rows.length) {
@@ -427,6 +446,7 @@ router.delete('/:id', requireWrite, async (req, res) => {
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
+    await setContext(client, ctx(req));
 
     const { rows } = await client.query(
       'SELECT id, pr_number, module_id FROM prs WHERE id = $1 AND project_id = $2',

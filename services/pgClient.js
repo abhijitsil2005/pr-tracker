@@ -51,4 +51,18 @@ async function query(sql, params = [], context = {}) {
   }
 }
 
-module.exports = { pool, query };
+// Set RLS session context on a manually-managed transaction (routes that do
+// their own pool.connect() + BEGIN/COMMIT for a multi-statement transaction,
+// instead of the single-statement query() above). Call once right after
+// BEGIN — SET LOCAL is scoped to the current transaction and clears itself
+// at COMMIT/ROLLBACK, same as query() does per-call.
+async function setContext(client, context = {}) {
+  if (context.project_id) {
+    await client.query('SELECT set_config($1, $2, true)', ['app.project_id', String(context.project_id)]);
+  }
+  if (context.company_id) {
+    await client.query('SELECT set_config($1, $2, true)', ['app.company_id', String(context.company_id)]);
+  }
+}
+
+module.exports = { pool, query, setContext };
