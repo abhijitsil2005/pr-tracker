@@ -1,11 +1,20 @@
 const express = require('express');
 const router  = express.Router();
-const { pool } = require('../services/pgClient');
+const { pool, query } = require('../services/pgClient');
 const { authenticate } = require('../middleware/auth');
 
 router.use(authenticate);
 
-// Verify caller can manage this project: CompanyAdmin or project-level Admin
+// team_members/sprints/releases/pr_statuses are RLS-scoped by project_id —
+// unlike the rest of the app, these admin-setup routes act on a :projectId
+// from the URL rather than the caller's own session project (a CompanyAdmin
+// configuring a project they haven't "entered"), so ctx() must set that
+// project's id explicitly rather than reusing req.user.project_id.
+const ctx = (projectId) => ({ project_id: projectId });
+
+// Verify caller can manage this project: CompanyAdmin or project-level Admin.
+// projects itself has no RLS (see db/schema.sql) — it's the tenant-hierarchy
+// root, checked here by explicit company_id ownership instead.
 async function canManage(req, res, next) {
   try {
     const { projectId } = req.params;
@@ -30,9 +39,10 @@ async function canManage(req, res, next) {
 // GET /api/onboard/:projectId/team
 router.get('/:projectId/team', canManage, async (req, res) => {
   try {
-    const { rows } = await pool.query(
+    const { rows } = await query(
       'SELECT id, role, name FROM team_members WHERE project_id = $1 ORDER BY role, name',
-      [req.params.projectId]
+      [req.params.projectId],
+      ctx(req.params.projectId)
     );
     res.json(rows);
   } catch (e) { res.status(500).json({ error: e.message }); }
@@ -43,12 +53,13 @@ router.post('/:projectId/team', canManage, async (req, res) => {
   const { role, name } = req.body;
   if (!role || !name) return res.status(400).json({ error: 'role and name are required' });
   try {
-    const { rows } = await pool.query(
+    const { rows } = await query(
       `INSERT INTO team_members (project_id, role, name)
        VALUES ($1, $2, $3)
        ON CONFLICT (project_id, name) DO UPDATE SET role = EXCLUDED.role
        RETURNING id, role, name`,
-      [req.params.projectId, role.trim(), name.trim()]
+      [req.params.projectId, role.trim(), name.trim()],
+      ctx(req.params.projectId)
     );
     res.status(201).json({ message: 'Team member added', data: rows[0] });
   } catch (e) { res.status(400).json({ error: e.message }); }
@@ -57,9 +68,10 @@ router.post('/:projectId/team', canManage, async (req, res) => {
 // DELETE /api/onboard/:projectId/team/:name
 router.delete('/:projectId/team/:name', canManage, async (req, res) => {
   try {
-    const { rowCount } = await pool.query(
+    const { rowCount } = await query(
       'DELETE FROM team_members WHERE project_id = $1 AND name = $2',
-      [req.params.projectId, decodeURIComponent(req.params.name)]
+      [req.params.projectId, decodeURIComponent(req.params.name)],
+      ctx(req.params.projectId)
     );
     if (!rowCount) return res.status(404).json({ error: 'Team member not found' });
     res.json({ message: 'Team member removed' });
@@ -71,9 +83,10 @@ router.delete('/:projectId/team/:name', canManage, async (req, res) => {
 // GET /api/onboard/:projectId/pr-statuses
 router.get('/:projectId/pr-statuses', canManage, async (req, res) => {
   try {
-    const { rows } = await pool.query(
+    const { rows } = await query(
       'SELECT id, name, sort_order, is_deployed FROM pr_statuses WHERE project_id = $1 ORDER BY sort_order, name',
-      [req.params.projectId]
+      [req.params.projectId],
+      ctx(req.params.projectId)
     );
     res.json(rows);
   } catch (e) { res.status(500).json({ error: e.message }); }
@@ -84,7 +97,7 @@ router.post('/:projectId/pr-statuses', canManage, async (req, res) => {
   const { name, is_deployed } = req.body;
   if (!name) return res.status(400).json({ error: 'name is required' });
   try {
-    const { rows } = await pool.query(
+    const { rows } = await query(
       `INSERT INTO pr_statuses (project_id, name, sort_order, is_deployed)
        VALUES (
          $1, $2,
@@ -93,7 +106,8 @@ router.post('/:projectId/pr-statuses', canManage, async (req, res) => {
        )
        ON CONFLICT (project_id, name) DO UPDATE SET is_deployed = EXCLUDED.is_deployed
        RETURNING id, name, sort_order, is_deployed`,
-      [req.params.projectId, name.trim(), !!is_deployed]
+      [req.params.projectId, name.trim(), !!is_deployed],
+      ctx(req.params.projectId)
     );
     res.status(201).json({ message: 'Status added', data: rows[0] });
   } catch (e) { res.status(400).json({ error: e.message }); }
@@ -105,9 +119,10 @@ router.put('/:projectId/pr-statuses/reorder', canManage, async (req, res) => {
   if (!Array.isArray(names) || !names.length) return res.status(400).json({ error: 'names array is required' });
   try {
     await Promise.all(names.map((name, i) =>
-      pool.query(
+      query(
         'UPDATE pr_statuses SET sort_order = $1 WHERE project_id = $2 AND name = $3',
-        [i + 1, req.params.projectId, name]
+        [i + 1, req.params.projectId, name],
+        ctx(req.params.projectId)
       )
     ));
     res.json({ message: 'Order updated' });
@@ -117,9 +132,10 @@ router.put('/:projectId/pr-statuses/reorder', canManage, async (req, res) => {
 // DELETE /api/onboard/:projectId/pr-statuses/:name
 router.delete('/:projectId/pr-statuses/:name', canManage, async (req, res) => {
   try {
-    const { rowCount } = await pool.query(
+    const { rowCount } = await query(
       'DELETE FROM pr_statuses WHERE project_id = $1 AND name = $2',
-      [req.params.projectId, decodeURIComponent(req.params.name)]
+      [req.params.projectId, decodeURIComponent(req.params.name)],
+      ctx(req.params.projectId)
     );
     if (!rowCount) return res.status(404).json({ error: 'Status not found' });
     res.json({ message: 'Status removed' });
@@ -131,10 +147,11 @@ router.delete('/:projectId/pr-statuses/:name', canManage, async (req, res) => {
 // GET /api/onboard/:projectId/sprints
 router.get('/:projectId/sprints', canManage, async (req, res) => {
   try {
-    const { rows } = await pool.query(
+    const { rows } = await query(
       `SELECT id, sprint_name AS "Sprint", start_date AS "StartDate", end_date AS "EndDate"
        FROM sprints WHERE project_id = $1 ORDER BY start_date`,
-      [req.params.projectId]
+      [req.params.projectId],
+      ctx(req.params.projectId)
     );
     res.json(rows);
   } catch (e) { res.status(500).json({ error: e.message }); }
@@ -147,14 +164,15 @@ router.post('/:projectId/sprints', canManage, async (req, res) => {
     return res.status(400).json({ error: 'sprint_name, start_date, and end_date are required' });
   }
   try {
-    const { rows } = await pool.query(
+    const { rows } = await query(
       `INSERT INTO sprints (project_id, sprint_name, start_date, end_date)
        VALUES ($1, $2, $3, $4)
        ON CONFLICT (project_id, sprint_name) DO UPDATE SET
          start_date = EXCLUDED.start_date,
          end_date   = EXCLUDED.end_date
        RETURNING id, sprint_name AS "Sprint", start_date AS "StartDate", end_date AS "EndDate"`,
-      [req.params.projectId, sprint_name.trim(), start_date, end_date]
+      [req.params.projectId, sprint_name.trim(), start_date, end_date],
+      ctx(req.params.projectId)
     );
     res.status(201).json({ message: 'Sprint added', data: rows[0] });
   } catch (e) { res.status(400).json({ error: e.message }); }
@@ -163,9 +181,10 @@ router.post('/:projectId/sprints', canManage, async (req, res) => {
 // DELETE /api/onboard/:projectId/sprints/:name
 router.delete('/:projectId/sprints/:name', canManage, async (req, res) => {
   try {
-    const { rowCount } = await pool.query(
+    const { rowCount } = await query(
       'DELETE FROM sprints WHERE project_id = $1 AND sprint_name = $2',
-      [req.params.projectId, decodeURIComponent(req.params.name)]
+      [req.params.projectId, decodeURIComponent(req.params.name)],
+      ctx(req.params.projectId)
     );
     if (!rowCount) return res.status(404).json({ error: 'Sprint not found' });
     res.json({ message: 'Sprint removed' });
@@ -177,7 +196,7 @@ router.delete('/:projectId/sprints/:name', canManage, async (req, res) => {
 // GET /api/onboard/:projectId/releases
 router.get('/:projectId/releases', canManage, async (req, res) => {
   try {
-    const { rows } = await pool.query(
+    const { rows } = await query(
       `SELECT release_number     AS "Release_Number",
               release_date       AS "Release_Date",
               code_freeze        AS "Code_Freeze",
@@ -186,7 +205,8 @@ router.get('/:projectId/releases', canManage, async (req, res) => {
        FROM releases
        WHERE project_id = $1
        ORDER BY release_date`,
-      [req.params.projectId]
+      [req.params.projectId],
+      ctx(req.params.projectId)
     );
     res.json(rows);
   } catch (e) { res.status(500).json({ error: e.message }); }
@@ -199,7 +219,7 @@ router.post('/:projectId/releases', canManage, async (req, res) => {
     return res.status(400).json({ error: 'Release_Number and Release_Date are required' });
   }
   try {
-    const { rows } = await pool.query(
+    const { rows } = await query(
       `INSERT INTO releases (project_id, release_number, release_date, code_freeze, regression_start)
        VALUES ($1, $2, $3, $4, $5)
        ON CONFLICT (project_id, release_number) DO UPDATE SET
@@ -217,7 +237,8 @@ router.post('/:projectId/releases', canManage, async (req, res) => {
         Release_Date,
         Code_Freeze     || null,
         Regression_Start || null,
-      ]
+      ],
+      ctx(req.params.projectId)
     );
     res.status(201).json({ message: 'Release added', data: rows[0] });
   } catch (e) { res.status(400).json({ error: e.message }); }
@@ -226,9 +247,10 @@ router.post('/:projectId/releases', canManage, async (req, res) => {
 // DELETE /api/onboard/:projectId/releases/:number
 router.delete('/:projectId/releases/:number', canManage, async (req, res) => {
   try {
-    const { rowCount } = await pool.query(
+    const { rowCount } = await query(
       'DELETE FROM releases WHERE project_id = $1 AND release_number = $2',
-      [req.params.projectId, req.params.number]
+      [req.params.projectId, req.params.number],
+      ctx(req.params.projectId)
     );
     if (!rowCount) return res.status(404).json({ error: 'Release not found' });
     res.json({ message: 'Release removed' });

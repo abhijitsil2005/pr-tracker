@@ -2,13 +2,14 @@ const express = require('express');
 const router  = express.Router();
 const path    = require('path');
 const fs      = require('fs');
-const { pool } = require('../services/pgClient');
+const { pool, query, setContext } = require('../services/pgClient');
 const { requireProject, requireWrite } = require('../middleware/auth');
 const logger = require('../services/logger');
 
 router.use(requireProject, requireWrite);
 
 const pid = (req) => req.user.project_id;
+const ctx = (req) => ({ project_id: req.user.project_id });
 
 // ── Shared helpers ────────────────────────────────────────────────
 
@@ -71,6 +72,7 @@ router.post('/tracker', async (req, res) => {
     const client = await pool.connect();
     try {
       await client.query('BEGIN');
+      await setContext(client, ctx(req));
 
       // Pre-load module name → id map
       const { rows: modRows } = await client.query(
@@ -86,7 +88,6 @@ router.post('/tracker', async (req, res) => {
            sa.developer,
            m.name           AS module,
            sa.page_name     AS page,
-           sa.linked_pr_number AS pr,
            sa.status,
            sa.task,
            sa.sprint,
@@ -110,6 +111,22 @@ router.post('/tracker', async (req, res) => {
       existingRows.forEach(a => {
         const key = `${(a.module || '').toLowerCase()}|||${(a.page || '').toLowerCase()}`;
         assignmentIndex.set(key, a);
+      });
+
+      // Pre-load each existing assignment's already-linked PR numbers + next chip position,
+      // so importing is additive (never drops a PR link a prior import/manual edit added)
+      const { rows: linkRows } = await client.query(
+        `SELECT assignment_id, pr_number, position FROM status_assignment_prs sap
+         JOIN status_assignments sa ON sa.id = sap.assignment_id
+         WHERE sa.project_id = $1`,
+        [projectId]
+      );
+      const linkedByAssignment = new Map(); // assignment_id -> { numbers: Set, nextPos: int }
+      linkRows.forEach(r => {
+        const entry = linkedByAssignment.get(r.assignment_id) || { numbers: new Set(), nextPos: 0 };
+        entry.numbers.add(r.pr_number);
+        entry.nextPos = Math.max(entry.nextPos, r.position + 1);
+        linkedByAssignment.set(r.assignment_id, entry);
       });
 
       // Pre-load PRs indexed by pr_number
@@ -141,7 +158,6 @@ router.post('/tracker', async (req, res) => {
         if (!module && !page && !poc)       { skipped++; continue; }
 
         const prNumbers    = parsePRNumbers(rawPR);
-        const primaryPR    = prNumbers[0] || null;
         const activityLogs = parseComments(comments);
 
         prNumbers.forEach(num => {
@@ -167,14 +183,12 @@ router.post('/tracker', async (req, res) => {
             `UPDATE status_assignments SET
                developer        = $1,
                status           = $2,
-               linked_pr_number = $3,
-               task             = $4,
-               sprint           = $5
-             WHERE id = $6`,
+               task             = $3,
+               sprint           = $4
+             WHERE id = $5`,
             [
               poc       || existing.developer,
               mappedStatus,
-              primaryPR != null ? primaryPR : existing.pr,
               task      !== null ? task      : existing.task,
               sprint    !== null ? sprint    : existing.sprint,
               existing.id,
@@ -189,12 +203,25 @@ router.post('/tracker', async (req, res) => {
             );
           }
 
+          // Additively link any PR numbers this row has that aren't linked yet —
+          // never removes a link a prior import or manual edit already made
+          const linkState = linkedByAssignment.get(existing.id) || { numbers: new Set(), nextPos: 0 };
+          for (const num of prNumbers) {
+            if (linkState.numbers.has(num)) continue;
+            await client.query(
+              `INSERT INTO status_assignment_prs (project_id, assignment_id, pr_number, position)
+               VALUES ($1, $2, $3, $4) ON CONFLICT (assignment_id, pr_number) DO NOTHING`,
+              [projectId, existing.id, num, linkState.nextPos++]
+            );
+            linkState.numbers.add(num);
+          }
+          linkedByAssignment.set(existing.id, linkState);
+
           // Refresh index entry so later rows see updated state
           assignmentIndex.set(key, {
             ...existing,
             developer: poc || existing.developer,
             status: mappedStatus,
-            pr: primaryPR != null ? primaryPR : existing.pr,
             task: task !== null ? task : existing.task,
             sprint: sprint !== null ? sprint : existing.sprint,
           });
@@ -205,8 +232,8 @@ router.post('/tracker', async (req, res) => {
           const { rows: newRows } = await client.query(
             `INSERT INTO status_assignments
                (project_id, developer, module_id, page_name, week_start,
-                linked_pr_number, status, task, sprint)
-             VALUES ($1, $2, $3, $4, $5::date, $6, $7, $8, $9)
+                status, task, sprint)
+             VALUES ($1, $2, $3, $4, $5::date, $6, $7, $8)
              RETURNING id`,
             [
               projectId,
@@ -214,13 +241,20 @@ router.post('/tracker', async (req, res) => {
               moduleId,
               page   || null,
               week,
-              primaryPR,
               mappedStatus,
               task   || null,
               sprint || null,
             ]
           );
           const assignmentId = newRows[0].id;
+
+          for (let i = 0; i < prNumbers.length; i++) {
+            await client.query(
+              `INSERT INTO status_assignment_prs (project_id, assignment_id, pr_number, position)
+               VALUES ($1, $2, $3, $4)`,
+              [projectId, assignmentId, prNumbers[i], i]
+            );
+          }
 
           const actLog = activityLogs.length
             ? activityLogs
@@ -291,10 +325,11 @@ function findSprintForDate(isoDate, sprintList) {
 
 router.get('/sprints', async (req, res) => {
   try {
-    const { rows } = await pool.query(
+    const { rows } = await query(
       `SELECT sprint_name AS "Sprint", start_date AS "StartDate", end_date AS "EndDate"
        FROM sprints WHERE project_id = $1 ORDER BY start_date`,
-      [pid(req)]
+      [pid(req)],
+      ctx(req)
     );
     res.json(rows);
   } catch (e) { res.status(500).json({ error: e.message }); }
@@ -322,6 +357,7 @@ router.post('/sprints', async (req, res) => {
     const client = await pool.connect();
     try {
       await client.query('BEGIN');
+      await setContext(client, ctx(req));
 
       // Upsert all sprints
       for (const s of sprintList) {
@@ -341,15 +377,17 @@ router.post('/sprints', async (req, res) => {
         [projectId]
       );
 
-      // Load all status assignments indexed by linked_pr_number
+      // Load all status assignments indexed by every PR number they're linked to
       const { rows: allAssignments } = await client.query(
-        'SELECT id, sprint, linked_pr_number FROM status_assignments WHERE project_id = $1',
+        `SELECT sa.id, sa.sprint, sap.pr_number
+         FROM status_assignments sa
+         JOIN status_assignment_prs sap ON sap.assignment_id = sa.id
+         WHERE sa.project_id = $1`,
         [projectId]
       );
       const assignmentsByPR = new Map();
       for (const a of allAssignments) {
-        if (a.linked_pr_number == null) continue;
-        const num = Number(a.linked_pr_number);
+        const num = Number(a.pr_number);
         if (!assignmentsByPR.has(num)) assignmentsByPR.set(num, []);
         assignmentsByPR.get(num).push(a);
       }

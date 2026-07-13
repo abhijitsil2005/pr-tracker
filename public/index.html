@@ -420,7 +420,16 @@
       <div class="form-group"><label>Target Release Date</label><select id="f_target"><option value="">— select —</option></select></div>
       <div class="form-group"><label>Testing Sprint</label><input type="text" id="f_testSprint" placeholder="2.6"></div>
       <div class="form-group"><label>Task #</label><input type="text" id="f_task" placeholder="e.g. 12345"></div>
-      <div class="form-group"><label>Dependent PRs (comma-separated)</label><input type="text" id="f_deps" placeholder="8846, 8872"></div>
+      <div class="form-group full">
+        <label>Dependent PRs <span style="color:var(--text2);font-weight:400">(optional — search to add, ✕ to remove)</span></label>
+        <div id="f_deps_chips" class="chip-row" style="margin-bottom:8px"></div>
+        <div class="ta-wrap">
+          <input type="text" id="f_deps_input" autocomplete="off" placeholder="Search PR # / module / developer…"
+            oninput="depPrTA.onInput()" onfocus="depPrTA.onFocus()" onblur="depPrTA.hideList()" onkeydown="depPrTA.onKeyDown(event)"
+            style="width:100%;background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:9px 12px;border-radius:8px;font-size:13px;outline:none;box-sizing:border-box">
+          <div id="f_deps_list" class="ta-list"></div>
+        </div>
+      </div>
       <div class="form-group full"><label>Additional Details</label><textarea id="f_additionalDetails" placeholder="Notes, links, edge cases, rollout considerations…"></textarea></div>
     </div>
     <div class="modal-footer">
@@ -588,7 +597,7 @@
     <div class="form-grid">
       <div class="form-group">
         <label>Developer *</label>
-        <select id="am_dev"><option value="">— select —</option></select>
+        <select id="am_dev" onchange="amPrTA.refreshIfOpen()"><option value="">— select —</option></select>
       </div>
       <div class="form-group">
         <label>Status</label>
@@ -602,7 +611,7 @@
       </div>
       <div class="form-group">
         <label>Module *</label>
-        <select id="am_module" onchange="amLoadPageOptions()"><option value="">— select —</option></select>
+        <select id="am_module" onchange="amLoadPageOptions();amPrTA.refreshIfOpen()"><option value="">— select —</option></select>
       </div>
       <div class="form-group">
         <label>Type</label>
@@ -618,11 +627,15 @@
         <div id="am_pages" class="page-chips"><span class="page-chip-hint">— select a module first —</span></div>
       </div>
       <div class="form-group full">
-        <label>Linked PR <span style="color:var(--text2);font-weight:400">(optional)</span></label>
+        <label>Linked PRs <span style="color:var(--text2);font-weight:400">(optional — search to add, ✕ to remove)</span></label>
+        <div id="am_pr_chips" class="chip-row" style="margin-bottom:8px"></div>
         <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-          <select id="am_pr" style="flex:1;background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:9px 12px;border-radius:8px;font-size:13px;outline:none">
-            <option value="">— no PR —</option>
-          </select>
+          <div class="ta-wrap" style="flex:1;min-width:200px">
+            <input type="text" id="am_pr_input" autocomplete="off" placeholder="Search PR # / module / developer…"
+              oninput="amPrTA.onInput()" onfocus="amPrTA.onFocus()" onblur="amPrTA.hideList()" onkeydown="amPrTA.onKeyDown(event)"
+              style="width:100%;background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:9px 12px;border-radius:8px;font-size:13px;outline:none;box-sizing:border-box">
+            <div id="am_pr_list" class="ta-list"></div>
+          </div>
           <button class="btn btn-ghost btn-sm" id="amToggleQPR" onclick="toggleAmQuickPRForm()" type="button">＋ New PR</button>
         </div>
         <div id="amQuickPRForm" style="display:none;margin-top:10px;padding:12px;background:var(--surface);border:1px solid var(--border);border-radius:8px">
@@ -674,35 +687,32 @@
     <button class="modal-close" onclick="closeModal('activityModal')">✕</button>
     <div style="font-size:12px;color:var(--text2);margin-bottom:14px" id="actAssignInfo"></div>
 
-    <!-- Status + linked PR -->
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:18px">
-      <div>
-        <label style="font-size:12px;color:var(--text2);margin-bottom:5px;display:block">Status</label>
-        <div style="display:flex;gap:8px;align-items:center">
-          <select id="actStatus" style="flex:1;background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:9px 12px;border-radius:8px;font-size:13px;outline:none">
-            <option value="Pending">Pending</option>
-            <option value="In Progress">In Progress</option>
-            <option value="In Review">In Review</option>
-            <option value="Blocked">Blocked</option>
-            <option value="Done">Done</option>
-          </select>
-          <button class="btn btn-primary btn-sm" onclick="updateStatusFromModal()">Update</button>
-        </div>
-      </div>
-      <div>
-        <label style="font-size:12px;color:var(--text2);margin-bottom:5px;display:block">Linked PR</label>
-        <div id="actLinkedPR" style="display:flex;align-items:center;gap:8px;min-height:38px;flex-wrap:wrap"></div>
+    <!-- Status -->
+    <div style="margin-bottom:18px">
+      <label style="font-size:12px;color:var(--text2);margin-bottom:5px;display:block">Status</label>
+      <div style="display:flex;gap:8px;align-items:center">
+        <select id="actStatus" style="flex:1;background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:9px 12px;border-radius:8px;font-size:13px;outline:none">
+          <option value="Pending">Pending</option>
+          <option value="In Progress">In Progress</option>
+          <option value="In Review">In Review</option>
+          <option value="Blocked">Blocked</option>
+          <option value="Done">Done</option>
+        </select>
+        <button class="btn btn-primary btn-sm" onclick="updateStatusFromModal()">Update</button>
       </div>
     </div>
 
     <!-- PR association -->
     <div style="margin-bottom:18px;padding:14px;background:var(--surface2);border-radius:10px;border:1px solid var(--border)">
-      <label style="font-size:11px;font-weight:700;color:var(--text2);margin-bottom:10px;display:block;text-transform:uppercase;letter-spacing:.5px">PR Association</label>
+      <label style="font-size:11px;font-weight:700;color:var(--text2);margin-bottom:10px;display:block;text-transform:uppercase;letter-spacing:.5px">Linked PRs <span style="font-weight:400;text-transform:none">(search to add, ✕ to remove — saves immediately)</span></label>
+      <div id="act_pr_chips" class="chip-row" style="margin-bottom:10px"></div>
       <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-        <select id="actPRSelect" style="flex:1;min-width:200px;background:var(--surface);border:1px solid var(--border);color:var(--text);padding:8px 12px;border-radius:8px;font-size:13px;outline:none">
-          <option value="">— link existing PR —</option>
-        </select>
-        <button class="btn btn-primary btn-sm" onclick="linkPRFromActivity()">Link</button>
+        <div class="ta-wrap" style="flex:1;min-width:200px">
+          <input type="text" id="act_pr_input" autocomplete="off" placeholder="Search PR # / module / developer…"
+            oninput="actPrTA.onInput()" onfocus="actPrTA.onFocus()" onblur="actPrTA.hideList()" onkeydown="actPrTA.onKeyDown(event)"
+            style="width:100%;background:var(--surface);border:1px solid var(--border);color:var(--text);padding:8px 12px;border-radius:8px;font-size:13px;outline:none;box-sizing:border-box">
+          <div id="act_pr_list" class="ta-list"></div>
+        </div>
         <button class="btn btn-ghost btn-sm" id="actToggleQPR" onclick="toggleQuickPRForm()">＋ New PR</button>
       </div>
       <!-- Quick PR creation form (hidden by default) -->
@@ -835,10 +845,10 @@
 
 <script src="js/app.js"></script>
 <script src="js/dashboard.js"></script>
+<script src="js/status.js"></script>
 <script src="js/prs.js"></script>
 <script src="js/releases.js"></script>
 <script src="js/modules.js"></script>
-<script src="js/status.js"></script>
 <script src="js/sync.js"></script>
 <script src="js/admin.js"></script>
 <script src="js/reports.js"></script>

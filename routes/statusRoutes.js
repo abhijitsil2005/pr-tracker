@@ -1,6 +1,6 @@
 const express = require('express');
 const router  = express.Router();
-const { pool, query } = require('../services/pgClient');
+const { pool, query, setContext } = require('../services/pgClient');
 const { requireProject, requireWrite } = require('../middleware/auth');
 
 router.use(requireProject);
@@ -17,7 +17,11 @@ const ASSIGNMENT_SELECT = `
     m.name                AS "Module",
     sa.page_name          AS "Page",
     sa.week_start         AS "Week",
-    sa.linked_pr_number   AS "PR",
+    COALESCE(
+      (SELECT json_agg(sap.pr_number ORDER BY sap.position)
+       FROM status_assignment_prs sap WHERE sap.assignment_id = sa.id),
+      '[]'::json
+    ) AS "PRs",
     sa.status             AS "Status",
     sa.type               AS "Type",
     sa.task               AS "Task",
@@ -73,13 +77,14 @@ router.get('/:id', async (req, res) => {
 
 // POST /api/status
 router.post('/', requireWrite, async (req, res) => {
-  const { Developer, Module, Page, Week, PR, Status, Type, Task, Sprint, note } = req.body;
+  const { Developer, Module, Page, Week, PRs, Status, Type, Task, Sprint, note } = req.body;
   if (!Developer) return res.status(400).json({ error: 'Developer is required' });
   if (!Week)      return res.status(400).json({ error: 'Week is required' });
 
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
+    await setContext(client, ctx(req));
 
     // Resolve module name → id
     let moduleId = null;
@@ -91,17 +96,31 @@ router.post('/', requireWrite, async (req, res) => {
       moduleId = rows[0]?.id || null;
     }
 
+    // Same developer already assigned to this exact module/page — don't create a duplicate row
+    const { rows: dupRows } = await client.query(
+      `SELECT id FROM status_assignments
+       WHERE project_id = $1 AND developer = $2
+         AND module_id IS NOT DISTINCT FROM $3
+         AND page_name IS NOT DISTINCT FROM $4`,
+      [pid(req), Developer, moduleId, Page || null]
+    );
+    if (dupRows.length) {
+      await client.query('ROLLBACK');
+      return res.status(409).json({
+        error: `${Developer} is already assigned to ${Module || 'this module'} / ${Page || 'this page'}`,
+      });
+    }
+
     const { rows } = await client.query(
       `INSERT INTO status_assignments
          (project_id, developer, module_id, page_name, week_start,
-          linked_pr_number, status, type, task, sprint)
-       VALUES ($1, $2, $3, $4, $5::date, $6, $7, $8, $9, $10)
+          status, type, task, sprint)
+       VALUES ($1, $2, $3, $4, $5::date, $6, $7, $8, $9)
        RETURNING id`,
       [
         pid(req), Developer, moduleId,
         Page   || null,
         Week,
-        PR     ? Number(PR) : null,
         Status || 'Pending',
         Type   || 'Development',
         Task   || null,
@@ -109,6 +128,16 @@ router.post('/', requireWrite, async (req, res) => {
       ]
     );
     const assignmentId = rows[0].id;
+
+    // Initial set of linked PRs (chips already selected before the assignment existed)
+    const prNumbers = Array.isArray(PRs) ? [...new Set(PRs.map(Number).filter(n => n > 0))] : [];
+    for (let i = 0; i < prNumbers.length; i++) {
+      await client.query(
+        `INSERT INTO status_assignment_prs (project_id, assignment_id, pr_number, position)
+         VALUES ($1, $2, $3, $4)`,
+        [pid(req), assignmentId, prNumbers[i], i]
+      );
+    }
 
     // Create the initial activity log entry
     await client.query(
@@ -134,6 +163,7 @@ router.put('/:id', requireWrite, async (req, res) => {
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
+    await setContext(client, ctx(req));
 
     const { rows: existing } = await client.query(
       'SELECT id FROM status_assignments WHERE id = $1 AND project_id = $2',
@@ -156,7 +186,6 @@ router.put('/:id', requireWrite, async (req, res) => {
     if (body.Type      !== undefined) push('type',             body.Type      || 'Development');
     if (body.Task      !== undefined) push('task',             body.Task      || null);
     if (body.Sprint    !== undefined) push('sprint',           body.Sprint    || null);
-    if (body.PR        !== undefined) push('linked_pr_number', body.PR ? Number(body.PR) : null);
 
     if (body.Module !== undefined) {
       let moduleId = null;
@@ -189,6 +218,94 @@ router.put('/:id', requireWrite, async (req, res) => {
   } finally { client.release(); }
 });
 
+// POST /api/status/:id/prs — link one more PR (chips add). Shared by the
+// Assign/Edit modal and the Activity modal so both call the exact same code.
+router.post('/:id/prs', requireWrite, async (req, res) => {
+  const prNumber = Number(req.body.pr_number);
+  if (!prNumber) return res.status(400).json({ error: 'pr_number is required' });
+
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    await setContext(client, ctx(req));
+
+    const { rows: existing } = await client.query(
+      'SELECT id FROM status_assignments WHERE id = $1 AND project_id = $2',
+      [req.params.id, pid(req)]
+    );
+    if (!existing.length) {
+      await client.query('ROLLBACK');
+      return res.status(404).json({ error: 'Assignment not found' });
+    }
+
+    const { rows: posRows } = await client.query(
+      'SELECT COALESCE(MAX(position), -1) + 1 AS next_pos FROM status_assignment_prs WHERE assignment_id = $1',
+      [req.params.id]
+    );
+    await client.query(
+      `INSERT INTO status_assignment_prs (project_id, assignment_id, pr_number, position)
+       VALUES ($1, $2, $3, $4)
+       ON CONFLICT (assignment_id, pr_number) DO NOTHING`,
+      [pid(req), req.params.id, prNumber, posRows[0].next_pos]
+    );
+
+    await client.query(
+      `INSERT INTO activity_logs (project_id, assignment_id, note, type)
+       VALUES ($1, $2, $3, 'pr_linked')`,
+      [pid(req), req.params.id, `PR #${prNumber} linked`]
+    );
+
+    const { rows: result } = await client.query(`${ASSIGNMENT_SELECT} WHERE sa.id = $1`, [req.params.id]);
+    await client.query('COMMIT');
+    res.status(201).json(result[0]);
+  } catch (e) {
+    await client.query('ROLLBACK').catch(() => {});
+    res.status(e.message.includes('not found') ? 404 : 400).json({ error: e.message });
+  } finally { client.release(); }
+});
+
+// DELETE /api/status/:id/prs/:prNumber — unlink one PR (chips remove)
+router.delete('/:id/prs/:prNumber', requireWrite, async (req, res) => {
+  const prNumber = Number(req.params.prNumber);
+
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    await setContext(client, ctx(req));
+
+    const { rows: existing } = await client.query(
+      'SELECT id FROM status_assignments WHERE id = $1 AND project_id = $2',
+      [req.params.id, pid(req)]
+    );
+    if (!existing.length) {
+      await client.query('ROLLBACK');
+      return res.status(404).json({ error: 'Assignment not found' });
+    }
+
+    const { rowCount } = await client.query(
+      'DELETE FROM status_assignment_prs WHERE assignment_id = $1 AND pr_number = $2',
+      [req.params.id, prNumber]
+    );
+    if (!rowCount) {
+      await client.query('ROLLBACK');
+      return res.status(404).json({ error: `PR #${prNumber} is not linked to this assignment` });
+    }
+
+    await client.query(
+      `INSERT INTO activity_logs (project_id, assignment_id, note, type)
+       VALUES ($1, $2, $3, 'pr_unlinked')`,
+      [pid(req), req.params.id, `PR #${prNumber} unlinked`]
+    );
+
+    const { rows: result } = await client.query(`${ASSIGNMENT_SELECT} WHERE sa.id = $1`, [req.params.id]);
+    await client.query('COMMIT');
+    res.json(result[0]);
+  } catch (e) {
+    await client.query('ROLLBACK').catch(() => {});
+    res.status(e.message.includes('not found') ? 404 : 400).json({ error: e.message });
+  } finally { client.release(); }
+});
+
 // DELETE /api/status/:id
 router.delete('/:id', requireWrite, async (req, res) => {
   try {
@@ -210,6 +327,7 @@ router.post('/:id/activity', requireWrite, async (req, res) => {
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
+    await setContext(client, ctx(req));
 
     const { rows: existing } = await client.query(
       'SELECT id FROM status_assignments WHERE id = $1 AND project_id = $2',

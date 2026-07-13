@@ -294,7 +294,6 @@ CREATE TABLE status_assignments (
   module_id        UUID        REFERENCES modules(id) ON DELETE SET NULL,
   page_name        TEXT,
   week_start       DATE        NOT NULL,
-  linked_pr_number INT,        -- pr_number reference (soft link; PR may not exist yet)
   status           TEXT        NOT NULL DEFAULT 'Pending',
   type             TEXT        NOT NULL DEFAULT 'Development'
                                CHECK (type IN ('Development','Iteration Bug','TCR Bug','Prod Bug')),
@@ -307,6 +306,25 @@ CREATE TABLE status_assignments (
 CREATE TRIGGER status_assignments_updated_at
   BEFORE UPDATE ON status_assignments
   FOR EACH ROW EXECUTE FUNCTION set_updated_at();
+
+-- ── status_assignment_prs ─────────────────────────────────────────────────
+-- Many-to-many: a status assignment can link multiple PRs (chips UI in the
+-- Assign/Edit and Activity modals). `position` preserves the order PRs were
+-- added in — the highest position is treated as "most recently linked" for
+-- Task/Sprint auto-fill. Replaces the old scalar linked_pr_number column,
+-- which silently dropped every PR but the first when the tracker.json
+-- importer parsed multiple PR numbers from a single row.
+CREATE TABLE status_assignment_prs (
+  id            UUID  PRIMARY KEY DEFAULT gen_random_uuid(),
+  project_id    UUID  NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+  assignment_id UUID  NOT NULL REFERENCES status_assignments(id) ON DELETE CASCADE,
+  pr_number     INT   NOT NULL,
+  position      INT   NOT NULL DEFAULT 0,
+  UNIQUE (assignment_id, pr_number)
+);
+
+CREATE INDEX idx_assignment_prs_assignment ON status_assignment_prs(assignment_id);
+CREATE INDEX idx_assignment_prs_pr_number  ON status_assignment_prs(project_id, pr_number);
 
 -- ── activity_logs ─────────────────────────────────────────────────────────
 CREATE TABLE activity_logs (
@@ -384,15 +402,18 @@ CREATE INDEX idx_modules_name_trgm    ON modules USING gin(name        gin_trgm_
 -- CompanyAdmin users bypass project_id filtering for cross-project access.
 -- ═══════════════════════════════════════════════════════════════════════════
 
--- Create a non-superuser role for the application
--- (run as superuser during setup; app connects as this role)
--- CREATE ROLE app_user LOGIN PASSWORD 'changeme';
--- GRANT CONNECT ON DATABASE PR Tracker TO app_user;
--- GRANT USAGE ON SCHEMA public TO app_user;
--- GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public TO app_user;
--- GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA public TO app_user;
+-- Create the non-superuser application role and its per-table grants:
+-- see db/enforce-rls.sql (run once as the RDS master user during setup;
+-- the app then connects as app_user, not the superuser).
 
-ALTER TABLE projects           ENABLE ROW LEVEL SECURITY;
+-- projects/project_members are deliberately NOT RLS-enabled: they're the
+-- tenant-hierarchy root, queried cross-project (e.g. listing every project
+-- in a company before any single one is "current" — during login, or in
+-- projectRoutes.js/userRoutes.js's company-wide management screens), so
+-- there's no single current_project_id() to scope them by. Every route
+-- touching them already does its own explicit company_id/project_id
+-- ownership check (requireCompanyAdmin + WHERE company_id = ...) — the same
+-- app-layer control these have always relied on.
 ALTER TABLE modules            ENABLE ROW LEVEL SECURITY;
 ALTER TABLE pages              ENABLE ROW LEVEL SECURITY;
 ALTER TABLE out_of_scope_pages ENABLE ROW LEVEL SECURITY;
@@ -406,9 +427,9 @@ ALTER TABLE pr_dependencies    ENABLE ROW LEVEL SECURITY;
 ALTER TABLE releases           ENABLE ROW LEVEL SECURITY;
 ALTER TABLE release_modules    ENABLE ROW LEVEL SECURITY;
 ALTER TABLE release_pages      ENABLE ROW LEVEL SECURITY;
-ALTER TABLE status_assignments ENABLE ROW LEVEL SECURITY;
-ALTER TABLE activity_logs      ENABLE ROW LEVEL SECURITY;
-ALTER TABLE project_members    ENABLE ROW LEVEL SECURITY;
+ALTER TABLE status_assignments   ENABLE ROW LEVEL SECURITY;
+ALTER TABLE status_assignment_prs ENABLE ROW LEVEL SECURITY;
+ALTER TABLE activity_logs        ENABLE ROW LEVEL SECURITY;
 
 -- Helper: read the current project/company from the session
 CREATE OR REPLACE FUNCTION current_project_id() RETURNS UUID LANGUAGE sql STABLE AS $$
@@ -417,14 +438,6 @@ $$;
 CREATE OR REPLACE FUNCTION current_company_id() RETURNS UUID LANGUAGE sql STABLE AS $$
   SELECT nullif(current_setting('app.company_id', true), '')::uuid;
 $$;
-
--- projects: company members see their company's projects
-CREATE POLICY rls_projects ON projects
-  USING (company_id = current_company_id());
-
--- project_members: users see memberships for their own project
-CREATE POLICY rls_project_members ON project_members
-  USING (project_id = current_project_id());
 
 -- All project-scoped tables share the same pattern
 CREATE POLICY rls_modules            ON modules            USING (project_id = current_project_id());
@@ -441,6 +454,7 @@ CREATE POLICY rls_releases           ON releases           USING (project_id = c
 CREATE POLICY rls_release_modules    ON release_modules    USING (project_id = current_project_id());
 CREATE POLICY rls_release_pages      ON release_pages      USING (project_id = current_project_id());
 CREATE POLICY rls_status_assignments ON status_assignments USING (project_id = current_project_id());
+CREATE POLICY rls_assignment_prs     ON status_assignment_prs USING (project_id = current_project_id());
 CREATE POLICY rls_activity_logs      ON activity_logs      USING (project_id = current_project_id());
 
 
@@ -491,7 +505,7 @@ SELECT
   m.name            AS module,
   sa.page_name,
   sa.week_start,
-  sa.linked_pr_number,
+  (SELECT array_agg(pr_number ORDER BY position) FROM status_assignment_prs WHERE assignment_id = sa.id) AS pr_numbers,
   sa.status,
   sa.type,
   sa.task,

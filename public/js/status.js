@@ -200,15 +200,25 @@ function buildDevCard(dev, items) {
         const lastNote = lastLog
           ? `<span class="st-last-note" title="${escHtml(lastLog.note)}">${timeAgo(lastLog.timestamp)} — ${escHtml(lastLog.note.slice(0, 52))}${lastLog.note.length > 52 ? '…' : ''}</span>`
           : '<span class="st-last-note muted">No activity</span>';
-        const prRec   = a.PR ? (allPRs.find(p => p.PR === Number(a.PR) && p.Module === a.Module) || allPRs.find(p => p.PR === Number(a.PR))) : null;
-        const prBadge = prRec
-          ? `<span class="pr-pill" onclick="openEditPRModal('${prRec.id}')">#${a.PR}</span>`
-          : (a.PR ? `<span class="pr-pill" style="opacity:.5">#${a.PR}</span>` : '<span class="st-dash">—</span>');
-        const taskVal     = (prRec && prRec.Task) || a.Task || null;
+        const prList  = a.PRs || [];
+        const prBadge = prList.length
+          ? prList.map(prNum => {
+              const rec = allPRs.find(p => p.PR === Number(prNum) && p.Module === a.Module) || allPRs.find(p => p.PR === Number(prNum));
+              return rec
+                ? `<span class="pr-pill" onclick="openEditPRModal('${rec.id}')">#${prNum}</span>`
+                : `<span class="pr-pill" style="opacity:.5">#${prNum}</span>`;
+            }).join('')
+          : '<span class="st-dash">—</span>';
+        // Task/Sprint auto-fill falls back to whichever PR was linked most recently
+        const lastPRNum = prList.length ? prList[prList.length - 1] : null;
+        const lastPRRec = lastPRNum
+          ? (allPRs.find(p => p.PR === Number(lastPRNum) && p.Module === a.Module) || allPRs.find(p => p.PR === Number(lastPRNum)))
+          : null;
+        const taskVal     = (lastPRRec && lastPRRec.Task) || a.Task || null;
         const taskDisplay = taskVal
           ? `<span class="st-meta">#${escHtml(String(taskVal))}</span>`
           : '<span class="st-dash">—</span>';
-        const sprintVal     = a.Sprint || (prRec && prRec.Dev_Sprint) || null;
+        const sprintVal     = a.Sprint || (lastPRRec && lastPRRec.Dev_Sprint) || null;
         const sprintDisplay = sprintVal
           ? `<span class="badge badge-gray" style="font-size:10px">${escHtml(String(sprintVal))}</span>`
           : '<span class="st-dash">—</span>';
@@ -226,7 +236,7 @@ function buildDevCard(dev, items) {
           </td>
           <td>${statusCell}</td>
           <td>${_typeBadge(a.Type)}</td>
-          <td>${prBadge}</td>
+          <td class="st-pr-cell">${prBadge}</td>
           <td>${taskDisplay}</td>
           <td>${sprintDisplay}</td>
           <td class="st-act-cell">${lastNote}</td>
@@ -363,8 +373,8 @@ function openAssignmentModal(prefilledDev) {
   modSel.innerHTML = '<option value="">— select —</option>';
   lookupModules.sort((a, b) => (a||'').localeCompare(b||'')).forEach(m => modSel.add(new Option(m, m)));
   modSel.value = '';
-  // PR section
-  populateAmPRSelect();
+  // PR section — no assignment exists yet, chips are staged locally until Assign
+  amPrTA.init({ mode: 'staged', prs: [] });
   const qf1 = document.getElementById('amQuickPRForm'); if (qf1) qf1.style.display = 'none';
   const tb1 = document.getElementById('amToggleQPR');   if (tb1) tb1.textContent = '＋ New PR';
   const qn1 = document.getElementById('am_qpr_number'); if (qn1) qn1.value = '';
@@ -387,8 +397,10 @@ async function openEditAssignmentModal(id) {
   document.getElementById('am_status').value         = assignments.Status || 'In Progress';
   document.getElementById('am_type').value           = assignments.Type   || 'Development';
   document.getElementById('am_note').value           = '';
-  const existingPRRec = assignments.PR
-    ? (allPRs.find(p => p.PR === Number(assignments.PR) && p.Module === assignments.Module) || allPRs.find(p => p.PR === Number(assignments.PR)))
+  const prList = assignments.PRs || [];
+  const lastPRNum = prList.length ? prList[prList.length - 1] : null;
+  const existingPRRec = lastPRNum
+    ? (allPRs.find(p => p.PR === Number(lastPRNum) && p.Module === assignments.Module) || allPRs.find(p => p.PR === Number(lastPRNum)))
     : null;
   document.getElementById('am_task').value   = assignments.Task   || (existingPRRec && existingPRRec.Task)      || '';
   document.getElementById('am_sprint').value = assignments.Sprint || (existingPRRec && existingPRRec.Dev_Sprint) || '';
@@ -407,8 +419,8 @@ async function openEditAssignmentModal(id) {
       if (chip.dataset.value === assignments.Page) chip.classList.add('selected');
     });
   }
-  // PR section
-  populateAmPRSelect(assignments.PR);
+  // PR section — assignment already exists, so add/remove save live immediately
+  amPrTA.init({ mode: 'live', assignmentId: assignments.id, prs: prList });
   const qf2 = document.getElementById('amQuickPRForm'); if (qf2) qf2.style.display = 'none';
   const tb2 = document.getElementById('amToggleQPR');   if (tb2) tb2.textContent = '＋ New PR';
   const qn2 = document.getElementById('am_qpr_number'); if (qn2) qn2.value = '';
@@ -440,6 +452,30 @@ async function amLoadPageOptions() {
   });
 }
 
+// Creates one assignment per chip, tolerating duplicate-row rejections from
+// the server (same developer already assigned to that module/page) instead
+// of aborting the whole batch — returns how many succeeded and which were
+// skipped, so the caller can report both.
+async function createAssignments(chips, dev, mod, status, type, prNumbers, task, sprint, note) {
+  let created = 0;
+  const skipped = [];
+  for (const chip of chips) {
+    const body = { Developer: dev, Module: mod, Page: chip.dataset.value, Week: weekKey(currentWeek), Status: status, Type: type, PRs: prNumbers, Task: task, Sprint: sprint };
+    if (note) body.note = note;
+    const res = await authFetch(`${API}/status`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+    if (res.ok) {
+      created++;
+    } else {
+      const j = await res.json();
+      skipped.push(j.error || `Failed to assign ${chip.dataset.value}`);
+    }
+  }
+  return { created, skipped };
+}
+
 async function saveAssignment() {
   const dev    = document.getElementById('am_dev').value;
   if (!dev)    return showToast('Select a developer', 'error');
@@ -448,14 +484,15 @@ async function saveAssignment() {
   const status = document.getElementById('am_status').value;
   const note   = document.getElementById('am_note').value.trim();
 
-  const prEl = document.getElementById('am_pr');
-  const linkedPR = prEl ? (Number(prEl.value) || null) : null;
   const task   = document.getElementById('am_task').value.trim()   || null;
   const sprint = document.getElementById('am_sprint').value.trim() || null;
   const type   = document.getElementById('am_type').value          || 'Development';
+  const prNumbers    = amPrTA.getSelected();
+  const mostRecentPR = prNumbers.length ? prNumbers[prNumbers.length - 1] : null;
 
   if (stCtx) {
-    // Edit mode: multi-select — update existing assignment for first page, create new for any extras
+    // Edit mode: multi-select — update existing assignment for first page, create new for any extras.
+    // PR links for the assignment being edited already saved live via the chips widget's add/remove.
     const selectedChips = [...document.querySelectorAll('#am_pages .page-chip.selected')];
     if (!selectedChips.length) return showToast('Select at least one page', 'error');
     const [firstChip, ...extraChips] = selectedChips;
@@ -464,7 +501,7 @@ async function saveAssignment() {
     // Update the existing assignment record
     const res = await authFetch(`${API}/status/${stCtx.id}`, {
       method: 'PUT', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ Developer: dev, Module: mod, Page: firstChip.dataset.value, Status: status, Type: type, PR: linkedPR, Task: task, Sprint: sprint }),
+      body: JSON.stringify({ Developer: dev, Module: mod, Page: firstChip.dataset.value, Status: status, Type: type, Task: task, Sprint: sprint }),
     });
     if (!res.ok) { const j = await res.json(); return showToast(j.error, 'error'); }
     if (oldStatus !== status) {
@@ -479,47 +516,37 @@ async function saveAssignment() {
         body: JSON.stringify({ note, type: 'update' }),
       });
     }
-    if (linkedPR && (task || sprint)) {
+    if (mostRecentPR && (task || sprint)) {
       const prUpdates = {};
       if (task)   prUpdates.Task       = task;
       if (sprint) prUpdates.Dev_Sprint = sprint;
-      await authFetch(`${API}/prs/by-pr/${linkedPR}`, {
+      await authFetch(`${API}/prs/by-pr/${mostRecentPR}`, {
         method: 'PUT', body: JSON.stringify(prUpdates),
       });
     }
-    // Create new assignments for any additional pages selected
-    for (const chip of extraChips) {
-      const body = { Developer: dev, Module: mod, Page: chip.dataset.value, Week: weekKey(currentWeek), Status: status, Type: type, PR: linkedPR, Task: task, Sprint: sprint };
-      if (note) body.note = note;
-      await authFetch(`${API}/status`, {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body),
-      });
+    // Create new assignments for any additional pages selected — inherit the same PR chips
+    const { created, skipped } = await createAssignments(extraChips, dev, mod, status, type, prNumbers, task, sprint, note);
+    if (skipped.length) {
+      showToast(skipped.join('; '), 'error');
+    } else {
+      const total = selectedChips.length;
+      showToast(total === 1 ? 'Assignment updated' : `Assignment updated + ${created} new page${created !== 1 ? 's' : ''} assigned`, 'success');
     }
-    const total = selectedChips.length;
-    showToast(total === 1 ? 'Assignment updated' : `Assignment updated + ${total - 1} new page${total > 2 ? 's' : ''} assigned`, 'success');
   } else {
-    // Create mode: multi-select — one assignment per page
+    // Create mode: multi-select — one assignment per page, all sharing the staged PR chips
     const selectedChips = [...document.querySelectorAll('#am_pages .page-chip.selected')];
     if (!selectedChips.length) return showToast('Select at least one page', 'error');
-    for (const chip of selectedChips) {
-      const body = { Developer: dev, Module: mod, Page: chip.dataset.value, Week: weekKey(currentWeek), Status: status, Type: type, PR: linkedPR, Task: task, Sprint: sprint };
-      if (note) body.note = note;
-      const res = await authFetch(`${API}/status`, {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body),
-      });
-      if (!res.ok) { const j = await res.json(); return showToast(j.error, 'error'); }
-    }
-    if (linkedPR && (task || sprint)) {
+    const { created, skipped } = await createAssignments(selectedChips, dev, mod, status, type, prNumbers, task, sprint, note);
+    if (!created) { return showToast(skipped.join('; ') || 'Nothing was assigned', 'error'); }
+    if (mostRecentPR && (task || sprint)) {
       const prUpdates = {};
       if (task)   prUpdates.Task       = task;
       if (sprint) prUpdates.Dev_Sprint = sprint;
-      await authFetch(`${API}/prs/by-pr/${linkedPR}`, {
+      await authFetch(`${API}/prs/by-pr/${mostRecentPR}`, {
         method: 'PUT', body: JSON.stringify(prUpdates),
       });
     }
-    showToast(selectedChips.length === 1 ? 'Page assigned' : `${selectedChips.length} pages assigned`, 'success');
+    showToast(skipped.length ? skipped.join('; ') : (created === 1 ? 'Page assigned' : `${created} pages assigned`), skipped.length ? 'error' : 'success');
   }
   closeModal('assignmentModal');
   renderStatusTracker();
@@ -622,20 +649,7 @@ function formatTimestamp(isoStr) {
 }
 
 function loadActivityPRSection(a) {
-  const prSel = document.getElementById('actPRSelect');
-  prSel.innerHTML = '<option value="">— link existing PR —</option>';
-  const unlinked = allPRs.filter(p => p.PR !== a.PR).sort((x, y) => y.PR - x.PR);
-  unlinked.forEach(p => prSel.add(new Option(
-    `#${p.PR} — ${p.Module || '?'} — ${p.Developer || '?'} (${p.Status || '?'})`, p.PR
-  )));
-  const actPrRec = a.PR ? (allPRs.find(p => p.PR === Number(a.PR) && p.Module === a.Module) || allPRs.find(p => p.PR === Number(a.PR))) : null;
-  document.getElementById('actLinkedPR').innerHTML = actPrRec
-    ? `<span class="pr-pill" onclick="closeModal('activityModal');openEditPRModal('${actPrRec.id}')">#${a.PR}</span>
-       <button class="btn btn-danger btn-xs" onclick="unlinkPRFromAssignment()">Unlink</button>`
-    : (a.PR
-        ? `<span class="pr-pill" style="opacity:.5">#${a.PR}</span>
-           <button class="btn btn-danger btn-xs" onclick="unlinkPRFromAssignment()">Unlink</button>`
-        : '<span style="color:var(--text2);font-size:12px">No PR linked</span>');
+  actPrTA.init({ mode: 'live', assignmentId: a.id, prs: a.PRs || [] });
 }
 
 async function addActivityNote() {
@@ -686,46 +700,9 @@ async function updateStatusFromModal() {
   renderStatusTracker();
 }
 
-async function linkPRFromActivity() {
-  const prNum = Number(document.getElementById('actPRSelect').value);
-  if (!prNum) return showToast('Select a PR first', 'error');
-  const res = await authFetch(`${API}/status/${stCtx.id}`, {
-    method: 'PUT', headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ PR: prNum }),
-  });
-  if (!res.ok) { const j = await res.json(); return showToast(j.error, 'error'); }
-  await authFetch(`${API}/status/${stCtx.id}/activity`, {
-    method: 'POST', headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ note: `PR #${prNum} linked`, type: 'pr_linked' }),
-  });
-  stCtx = { ...stCtx, PR: prNum };
-  showToast(`PR #${prNum} linked`, 'success');
-  await refreshActivityModal();
-  renderStatusTracker();
-}
-
-async function unlinkPRFromAssignment() {
-  const prNum = stCtx.PR;
-  if (!prNum) return;
-  if (!confirm(`Unlink PR #${prNum} from this assignment?`)) return;
-  await authFetch(`${API}/status/${stCtx.id}`, {
-    method: 'PUT', headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ PR: null }),
-  });
-  await authFetch(`${API}/status/${stCtx.id}/activity`, {
-    method: 'POST', headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ note: `PR #${prNum} unlinked`, type: 'pr_unlinked' }),
-  });
-  stCtx = { ...stCtx, PR: null };
-  showToast(`PR #${prNum} unlinked`, 'success');
-  await refreshActivityModal();
-  renderStatusTracker();
-}
-
 async function refreshActivityModal() {
-  const updated = await api('status');
-  stAssignments  = updated || [];
-  const fresh    = stAssignments.find(x => x.id === stCtx.id);
+  await refreshAssignments();
+  const fresh = stAssignments.find(x => x.id === stCtx.id);
   if (!fresh) return;
   stCtx = fresh;
   document.getElementById('actStatus').value = fresh.Status;
@@ -733,25 +710,220 @@ async function refreshActivityModal() {
   loadActivityPRSection(fresh);
 }
 
-// ── Assign-modal PR helpers ──────────────────────────────
-function populateAmPRSelect(selectedPR) {
-  const sel = document.getElementById('am_pr');
-  if (!sel) return;
-  sel.innerHTML = '<option value="">— no PR —</option>';
-  const active = allPRs
-    .filter(p => {
-      const s = (p.Status || '').toLowerCase();
-      // Always include the currently linked PR even if its status is outside the filter
-      if (selectedPR && p.PR === selectedPR) return true;
-      return s === 'development inprogress' || s === 'dev pr in review';
-    })
-    .sort((a, b) => b.PR - a.PR);
-  active.forEach(p => sel.add(new Option(
-    `#${p.PR}${p.Module ? ' — ' + p.Module : ''}${p.Developer ? ' (' + p.Developer + ')' : ''}`,
-    p.PR
-  )));
-  if (selectedPR) sel.value = selectedPR;
+// ── Shared PR-linking helpers ─────────────────────────────
+// Both chip widgets below call these same two functions to add/remove a PR
+// link — one HTTP call path for the Assign/Edit modal and the Activity modal.
+async function apiLinkPR(assignmentId, prNum) {
+  const res = await authFetch(`${API}/status/${assignmentId}/prs`, {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ pr_number: prNum }),
+  });
+  if (!res.ok) { const j = await res.json(); showToast(j.error || 'Failed to link PR', 'error'); return false; }
+  showToast(`PR #${prNum} linked`, 'success');
+  return true;
 }
+
+async function apiUnlinkPR(assignmentId, prNum) {
+  const res = await authFetch(`${API}/status/${assignmentId}/prs/${prNum}`, { method: 'DELETE' });
+  if (!res.ok) { const j = await res.json(); showToast(j.error || 'Failed to unlink PR', 'error'); return false; }
+  showToast(`PR #${prNum} unlinked`, 'success');
+  return true;
+}
+
+async function refreshAssignments() {
+  stAssignments = (await api('status')) || [];
+}
+
+function prLabel(p) {
+  return `#${p.PR}${p.Module ? ' — ' + p.Module : ''}${p.Developer ? ' (' + p.Developer + ')' : ''}`;
+}
+
+// Single shared multi-PR chips widget, used identically by the Assign/Edit
+// modal's "Linked PR" field and the Activity modal's "PR Association" field —
+// one implementation so both stay in sync and a filtering/linking fix only
+// has to be made once.
+//
+// Two modes:
+//  - 'staged': no assignment exists yet (Create-mode) — chips are tracked
+//    only in memory; the caller reads them back via getSelected() to send
+//    as the initial PRs array when creating the assignment.
+//  - 'live': the assignment already exists — every add/remove immediately
+//    calls the shared apiLinkPR/apiUnlinkPR routes via cfg.onAdd/cfg.onRemove
+//    (assignmentId, prNum) => bool, which also does whatever refresh that
+//    modal needs. The widget's own chip list is only ever repopulated by a
+//    later init() call (driven by that refresh), never by local bookkeeping,
+//    so it can't drift from the server.
+function createPrChips(cfg) {
+  let items        = []; // [{PR, Module, Developer, Status, id?}, ...] in position order
+  let mode         = 'staged';
+  let assignmentId = null;
+  let activeIndex  = -1;
+
+  const el = (id) => document.getElementById(id);
+  const selectedPRs = () => items.map(i => i.PR);
+
+  function candidates() {
+    const { developer, module } = cfg.getFilters() || {};
+    const exclude = cfg.getExcludePR ? cfg.getExcludePR() : null;
+    const already = new Set(selectedPRs());
+    return allPRs
+      .filter(p => p.PR !== exclude)
+      .filter(p => !already.has(p.PR))
+      .filter(p => !developer || p.Developer === developer)
+      .filter(p => !module    || p.Module    === module)
+      .sort((a, b) => b.PR - a.PR);
+  }
+
+  function search(qRaw) {
+    const q    = (qRaw || '').trim().toLowerCase();
+    const base = candidates();
+    if (!q) return base.slice(0, 40);
+    return base
+      .filter(p =>
+        String(p.PR).includes(q) ||
+        (p.Module    && p.Module.toLowerCase().includes(q)) ||
+        (p.Developer && p.Developer.toLowerCase().includes(q))
+      )
+      .slice(0, 40);
+  }
+
+  function renderChips() {
+    const box = el(cfg.chipsId);
+    box.innerHTML = items.length
+      ? items.map(p => `<span class="pr-pill">
+          <span${p.id ? ` onclick="openEditPRModal('${p.id}')"` : ''}>#${p.PR}</span>
+          <span class="pr-pill-x" onmousedown="event.preventDefault();${cfg.name}.remove(${p.PR})" title="Unlink">✕</span>
+        </span>`).join('')
+      : '<span class="st-dash" style="font-size:12px">No PR linked</span>';
+  }
+
+  function renderList(list) {
+    const l = el(cfg.listId);
+    l.innerHTML = list.length
+      ? list.map(p => `<div class="ta-item" data-pr="${p.PR}" onmousedown="event.preventDefault();${cfg.name}.add(${p.PR})">
+          <span>${escHtml(prLabel(p))}</span>
+          ${p.Status ? `<span class="ta-item-status">${escHtml(p.Status)}</span>` : ''}
+        </div>`).join('')
+      : `<div class="ta-empty">No matching PRs</div>`;
+    l.style.display = 'block';
+  }
+
+  function hideList() {
+    const l = el(cfg.listId);
+    if (l) l.style.display = 'none';
+  }
+
+  function highlight(nodes) {
+    nodes.forEach((n, i) => n.classList.toggle('active', i === activeIndex));
+    if (nodes[activeIndex]) nodes[activeIndex].scrollIntoView({ block: 'nearest' });
+  }
+
+  const widget = {
+    init(opts = {}) {
+      mode         = opts.mode || 'staged';
+      assignmentId = opts.assignmentId || null;
+      items        = (opts.prs || []).map(num => allPRs.find(p => p.PR === Number(num)) || { PR: Number(num) });
+      el(cfg.inputId).value = '';
+      hideList();
+      renderChips();
+    },
+    getSelected() { return selectedPRs(); },
+    async add(prNum) {
+      if (selectedPRs().includes(prNum)) { el(cfg.inputId).value = ''; hideList(); return; }
+      el(cfg.inputId).value = '';
+      hideList();
+      if (mode === 'live') {
+        if (cfg.onAdd) await cfg.onAdd(assignmentId, prNum);
+        return;
+      }
+      const rec = allPRs.find(p => p.PR === prNum);
+      items.push(rec || { PR: prNum });
+      renderChips();
+    },
+    async remove(prNum) {
+      if (mode === 'live') {
+        if (cfg.onRemove) await cfg.onRemove(assignmentId, prNum);
+        return;
+      }
+      items = items.filter(p => p.PR !== prNum);
+      renderChips();
+    },
+    onInput() { activeIndex = -1; renderList(search(el(cfg.inputId).value)); },
+    onFocus()  { activeIndex = -1; renderList(search(el(cfg.inputId).value)); },
+    hideList,
+    onKeyDown(e) {
+      const l = el(cfg.listId);
+      if (!l || l.style.display === 'none') return;
+      const nodes = [...l.querySelectorAll('.ta-item[data-pr]')];
+      if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        if (!nodes.length) return;
+        activeIndex = Math.min(activeIndex + 1, nodes.length - 1);
+        highlight(nodes);
+      } else if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        if (!nodes.length) return;
+        activeIndex = Math.max(activeIndex - 1, 0);
+        highlight(nodes);
+      } else if (e.key === 'Enter') {
+        if (activeIndex >= 0 && nodes[activeIndex]) {
+          e.preventDefault();
+          widget.add(Number(nodes[activeIndex].dataset.pr));
+        }
+      } else if (e.key === 'Escape') {
+        hideList();
+      }
+    },
+    // Developer/module filter changed — just re-hide the list; already-added
+    // chips are never retroactively removed by a filter change.
+    refreshIfOpen() { hideList(); },
+  };
+  return widget;
+}
+
+// Assign/Edit Assignment modal — "Linked PR" chips, scoped to the developer + module selected in the form
+const amPrTA = createPrChips({
+  name: 'amPrTA',
+  inputId: 'am_pr_input', listId: 'am_pr_list', chipsId: 'am_pr_chips',
+  getFilters: () => ({
+    developer: document.getElementById('am_dev')?.value || '',
+    module:    document.getElementById('am_module')?.value || '',
+  }),
+  onAdd: async (assignmentId, prNum) => {
+    const ok = await apiLinkPR(assignmentId, prNum);
+    if (ok) await amPrTA_refreshLive(assignmentId);
+    return ok;
+  },
+  onRemove: async (assignmentId, prNum) => {
+    const ok = await apiUnlinkPR(assignmentId, prNum);
+    if (ok) await amPrTA_refreshLive(assignmentId);
+    return ok;
+  },
+});
+
+async function amPrTA_refreshLive(assignmentId) {
+  await refreshAssignments();
+  const fresh = stAssignments.find(x => x.id === assignmentId);
+  if (fresh) amPrTA.init({ mode: 'live', assignmentId, prs: fresh.PRs });
+  renderStatusTracker();
+}
+
+// Activity modal — "PR Association" chips, scoped to the assignment's own developer + module
+const actPrTA = createPrChips({
+  name: 'actPrTA',
+  inputId: 'act_pr_input', listId: 'act_pr_list', chipsId: 'act_pr_chips',
+  getFilters: () => (stCtx ? { developer: stCtx.Developer, module: stCtx.Module } : {}),
+  onAdd: async (assignmentId, prNum) => {
+    const ok = await apiLinkPR(assignmentId, prNum);
+    if (ok) { await refreshActivityModal(); renderStatusTracker(); }
+    return ok;
+  },
+  onRemove: async (assignmentId, prNum) => {
+    const ok = await apiUnlinkPR(assignmentId, prNum);
+    if (ok) { await refreshActivityModal(); renderStatusTracker(); }
+    return ok;
+  },
+});
 
 function toggleAmQuickPRForm() {
   const form = document.getElementById('amQuickPRForm');
@@ -801,13 +973,7 @@ async function saveAmQuickPR() {
 
   const created = prJson.data || { PR: prNum, Status: status };
   allPRs = [created, ...allPRs.filter(p => p.PR !== prNum)];
-  populateAmPRSelect(prNum);
-  // If status doesn't match the filter, ensure the option is still present and selected
-  const sel = document.getElementById('am_pr');
-  if (Number(sel.value) !== prNum) {
-    sel.add(new Option(`#${prNum} (${status})`, prNum));
-    sel.value = prNum;
-  }
+  await amPrTA.add(prNum);
 
   // Propagate sprint to the assignment form fields
   if (devSprint) {
@@ -859,18 +1025,11 @@ async function saveQuickPR() {
   const prJson = await prRes.json();
   if (!prRes.ok) return showToast(prJson.error || 'Failed to create PR', 'error');
 
-  // Link the new PR to this assignment
-  await authFetch(`${API}/status/${stCtx.id}`, {
-    method: 'PUT', headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ PR: prNum }),
-  });
-  await authFetch(`${API}/status/${stCtx.id}/activity`, {
-    method: 'POST', headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ note: `PR #${prNum} created and linked`, type: 'pr_linked' }),
-  });
-
-  stCtx = { ...stCtx, PR: prNum };
-  showToast(`PR #${prNum} created and linked`, 'success');
+  // Refresh the global PR list so the chips widget can find the new record,
+  // then link it through the exact same route the search-and-pick flow uses.
+  const fresh = await api('prs');
+  allPRs = (fresh && fresh.data) || [];
+  await actPrTA.add(prNum);
 
   // Hide quick form, refresh
   document.getElementById('actQuickPRForm').style.display = 'none';
@@ -878,10 +1037,4 @@ async function saveQuickPR() {
   document.getElementById('qpr_number').value             = '';
   document.getElementById('qpr_raised').value             = '';
   document.getElementById('qpr_devSprint').value          = '';
-
-  // Refresh PRs global list + modal
-  const fresh = await api('prs');
-  allPRs = (fresh && fresh.data) || [];
-  await refreshActivityModal();
-  renderStatusTracker();
 }

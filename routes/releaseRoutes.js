@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { pool, query } = require('../services/pgClient');
+const { pool, query, setContext } = require('../services/pgClient');
 const { requireProject, requireWrite } = require('../middleware/auth');
 
 router.use(requireProject);
@@ -242,6 +242,7 @@ router.post('/', requireWrite, async (req, res) => {
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
+    await setContext(client, ctx(req));
     const releaseId = await upsertRelease(client, pid(req), req.body);
     const { rows } = await client.query(`${RELEASE_SELECT} WHERE r.id = $1`, [releaseId]);
     await client.query('COMMIT');
@@ -257,6 +258,7 @@ router.put('/:releaseNumber', requireWrite, async (req, res) => {
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
+    await setContext(client, ctx(req));
 
     // Verify existence, then merge existing fields with incoming body
     const { rows: existing } = await client.query(
@@ -288,6 +290,7 @@ router.post('/:releaseNumber/complete', requireWrite, async (req, res) => {
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
+    await setContext(client, ctx(req));
     const result = await completeRelease(client, pid(req), req.params.releaseNumber);
     await client.query('COMMIT');
     res.json({ message: `Release ${req.params.releaseNumber} completed`, ...result });
