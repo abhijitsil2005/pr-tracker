@@ -74,7 +74,14 @@ async function insertPRRelations(client, projectId, prId, pages, deps) {
 async function syncPRReleasePages(client, projectId, {
   prNumber, oldModule, oldPages, newModule, newPages, oldTargetRelease, newTargetRelease, task,
 }) {
-  if (oldTargetRelease && oldModule) {
+  // Only clear out the PR's old release/module placement when it's actually
+  // moving (release or module changed). Otherwise — e.g. a Task-only edit
+  // that re-triggers this sync with the same release+module — deleting here
+  // would remove the very row the INSERT below is about to re-create, so
+  // its ON CONFLICT never fires and the fresh INSERT (which doesn't carry
+  // feature_flag/feature_flag_status) silently resets those to defaults.
+  const locationChanged = oldTargetRelease !== newTargetRelease || oldModule !== newModule;
+  if (locationChanged && oldTargetRelease && oldModule) {
     await client.query(
       `DELETE FROM release_pages
        WHERE pr_number = $1

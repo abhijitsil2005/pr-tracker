@@ -716,6 +716,7 @@ async function addSetupRelease() {
   showToast(`Release ${num} added`, 'success');
   const data = await authFetch(`${API}/onboard/${_relPlanProjectId}/releases`).then(r => r.json());
   _setupRenderReleases(Array.isArray(data) ? data : []);
+  refreshTimeline();
 }
 
 async function removeSetupRelease(number) {
@@ -729,6 +730,7 @@ async function removeSetupRelease(number) {
   showToast(`Release ${number} removed`, 'success');
   const data = await authFetch(`${API}/onboard/${_relPlanProjectId}/releases`).then(r => r.json());
   _setupRenderReleases(Array.isArray(data) ? data : []);
+  refreshTimeline();
 }
 
 // ── Sprint Dates ───────────────────────────────────────
