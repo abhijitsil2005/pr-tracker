@@ -106,10 +106,13 @@ router.post('/tracker', async (req, res) => {
         [projectId]
       );
 
-      // Index by "module|||page" (case-insensitive)
+      // Index by "developer|||module|||page" (case-insensitive) — must include
+      // developer, or two different people assigned the same module/page in
+      // tracker.json collapse onto one row and silently steal each other's
+      // assignment instead of getting separate ones.
       const assignmentIndex = new Map();
       existingRows.forEach(a => {
-        const key = `${(a.module || '').toLowerCase()}|||${(a.page || '').toLowerCase()}`;
+        const key = `${(a.developer || '').toLowerCase()}|||${(a.module || '').toLowerCase()}|||${(a.page || '').toLowerCase()}`;
         assignmentIndex.set(key, a);
       });
 
@@ -167,7 +170,10 @@ router.post('/tracker', async (req, res) => {
           prUpdateMap.set(num, acc);
         });
 
-        const key      = `${module.toLowerCase()}|||${page.toLowerCase()}`;
+        // Blank POC falls into the same "Unknown" bucket new rows are stored
+        // under below, so re-imports of unassigned rows keep matching it.
+        const devKey   = (poc || 'Unknown').toLowerCase();
+        const key      = `${devKey}|||${module.toLowerCase()}|||${page.toLowerCase()}`;
         const existing = assignmentIndex.get(key);
 
         if (existing) {

@@ -166,15 +166,53 @@ router.put('/:id', requireWrite, async (req, res) => {
     await setContext(client, ctx(req));
 
     const { rows: existing } = await client.query(
-      'SELECT id FROM status_assignments WHERE id = $1 AND project_id = $2',
+      'SELECT developer, module_id, page_name FROM status_assignments WHERE id = $1 AND project_id = $2',
       [req.params.id, pid(req)]
     );
     if (!existing.length) {
       await client.query('ROLLBACK');
       return res.status(404).json({ error: 'Assignment not found' });
     }
+    const current = existing[0];
 
     const body = req.body;
+
+    let moduleId = current.module_id;
+    const moduleProvided = body.Module !== undefined;
+    if (moduleProvided) {
+      moduleId = null;
+      if (body.Module) {
+        const { rows } = await client.query(
+          'SELECT id FROM modules WHERE project_id = $1 AND name = $2',
+          [pid(req), body.Module]
+        );
+        moduleId = rows[0]?.id || null;
+      }
+    }
+
+    // Same duplicate check POST uses — only re-run it when the developer,
+    // module, or page is actually changing, since those are the only fields
+    // that make up the "one instance per developer/module/page" key.
+    if (body.Developer !== undefined || body.Page !== undefined || moduleProvided) {
+      const effectiveDeveloper = body.Developer !== undefined ? body.Developer : current.developer;
+      const effectivePage      = body.Page      !== undefined ? (body.Page || null) : current.page_name;
+
+      const { rows: dupRows } = await client.query(
+        `SELECT id FROM status_assignments
+         WHERE project_id = $1 AND developer = $2
+           AND module_id IS NOT DISTINCT FROM $3
+           AND page_name IS NOT DISTINCT FROM $4
+           AND id <> $5`,
+        [pid(req), effectiveDeveloper, moduleId, effectivePage, req.params.id]
+      );
+      if (dupRows.length) {
+        await client.query('ROLLBACK');
+        return res.status(409).json({
+          error: `${effectiveDeveloper} is already assigned to ${body.Module || 'this module'} / ${effectivePage || 'this page'}`,
+        });
+      }
+    }
+
     const sets = [];
     const vals = [req.params.id];
     const push = (col, val) => { vals.push(val); sets.push(`${col} = $${vals.length}`); };
@@ -186,18 +224,7 @@ router.put('/:id', requireWrite, async (req, res) => {
     if (body.Type      !== undefined) push('type',             body.Type      || 'Development');
     if (body.Task      !== undefined) push('task',             body.Task      || null);
     if (body.Sprint    !== undefined) push('sprint',           body.Sprint    || null);
-
-    if (body.Module !== undefined) {
-      let moduleId = null;
-      if (body.Module) {
-        const { rows } = await client.query(
-          'SELECT id FROM modules WHERE project_id = $1 AND name = $2',
-          [pid(req), body.Module]
-        );
-        moduleId = rows[0]?.id || null;
-      }
-      push('module_id', moduleId);
-    }
+    if (moduleProvided)                push('module_id',       moduleId);
 
     if (sets.length) {
       await client.query(

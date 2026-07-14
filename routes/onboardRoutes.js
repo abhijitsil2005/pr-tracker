@@ -56,7 +56,7 @@ router.post('/:projectId/team', canManage, async (req, res) => {
     const { rows } = await query(
       `INSERT INTO team_members (project_id, role, name)
        VALUES ($1, $2, $3)
-       ON CONFLICT (project_id, name) DO UPDATE SET role = EXCLUDED.role
+       ON CONFLICT (project_id, role, name) DO UPDATE SET role = EXCLUDED.role
        RETURNING id, role, name`,
       [req.params.projectId, role.trim(), name.trim()],
       ctx(req.params.projectId)
