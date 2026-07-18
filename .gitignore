@@ -1,5 +1,6 @@
 .vscode/launch.json
 .env
+node_modules/
 pr-tracker.zip
 .DS_Store
 pr-tracker1.zip

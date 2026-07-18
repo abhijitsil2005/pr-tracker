@@ -1,7 +1,7 @@
 {
   "name": "pr-tracker",
   "version": "1.0.0",
-  "description": "ProjectPulse - Know the Pulse of Every PR, Sprint and Release.",
+  "description": "PR Tracker - Track PRs for each release",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
