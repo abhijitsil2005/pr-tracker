@@ -17,6 +17,7 @@ const RELEASE_SELECT = `
     r.release_date       AS "Release_Date",
     r.code_freeze        AS "Code_Freeze",
     r.regression_start   AS "Regression_Start",
+    r.sprint             AS "Sprint",
     r.completed          AS "Completed",
     r.completed_at       AS "Completed_At",
     COALESCE(
@@ -47,18 +48,20 @@ async function upsertRelease(client, projectId, body) {
   const releaseDate     = body.Release_Date     ?? body.release_date     ?? null;
   const codeFreeze      = body.Code_Freeze      ?? body.code_freeze      ?? null;
   const regressionStart = body.Regression_Start ?? body.regression_start ?? null;
+  const sprint          = body.Sprint           ?? body.sprint           ?? null;
   const modules         = body.Modules          ?? body.modules          ?? [];
 
   const { rows } = await client.query(
     `INSERT INTO releases
-       (project_id, release_number, release_date, code_freeze, regression_start)
-     VALUES ($1, $2, $3, $4, $5)
+       (project_id, release_number, release_date, code_freeze, regression_start, sprint)
+     VALUES ($1, $2, $3, $4, $5, $6)
      ON CONFLICT (project_id, release_number) DO UPDATE SET
        release_date      = EXCLUDED.release_date,
        code_freeze       = EXCLUDED.code_freeze,
-       regression_start  = EXCLUDED.regression_start
+       regression_start  = EXCLUDED.regression_start,
+       sprint            = EXCLUDED.sprint
      RETURNING id`,
-    [projectId, releaseNumber, releaseDate, codeFreeze, regressionStart]
+    [projectId, releaseNumber, releaseDate, codeFreeze, regressionStart, sprint]
   );
   const releaseId = rows[0].id;
 

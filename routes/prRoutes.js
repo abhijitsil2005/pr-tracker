@@ -65,6 +65,64 @@ async function insertPRRelations(client, projectId, prId, pages, deps) {
   }
 }
 
+// Every Dependent_PRs entry must reference a PR that actually exists in this project —
+// the column itself has no FK (see pr_dependencies below), but the app no longer lets
+// the UI/API create a dangling reference. Throws with a message that intentionally
+// avoids the substring "not found" so route catch blocks (which map that phrase to 404)
+// report this as a 400 instead.
+async function validateDependentPRs(client, projectId, depNumbers) {
+  const unique = [...new Set(depNumbers || [])];
+  if (!unique.length) return;
+  const { rows } = await client.query(
+    'SELECT DISTINCT pr_number FROM prs WHERE project_id = $1 AND pr_number = ANY($2::int[])',
+    [projectId, unique]
+  );
+  const found = new Set(rows.map(r => r.pr_number));
+  const missing = unique.filter(n => !found.has(n));
+  if (missing.length) {
+    throw new Error(`Dependent PR${missing.length > 1 ? 's' : ''} ${missing.map(n => '#' + n).join(', ')} do${missing.length > 1 ? '' : 'es'} not exist in this project`);
+  }
+}
+
+// Keep Dependent_PRs symmetric: if PR #9290 declares #9340 as a dependent, #9340 should
+// also list #9290, and dropping the link on either side drops it on both. Diffs
+// beforeDeps/afterDeps for the PR being saved and adds/removes the reciprocal row on
+// every row sharing each affected PR number (a number can span multiple modules).
+async function syncReciprocalDependencies(client, projectId, ownerPrNumber, beforeDeps, afterDeps) {
+  const before = new Set(beforeDeps || []);
+  const after  = new Set(afterDeps  || []);
+  const added   = [...after].filter(n => !before.has(n));
+  const removed = [...before].filter(n => !after.has(n));
+
+  for (const depNumber of added) {
+    if (depNumber === ownerPrNumber) continue;
+    const { rows: targetRows } = await client.query(
+      'SELECT id FROM prs WHERE project_id = $1 AND pr_number = $2',
+      [projectId, depNumber]
+    );
+    for (const { id: targetId } of targetRows) {
+      await client.query(
+        `INSERT INTO pr_dependencies (pr_id, project_id, dependent_pr_number)
+         VALUES ($1, $2, $3) ON CONFLICT (pr_id, dependent_pr_number) DO NOTHING`,
+        [targetId, projectId, ownerPrNumber]
+      );
+    }
+  }
+
+  for (const depNumber of removed) {
+    const { rows: targetRows } = await client.query(
+      'SELECT id FROM prs WHERE project_id = $1 AND pr_number = $2',
+      [projectId, depNumber]
+    );
+    for (const { id: targetId } of targetRows) {
+      await client.query(
+        'DELETE FROM pr_dependencies WHERE pr_id = $1 AND dependent_pr_number = $2',
+        [targetId, ownerPrNumber]
+      );
+    }
+  }
+}
+
 // Keep a PR's entry in the Releases page's Modules→Pages tree (release_modules/
 // release_pages) in step with its Target_Release: drop it from whichever release
 // it used to point to, and add it to the release matching the new date.
@@ -267,6 +325,8 @@ router.post('/', requireWrite, async (req, res) => {
     await client.query('BEGIN');
     await setContext(client, ctx(req));
 
+    await validateDependentPRs(client, pid(req), deps);
+
     let moduleId = null;
     if (body.Module) {
       const { rows } = await client.query(
@@ -317,6 +377,7 @@ router.post('/', requireWrite, async (req, res) => {
     const prId = rows[0].id;
 
     await insertPRRelations(client, pid(req), prId, pages, deps);
+    await syncReciprocalDependencies(client, pid(req), Number(body.PR), [], deps);
 
     const { rows: created } = await client.query(`${PR_SELECT} WHERE p.id = $1`, [prId]);
     const sync = await maybeSyncPRReleasePages(
@@ -351,6 +412,7 @@ router.put('/by-pr/:prNumber', requireWrite, async (req, res) => {
 
     const body = { ...req.body };
     if (body.Dependent_PRs) body.Dependent_PRs = body.Dependent_PRs.map(Number);
+    if (body.Dependent_PRs !== undefined) await validateDependentPRs(client, pid(req), body.Dependent_PRs);
 
     const { sets, vals } = await buildPRSets(client, pid(req), body);
     const results = [];
@@ -376,6 +438,8 @@ router.put('/by-pr/:prNumber', requireWrite, async (req, res) => {
       if (body.Dependent_PRs !== undefined) {
         await client.query('DELETE FROM pr_dependencies WHERE pr_id = $1', [id]);
         await insertPRRelations(client, pid(req), id, null, body.Dependent_PRs);
+        const ownerPrNumber = body.PR !== undefined ? Number(body.PR) : before.PR;
+        await syncReciprocalDependencies(client, pid(req), ownerPrNumber, before.Dependent_PRs, body.Dependent_PRs);
       }
 
       syncs.push(await maybeSyncPRReleasePages(client, pid(req), before, body));
@@ -410,6 +474,7 @@ router.put('/:id', requireWrite, async (req, res) => {
     if (body.PR)            body.PR = Number(body.PR);
     if (body.Dependent_PRs) body.Dependent_PRs = body.Dependent_PRs.map(Number);
     if (body.Page && !Array.isArray(body.Page)) body.Page = [body.Page];
+    if (body.Dependent_PRs !== undefined) await validateDependentPRs(client, pid(req), body.Dependent_PRs);
 
     const { sets, vals } = await buildPRSets(client, pid(req), body);
 
@@ -428,6 +493,8 @@ router.put('/:id', requireWrite, async (req, res) => {
     if (body.Dependent_PRs !== undefined) {
       await client.query('DELETE FROM pr_dependencies WHERE pr_id = $1', [req.params.id]);
       await insertPRRelations(client, pid(req), req.params.id, null, body.Dependent_PRs);
+      const ownerPrNumber = body.PR !== undefined ? body.PR : before.PR;
+      await syncReciprocalDependencies(client, pid(req), ownerPrNumber, before.Dependent_PRs, body.Dependent_PRs);
     }
 
     const sync = await maybeSyncPRReleasePages(client, pid(req), before, body);

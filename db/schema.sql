@@ -37,6 +37,11 @@ CREATE TABLE projects (
   name        TEXT        NOT NULL,
   description TEXT,
   active      BOOLEAN     NOT NULL DEFAULT true,
+  -- Which vocabulary the UI uses for the modules/pages hierarchy:
+  -- 'module_page' -> Module / Page (default), 'feature_functionality' -> Feature / Functionality.
+  -- Purely cosmetic — underlying modules/pages tables and structure are unchanged.
+  terminology TEXT        NOT NULL DEFAULT 'module_page'
+                          CHECK (terminology IN ('module_page', 'feature_functionality')),
   created_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
   UNIQUE (company_id, name)
 );
@@ -228,7 +233,10 @@ CREATE TABLE pr_pages (
 
 -- ── pr_dependencies ───────────────────────────────────────────────────────
 -- PRs that must be deployed before this PR (stored as pr_number, not id,
--- because the dependent PR may not exist in this project's records).
+-- since one PR number can span several rows — one per module). No FK on
+-- dependent_pr_number: the app (routes/prRoutes.js) validates it against
+-- existing PR numbers and keeps both sides in sync on add/remove, but the
+-- column itself doesn't enforce that.
 CREATE TABLE pr_dependencies (
   pr_id               UUID  NOT NULL REFERENCES prs(id) ON DELETE CASCADE,
   project_id          UUID  NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
@@ -251,6 +259,7 @@ CREATE TABLE releases (
   release_date     DATE,
   code_freeze      DATE,
   regression_start DATE,
+  sprint           TEXT,
   completed        BOOLEAN     NOT NULL DEFAULT false,
   completed_at     TIMESTAMPTZ,
   created_at       TIMESTAMPTZ NOT NULL DEFAULT now(),
