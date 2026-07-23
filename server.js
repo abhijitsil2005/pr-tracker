@@ -90,6 +90,15 @@ app.use(cors());
 app.use(express.json({ limit: '1mb' }));
 app.use(express.static(path.join(__dirname, 'public')));
 app.use('/api', apiLimiter);
+// Every /api response is live application data (PRs, releases, dependencies...)
+// that other users/tabs can change at any time. Without this, Express's default
+// ETag plus a bare GET can lead a browser to reuse a cached response instead of
+// hitting the network — e.g. saving PR A's dependency on PR B, then opening PR
+// B's Edit modal showing stale data until a manual page refresh.
+app.use('/api', (req, res, next) => {
+  res.set('Cache-Control', 'no-store');
+  next();
+});
 
 // Public routes
 app.use('/api/auth', authRoutes);
