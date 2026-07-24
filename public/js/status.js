@@ -609,7 +609,7 @@ async function openActivityModal(id) {
   const a = stAssignments.find(x => x.id === id);
   if (!a) return;
   stCtx = a;
-  const pageName = (a.Page || '').split('/').pop() || a.Page || '—';
+  const pageName = a.Page || '—';
   document.getElementById('actTitle').textContent     = `${a.Developer} — ${pageName}`;
   document.getElementById('actAssignInfo').textContent = `${a.Module || '—'} / ${a.Page || '—'} · Week of ${weekLabel(currentWeek)}`;
   document.getElementById('actStatus').value          = a.Status || 'Pending';
