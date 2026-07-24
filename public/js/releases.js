@@ -154,12 +154,17 @@ function buildReleaseBlock(rel, search, cssClass) {
   const distinctRelPRs = new Set();
   filteredMods.forEach(mod => {
     const modPages = mod.Pages || [];
+    const storedFull  = new Set(modPages.map(p => (p.Page_Name || '').trim()).filter(Boolean));
     const storedBases = new Set(modPages.map(p => pgBase(p.Page_Name || '')).filter(Boolean));
     modPages.forEach(p => { if (p.PR) distinctRelPRs.add(Number(p.PR)); });
     allPRs.forEach(pr => {
       if (pr.Module !== mod.Module) return;
       if (!pr.Target_Release || pr.Target_Release.trim() !== relDate) return;
-      if ((pr.Page || []).some(pg => storedBases.has(pgBase(pg)))) {
+      // Prefer an exact page match; only fall back to filename-only matching
+      // (for pages renamed/moved into a folder since the PR was saved) when
+      // no exact match exists — otherwise two distinct pages that merely
+      // share a filename (e.g. "x.aspx" and "import/x.aspx") get conflated.
+      if ((pr.Page || []).some(pg => storedFull.has((pg||'').trim()) || storedBases.has(pgBase(pg)))) {
         distinctRelPRs.add(Number(pr.PR));
       }
     });
@@ -260,8 +265,17 @@ function buildModGroup(mod, rel) {
     if (pr.Module !== mod.Module) return;
     if (!pr.Target_Release || pr.Target_Release.trim() !== relDate) return;
     (pr.Page || []).forEach(pg => {
+      // Prefer an exact page match; only fall back to filename-only matching
+      // (for pages renamed/moved into a folder since the PR was saved) when
+      // no exact match exists — otherwise a PR for "x.aspx" would also get
+      // attributed to an unrelated "import/x.aspx" page that merely shares
+      // the same filename.
+      if (pageMap.has(pg)) {
+        pageMap.get(pg).prSet.add(Number(pr.PR));
+        return;
+      }
       for (const [key, entry] of pageMap) {
-        if (pgBase(pg) === pgBase(key) || pg === key) {
+        if (pgBase(pg) === pgBase(key)) {
           entry.prSet.add(Number(pr.PR));
         }
       }
@@ -283,11 +297,15 @@ function buildModGroup(mod, rel) {
   sortedPageEntries.forEach(([, { page: p, prs }]) => {
     const ffName = p.Feature_Flag || (mpMod
       ? (() => {
-          const mpPage = mpMod.Pages.find(mp =>
-            mp.page_name === p.Page_Name ||
-            p.Page_Name?.endsWith(mp.page_name) ||
-            mp.page_name === (p.Page_Name||'').split('/').pop()
-          );
+          // Prefer an exact page match; only fall back to suffix/filename
+          // matching (for pages renamed/moved into a folder since this data
+          // was synced) when no exact match exists — an unfiltered fallback
+          // can match the wrong page when two share the same filename.
+          const mpPage = mpMod.Pages.find(mp => mp.page_name === p.Page_Name) ||
+            mpMod.Pages.find(mp =>
+              p.Page_Name?.endsWith(mp.page_name) ||
+              mp.page_name === (p.Page_Name||'').split('/').pop()
+            );
           return mpPage ? mpPage.Feature_Flag : '';
         })()
       : '');

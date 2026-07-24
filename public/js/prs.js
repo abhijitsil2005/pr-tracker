@@ -113,7 +113,7 @@ function _renderPRPage() {
       <td><strong style="color:var(--accent)">#${p.PR}</strong></td>
       <td>${p.Module||'—'}</td>
       <td>${p.Developer||'—'}</td>
-      <td><div class="tag-list">${(p.Page||[]).map(pg=>`<span class="tag">${pg.split('/').pop()}</span>`).join('')}</div></td>
+      <td><div class="tag-list">${(p.Page||[]).map(pg=>`<span class="tag">${pg}</span>`).join('')}</div></td>
       <td>${p.Dev_Sprint||'—'}</td>
       <td>${statusBadge(p.Status)}</td>
       <td style="white-space:nowrap">${p['PR Raised Date']||'—'}</td>
@@ -258,14 +258,23 @@ async function openEditPRModal(id) {
   document.getElementById('f_developer').value = pr.Developer||'';
   await loadPageOptions();
   const savedPages = (pr.Page||[]).map(p => (p||'').trim()).filter(Boolean);
-  const pageMatches = (chipVal, saved) =>
-    saved === chipVal ||
-    saved.endsWith('/' + chipVal) ||
-    chipVal.endsWith('/' + saved) ||
-    saved.split('/').pop() === chipVal.split('/').pop();
-  document.getElementById('f_pages').querySelectorAll('.page-chip').forEach(chip => {
-    const v = chip.dataset.value || '';
-    if (savedPages.some(s => pageMatches(v, s))) chip.classList.add('selected');
+  const pageChips  = [...document.getElementById('f_pages').querySelectorAll('.page-chip')];
+  const chipValues = pageChips.map(chip => chip.dataset.value || '');
+  // Resolve each saved page to at most one chip, preferring an exact match.
+  // Folder/basename fuzzy matching is only a fallback for pages that were
+  // renamed/moved since this PR was saved (no exact chip left for them) —
+  // applying it unconditionally would make two distinct sibling pages that
+  // merely share a filename (e.g. "x.aspx" and "import/x.aspx") both light
+  // up for a single saved value, so removing one and keeping the other
+  // could never actually stick.
+  savedPages.forEach(saved => {
+    let matchIndex = chipValues.indexOf(saved);
+    if (matchIndex === -1) {
+      matchIndex = chipValues.findIndex(v =>
+        v.endsWith('/' + saved) || saved.endsWith('/' + v) || v.split('/').pop() === saved.split('/').pop()
+      );
+    }
+    if (matchIndex !== -1) pageChips[matchIndex].classList.add('selected');
   });
   populatePRStatusSelect(document.getElementById('f_status'), pr.Status||'');
   document.getElementById('f_reviewer').value = pr.Reviewer||'';
